@@ -18,7 +18,6 @@ import io.pravega.schemaregistry.contract.data.GroupProperties;
 import io.pravega.schemaregistry.storage.StoreExceptions;
 import io.pravega.schemaregistry.storage.client.TableStore;
 import io.pravega.schemaregistry.storage.impl.group.Group;
-import io.pravega.schemaregistry.storage.impl.group.PravegaLogCache;
 import io.pravega.schemaregistry.storage.impl.group.PravegaTableTable;
 import lombok.Data;
 
@@ -30,7 +29,6 @@ import java.util.function.Supplier;
 public class PravegaTableGroups implements Groups<Version> {
     private static final String GROUPS = "schema-registry/groups/0";
 
-    private final PravegaLogCache logCache;
     private final ClientConfig clientConfig;
     private final TableStore tableStore;
     private final ScheduledExecutorService executor;
@@ -40,7 +38,6 @@ public class PravegaTableGroups implements Groups<Version> {
         this.tableStore = tableStore;
         this.executor = executor;
         this.tableName = GROUPS;
-        this.logCache = new PravegaLogCache(clientConfig);
         this.clientConfig = clientConfig;
     }
     
@@ -70,11 +67,10 @@ public class PravegaTableGroups implements Groups<Version> {
                        if (entry.getObject().getState().equals(GroupsValue.State.Creating)) {
                            GroupObj groupObject = getGroupObject(group, entry.getObject());
                            Group<Version> grp = groupObject.getGroup();
-                           PravegaLog log = groupObject.getLog();
                            PravegaTableTable index = groupObject.getIndex();
                            
                            boolean toReturn = entry.getObject().getId().equals(id);
-                           return log.create().thenCompose(v -> index.create())
+                           return index.create()
                                      .thenCompose(v -> grp.create(groupProperties.getSchemaType(), groupProperties.getProperties(),
                                              groupProperties.isValidateByObjectType(), groupProperties.getSchemaValidationRules()))
                                      .thenCompose(v -> {
@@ -108,7 +104,7 @@ public class PravegaTableGroups implements Groups<Version> {
                               return tableStore.updateEntry(tableName, group, newValue.toBytes(), entry.getVersion())
                                                .thenCompose(version -> {
                                                     GroupObj grpObj = getGroupObject(group, newValue);
-                                                    return CompletableFuture.allOf(grpObj.getLog().delete(), grpObj.getIndex().delete());
+                                                    return grpObj.getIndex().delete();
                                                 });
                           })
                          .thenCompose(v -> tableStore.removeEntry(tableName, group)), 
@@ -116,10 +112,9 @@ public class PravegaTableGroups implements Groups<Version> {
     }
 
     private GroupObj getGroupObject(String groupName, GroupsValue value) {
-        PravegaLog log = new PravegaLog(groupName, value.getId(), clientConfig, logCache, executor);
         PravegaTableTable index = new PravegaTableTable(groupName, value.getId(), tableStore);
-        Group<Version> group = new Group<>(log, index, executor);
-        return new GroupObj(group, log, index);
+        Group<Version> group = new Group<>(index, executor);
+        return new GroupObj(group, index);
     }
 
     private <T> CompletableFuture<T> withCreateGroupsTableIfAbsent(Supplier<CompletableFuture<T>> supplier) {
@@ -131,7 +126,6 @@ public class PravegaTableGroups implements Groups<Version> {
     @Data
     private static class GroupObj {
         private final Group<Version> group;
-        private final PravegaLog log;
         private final PravegaTableTable index;
     } 
 }

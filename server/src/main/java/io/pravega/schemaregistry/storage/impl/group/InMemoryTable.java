@@ -10,6 +10,7 @@
 package io.pravega.schemaregistry.storage.impl.group;
 
 import io.pravega.common.concurrent.Futures;
+import io.pravega.schemaregistry.storage.Position;
 import io.pravega.schemaregistry.storage.StoreExceptions;
 import io.pravega.schemaregistry.storage.records.TableRecords;
 import lombok.AccessLevel;
@@ -26,61 +27,66 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * In memory implementation of index. 
+ * In memory implementation of records. 
  */
 public class InMemoryTable implements Table<Integer> {
     @GuardedBy("$lock")
     @Getter(AccessLevel.NONE)
-    private final Map<TableRecords.Key, Value<TableRecords.Record, Integer>> index = new HashMap<>();
+    private final Map<TableRecords.Key, Value<TableRecords.Record, Integer>> records = new HashMap<>();
 
     @Override
     @Synchronized
     public CompletableFuture<Collection<TableRecords.Key>> getAllKeys() {
-        return CompletableFuture.completedFuture(index.keySet());
+        return CompletableFuture.completedFuture(records.keySet());
     }
 
     @Override
     @Synchronized
     public CompletableFuture<List<Entry>> getAllEntries() {
         return CompletableFuture.completedFuture(
-                index.entrySet().stream().map(x -> new Entry(x.getKey(), x.getValue().getValue())).collect(Collectors.toList()));
+                records.entrySet().stream().map(x -> new Entry(x.getKey(), x.getValue().getValue())).collect(Collectors.toList()));
     }
 
     @Override
     @Synchronized
     public CompletableFuture<List<Entry>> getAllEntries(Predicate<TableRecords.Key> filterKeys) {
-        return CompletableFuture.completedFuture(index.entrySet().stream().filter(x -> filterKeys.test(x.getKey()))
-                    .map(x -> new Entry(x.getKey(), x.getValue().getValue())).collect(Collectors.toList()));
+        return CompletableFuture.completedFuture(records.entrySet().stream().filter(x -> filterKeys.test(x.getKey()))
+                                                        .map(x -> new Entry(x.getKey(), x.getValue().getValue())).collect(Collectors.toList()));
     }
 
     @Override
     @Synchronized
     public CompletableFuture<Void> addEntry(TableRecords.Key key, TableRecords.Record value) {
-        index.putIfAbsent(key, new Value<>(value, 0));
+        records.putIfAbsent(key, new Value<>(value, 0));
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     @Synchronized
     public CompletableFuture<Void> updateEntry(TableRecords.Key key, TableRecords.Record value, Integer version) {
-        int currentVersion = index.containsKey(key) ? index.get(key).getVersion() : 0;
+        int currentVersion = records.containsKey(key) ? records.get(key).getVersion() : 0;
         if (currentVersion != version) {
             throw StoreExceptions.create(StoreExceptions.Type.WRITE_CONFLICT, key.getClass().toString());
         } else {
-            index.put(key, new Value<>(value, version + 1));
+            records.put(key, new Value<>(value, version + 1));
         }
         return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<Void> updateEntries(List<Map.Entry<TableRecords.Key, Value>> value) {
+        return null;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     @Synchronized
     public <T extends TableRecords.Record> CompletableFuture<T> getRecord(TableRecords.Key key, Class<T> tClass) {
-        if (!index.containsKey(key)) {
+        if (!records.containsKey(key)) {
             return CompletableFuture.completedFuture(null);
         }
 
-        Value<TableRecords.Record, Integer> value = index.get(key);
+        Value<TableRecords.Record, Integer> value = records.get(key);
         if (tClass.isAssignableFrom(value.getValue().getClass())) {
             return CompletableFuture.completedFuture((T) value.getValue());
         } else {
@@ -89,18 +95,29 @@ public class InMemoryTable implements Table<Integer> {
     }
 
     @Override
+    public <T extends TableRecords.Record> CompletableFuture<List<T>> getRecords(List<TableRecords.Key> keys, Class<T> tClass) {
+        return null;
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     @Synchronized
     public <T extends TableRecords.Record> CompletableFuture<Value<T, Integer>> getRecordWithVersion(TableRecords.Key key, Class<T> tClass) {
-        if (!index.containsKey(key)) {
+        if (!records.containsKey(key)) {
             return CompletableFuture.completedFuture(null);
         }
 
-        Value<? extends TableRecords.Record, Integer> value = index.get(key);
+        Value<? extends TableRecords.Record, Integer> value = records.get(key);
         if (tClass.isAssignableFrom(value.getValue().getClass())) {
             return CompletableFuture.completedFuture(new Value<>((T) value.getValue(), value.getVersion()));
         } else {
             return Futures.failedFuture(new IllegalArgumentException());
         }
+    }
+
+    @Override
+    @Synchronized
+    public Position versionToPosition(Integer version) {
+        return new InMemoryPosition(version);
     }
 }

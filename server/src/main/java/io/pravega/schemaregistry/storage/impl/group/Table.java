@@ -44,7 +44,7 @@ public interface Table<V> {
 
     <T extends TableRecords.Record> CompletableFuture<Value<T, V>> getRecordWithVersion(TableRecords.Key key, Class<T> tClass);
 
-    CompletableFuture<Position> getCurrentEtag();
+    Position versionToPosition(V version);
 
     @Data
     class Value<T extends TableRecords.Record, V> {

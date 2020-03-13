@@ -13,6 +13,6 @@ package io.pravega.schemaregistry.storage;
  * Pointer to a position/offset in the {@link io.pravega.schemaregistry.storage.impl.group.Log} where any record has been written. 
  * @param <T> Type of position. 
  */
-public interface Position<T extends Comparable<T>> {
+public interface Position<T> {
     T getPosition();
 }

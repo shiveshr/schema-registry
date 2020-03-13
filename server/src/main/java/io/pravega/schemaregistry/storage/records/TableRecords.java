@@ -14,24 +14,26 @@ import io.pravega.common.ObjectBuilder;
 import io.pravega.common.io.serialization.RevisionDataInput;
 import io.pravega.common.io.serialization.RevisionDataOutput;
 import io.pravega.common.io.serialization.VersionedSerializer;
-import io.pravega.schemaregistry.contract.data.CompressionType;
-import io.pravega.schemaregistry.contract.data.CompressionTypeRecord;
-import io.pravega.schemaregistry.contract.data.SchemaInfo;
+import io.pravega.schemaregistry.common.Either;
+import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.SchemaType;
-import io.pravega.schemaregistry.contract.data.SchemaTypeRecord;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.SneakyThrows;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.security.cert.Extension;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Table Records with different implementations for {@link Key} and {@link Record}.
@@ -179,7 +181,7 @@ public interface TableRecords {
     public class ValidationRulesValue implements Record {
         public static final Serializer SERIALIZER = new Serializer();
 
-        private final SchemaValidationRules validationRules;
+        private final SchemaValidationRulesRecord validationRules;
 
         @SneakyThrows
         @Override
@@ -207,11 +209,11 @@ public interface TableRecords {
             }
 
             private void write00(ValidationRulesValue e, RevisionDataOutput target) throws IOException {
-                SchemaValidationRules.SERIALIZER.serialize(target, e.validationRules);
+                SchemaValidationRulesRecord.SERIALIZER.serialize(target, e.validationRules);
             }
 
             private void read00(RevisionDataInput source, ValidationRulesValue.ValidationRulesValueBuilder b) throws IOException {
-                b.validationRules(SchemaValidationRules.SERIALIZER.deserialize(source));
+                b.validationRules(SchemaValidationRulesRecord.SERIALIZER.deserialize(source));
             }
         }
     }
@@ -259,8 +261,13 @@ public interface TableRecords {
     class SchemaInfoValue implements Record {
         public static final Serializer SERIALIZER = new Serializer();
 
-        private final SchemaInfo schemaInfo;
-        private final VersionInfo versionInfo;
+        private final String name;
+        private final SchemaTypeRecord schemaType;
+        private final Map<String, String> properties;
+        private final int schemaPosition;
+
+        // either we encode the data or the UUID based on 
+        private final Either<byte[], UUID> schemaData;
 
         @SneakyThrows
         @Override
@@ -288,13 +295,113 @@ public interface TableRecords {
             }
 
             private void write00(SchemaInfoValue e, RevisionDataOutput target) throws IOException {
-                SchemaInfo.SERIALIZER.serialize(target, e.schemaInfo);
-                VersionInfo.SERIALIZER.serialize(target, e.versionInfo);
+                target.writeUTF(e.name);
+                SchemaTypeRecord.SERIALIZER.serialize(target, e.schemaType);
+                if (!e.properties.isEmpty()) {
+                    target.writeMap(e.properties, DataOutput::writeUTF, DataOutput::writeUTF);
+                }
+                target.writeInt(e.schemaPosition);
+                
+                if (e.schemaData.isLeft()) {
+                    target.writeBoolean(true);
+                    target.writeArray(e.schemaData.getLeft());
+                } else {
+                    target.writeBoolean(false);
+                    target.writeUUID(e.schemaData.getRight());
+                }
+            }
+            
+            private void read00(RevisionDataInput source, SchemaInfoValue.SchemaInfoValueBuilder b) throws IOException {
+                b.name(source.readUTF())
+                 .schemaType(SchemaTypeRecord.SERIALIZER.deserialize(source))
+                 .properties(source.readMap(DataInput::readUTF, DataInput::readUTF))
+                 .schemaPosition(source.readInt());
+                boolean isLeft = source.readBoolean();
+                if (isLeft) {
+                    b.schemaData(Either.left(source.readArray()));
+                } else {
+                    b.schemaData(Either.right(source.readUUID()));
+                }
+            }
+        }
+    }
+    
+    @Data
+    @Builder
+    @AllArgsConstructor
+    class SchemaBytesChunkKey implements Key {
+        public static final Serializer SERIALIZER = new Serializer();
+        
+        private final UUID id;
+
+        private static class SchemaBytesChunkKeyBuilder implements ObjectBuilder<SchemaBytesChunkKey> {
+        }
+
+        static class Serializer extends VersionedSerializer.WithBuilder<SchemaBytesChunkKey, SchemaBytesChunkKey.SchemaBytesChunkKeyBuilder> {
+            @Override
+            protected SchemaBytesChunkKey.SchemaBytesChunkKeyBuilder newBuilder() {
+                return SchemaBytesChunkKey.builder();
             }
 
-            private void read00(RevisionDataInput source, SchemaInfoValue.SchemaInfoValueBuilder b) throws IOException {
-                b.schemaInfo(SchemaInfo.SERIALIZER.deserialize(source))
-                 .versionInfo(VersionInfo.SERIALIZER.deserialize(source));
+            @Override
+            protected byte getWriteVersion() {
+                return 0;
+            }
+
+            @Override
+            protected void declareVersions() {
+                version(0).revision(0, this::write00, this::read00);
+            }
+
+            private void write00(SchemaBytesChunkKey e, RevisionDataOutput target) throws IOException {
+                target.writeUUID(e.id);
+            }
+
+            private void read00(RevisionDataInput source, SchemaBytesChunkKey.SchemaBytesChunkKeyBuilder b) throws IOException {
+                b.id(source.readUUID());
+            }
+        }
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    class SchemaBytesChunkValue implements Record {
+        public static final Serializer SERIALIZER = new Serializer();
+        
+        private final byte[] schemaDataChunk;
+
+        @SneakyThrows
+        @Override
+        public byte[] toBytes() {
+            return SERIALIZER.serialize(this).getCopy();
+        }
+
+        private static class SchemaBytesChunkValueBuilder implements ObjectBuilder<SchemaBytesChunkValue> {
+        }
+
+        static class Serializer extends VersionedSerializer.WithBuilder<SchemaBytesChunkValue, SchemaBytesChunkValue.SchemaBytesChunkValueBuilder> {
+            @Override
+            protected SchemaBytesChunkValue.SchemaBytesChunkValueBuilder newBuilder() {
+                return SchemaBytesChunkValue.builder();
+            }
+
+            @Override
+            protected byte getWriteVersion() {
+                return 0;
+            }
+
+            @Override
+            protected void declareVersions() {
+                version(0).revision(0, this::write00, this::read00);
+            }
+
+            private void write00(SchemaBytesChunkValue e, RevisionDataOutput target) throws IOException {
+                target.writeArray(e.schemaDataChunk);
+            }
+
+            private void read00(RevisionDataInput source, SchemaBytesChunkValue.SchemaBytesChunkValueBuilder b) throws IOException {
+                b.schemaDataChunk(source.readArray());
             }
         }
     }
@@ -305,8 +412,13 @@ public interface TableRecords {
     class VersionInfoKey implements Key {
         public static final Serializer SERIALIZER = new Serializer();
         
-        private final VersionInfo versionInfo;
+        @Getter(AccessLevel.PRIVATE)
+        private final VersionInfoRecord versionInfo;
 
+        public VersionInfo getVersion() {
+            return versionInfo.getVersionInfo();
+        }
+        
         private static class VersionInfoKeyBuilder implements ObjectBuilder<VersionInfoKey> {
         }
 
@@ -327,11 +439,11 @@ public interface TableRecords {
             }
 
             private void write00(VersionInfoKey e, RevisionDataOutput target) throws IOException {
-                VersionInfo.SERIALIZER.serialize(target, e.versionInfo);
+                VersionInfoRecord.SERIALIZER.serialize(target, e.versionInfo);
             }
 
             private void read00(RevisionDataInput source, VersionInfoKey.VersionInfoKeyBuilder b) throws IOException {
-                b.versionInfo(VersionInfo.SERIALIZER.deserialize(source));
+                b.versionInfo(VersionInfoRecord.SERIALIZER.deserialize(source));
             }
         }
     }
@@ -342,7 +454,7 @@ public interface TableRecords {
     class SchemaVersionValue implements Record {
         public static final Serializer SERIALIZER = new Serializer();
         
-        private final List<VersionInfo> versions;
+        private final List<VersionInfoRecord> versions;
 
         @SneakyThrows
         @Override
@@ -370,11 +482,11 @@ public interface TableRecords {
             }
 
             private void write00(SchemaVersionValue e, RevisionDataOutput target) throws IOException {
-                target.writeCollection(e.versions, VersionInfo.SERIALIZER::serialize);
+                target.writeCollection(e.versions, VersionInfoRecord.SERIALIZER::serialize);
             }
 
             private void read00(RevisionDataInput source, SchemaVersionValue.SchemaVersionValueBuilder b) throws IOException {
-                b.versions(new ArrayList<>(source.readCollection(VersionInfo.SERIALIZER::deserialize)));
+                b.versions(new ArrayList<>(source.readCollection(VersionInfoRecord.SERIALIZER::deserialize)));
             }
         }
     }
@@ -385,8 +497,8 @@ public interface TableRecords {
     class EncodingInfo implements Key, Record {
         public static final Serializer SERIALIZER = new Serializer();
         
-        private final VersionInfo versionInfo;
-        private final CompressionType compressionType;
+        private final VersionInfoRecord versionInfo;
+        private final CompressionTypeRecord compressionType;
 
         @SneakyThrows
         @Override
@@ -414,13 +526,13 @@ public interface TableRecords {
             }
 
             private void write00(EncodingInfo e, RevisionDataOutput target) throws IOException {
-                VersionInfo.SERIALIZER.serialize(target, e.versionInfo);
-                CompressionTypeRecord.SERIALIZER.serialize(target, new CompressionTypeRecord(e.compressionType));
+                VersionInfoRecord.SERIALIZER.serialize(target, e.versionInfo);
+                CompressionTypeRecord.SERIALIZER.serialize(target, e.compressionType);
             }
 
             private void read00(RevisionDataInput source, EncodingInfo.EncodingInfoBuilder b) throws IOException {
-                b.versionInfo(VersionInfo.SERIALIZER.deserialize(source))
-                 .compressionType(CompressionTypeRecord.SERIALIZER.deserialize(source).getCompressionType());
+                b.versionInfo(VersionInfoRecord.SERIALIZER.deserialize(source))
+                 .compressionType(CompressionTypeRecord.SERIALIZER.deserialize(source));
             }
         }
     }
@@ -431,12 +543,16 @@ public interface TableRecords {
     class EncodingId implements Key, Record {
         public static final Serializer SERIALIZER = new Serializer();
 
-        private final io.pravega.schemaregistry.contract.data.EncodingId encodingId;
-
+        private final EncodingIdRecord id;
+        
         @SneakyThrows
         @Override
         public byte[] toBytes() {
             return SERIALIZER.serialize(this).getCopy();
+        }
+
+        public io.pravega.schemaregistry.contract.data.EncodingId getEncodingId() {
+            return id.getEncodingId();
         }
 
         private static class EncodingIdBuilder implements ObjectBuilder<EncodingId> {
@@ -459,11 +575,11 @@ public interface TableRecords {
             }
 
             private void write00(EncodingId e, RevisionDataOutput target) throws IOException {
-                io.pravega.schemaregistry.contract.data.EncodingId.SERIALIZER.serialize(target, e.encodingId);
+                EncodingIdRecord.SERIALIZER.serialize(target, e.getId());
             }
 
             private void read00(RevisionDataInput source, EncodingId.EncodingIdBuilder b) throws IOException {
-                b.encodingId(io.pravega.schemaregistry.contract.data.EncodingId.SERIALIZER.deserialize(source));
+                b.id(EncodingIdRecord.SERIALIZER.deserialize(source));
             }
         }
     }
@@ -508,7 +624,7 @@ public interface TableRecords {
     class LatestEncodingIdValue implements Record {
         public static final Serializer SERIALIZER = new Serializer();
 
-        private final io.pravega.schemaregistry.contract.data.EncodingId encodingId;
+        private final int id;
 
         @SneakyThrows
         @Override
@@ -536,11 +652,11 @@ public interface TableRecords {
             }
 
             private void write00(LatestEncodingIdValue e, RevisionDataOutput target) throws IOException {
-                io.pravega.schemaregistry.contract.data.EncodingId.SERIALIZER.serialize(target, e.encodingId);
+                target.writeInt(e.id);
             }
 
             private void read00(RevisionDataInput source, LatestEncodingIdValue.LatestEncodingIdValueBuilder b) throws IOException {
-                b.encodingId(io.pravega.schemaregistry.contract.data.EncodingId.SERIALIZER.deserialize(source));
+                b.id(source.readInt());
             }
         }
     }
@@ -587,7 +703,7 @@ public interface TableRecords {
     class LatestSchemaVersionValue implements Record {
         public static final Serializer SERIALIZER = new Serializer();
 
-        private final VersionInfo versionInfo;
+        private final VersionInfoRecord versionInfo;
 
         @SneakyThrows
         @Override
@@ -615,11 +731,11 @@ public interface TableRecords {
             }
 
             private void write00(LatestSchemaVersionValue e, RevisionDataOutput target) throws IOException {
-                VersionInfo.SERIALIZER.serialize(target, e.versionInfo);
+                VersionInfoRecord.SERIALIZER.serialize(target, e.versionInfo);
             }
 
             private void read00(RevisionDataInput source, LatestSchemaVersionValue.LatestSchemaVersionValueBuilder b) throws IOException {
-                b.versionInfo(VersionInfo.SERIALIZER.deserialize(source));
+                b.versionInfo(VersionInfoRecord.SERIALIZER.deserialize(source));
             }
         }
     }

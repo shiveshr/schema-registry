@@ -9,19 +9,9 @@
  */
 package io.pravega.schemaregistry.contract.data;
 
-import io.pravega.common.ObjectBuilder;
-import io.pravega.common.io.serialization.RevisionDataInput;
-import io.pravega.common.io.serialization.RevisionDataOutput;
-import io.pravega.common.io.serialization.VersionedSerializer;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
@@ -37,11 +27,7 @@ import java.util.Objects;
  * application specific information with the schema.
  */
 @Data
-@Builder
-@AllArgsConstructor
 public class SchemaInfo {
-    public static final Serializer SERIALIZER = new Serializer();
-
     private final String name;
     private final SchemaType schemaType;
     private final byte[] schemaData;
@@ -68,47 +54,5 @@ public class SchemaInfo {
         int result = Objects.hash(name, schemaType, properties);
         result = 31 * result + Arrays.hashCode(schemaData);
         return result;
-    }
-
-    private static class SchemaInfoBuilder implements ObjectBuilder<SchemaInfo> {
-    }
-
-    public static class Serializer extends VersionedSerializer.WithBuilder<SchemaInfo, SchemaInfo.SchemaInfoBuilder> {
-        @Override
-        protected SchemaInfo.SchemaInfoBuilder newBuilder() {
-            return SchemaInfo.builder();
-        }
-
-        @Override
-        protected byte getWriteVersion() {
-            return 0;
-        }
-
-        @Override
-        protected void declareVersions() {
-            version(0).revision(0, this::write00, this::read00);
-        }
-
-        private void write00(SchemaInfo e, RevisionDataOutput target) throws IOException {
-            target.writeUTF(e.name);
-            SchemaTypeRecord.SERIALIZER.serialize(target, new SchemaTypeRecord(e.schemaType));
-            target.writeArray(e.schemaData);
-            target.writeCompactInt(e.properties.size());
-            if (!e.properties.isEmpty()) {
-                target.writeMap(e.properties, DataOutput::writeUTF, DataOutput::writeUTF);
-            }
-        }
-
-        private void read00(RevisionDataInput source, SchemaInfo.SchemaInfoBuilder b) throws IOException {
-            b.name(source.readUTF())
-                .schemaType(SchemaTypeRecord.SERIALIZER.deserialize(source).getSchemaType())
-                .schemaData(source.readArray());
-            int size = source.readCompactInt();
-            if (size > 0) {
-                b.properties(source.readMap(DataInput::readUTF, DataInput::readUTF));
-            } else {
-                b.properties(Collections.emptyMap());
-            }
-        }
     }
 }

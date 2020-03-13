@@ -20,6 +20,7 @@ import io.pravega.schemaregistry.storage.records.TableRecords;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
  * Pravega tables based index implementation. 
  */
 public class PravegaTableTable implements Table<Version> {
-    public static final String TABLE_NAME_FORMAT = "table-%s/index/0";
+    private static final String TABLE_NAME_FORMAT = "table-%s/index/0";
     private static final IndexKeySerializer INDEX_KEY_SERIALIZER = new IndexKeySerializer();
     
     private final TableStore tablesStore;
@@ -88,12 +89,22 @@ public class PravegaTableTable implements Table<Version> {
     }
 
     @Override
+    public CompletableFuture<Void> updateEntries(List<Map.Entry<TableRecords.Key, Value>> value) {
+        return null;
+    }
+
+    @Override
     public <T extends TableRecords.Record> CompletableFuture<T> getRecord(TableRecords.Key key, Class<T> tClass) {
         return Futures.exceptionallyExpecting(
                 tablesStore.getEntry(tableName, INDEX_KEY_SERIALIZER.toKeyString(key), x -> TableRecords.fromBytes(key.getClass(), x))
                           .thenApply(entry -> getTypedRecord(tClass, entry.getObject())), 
                 e -> Exceptions.unwrap(e) instanceof StoreExceptions.DataNotFoundException, 
                 null);
+    }
+
+    @Override
+    public <T extends TableRecords.Record> CompletableFuture<List<T>> getRecords(List<TableRecords.Key> keys, Class<T> tClass) {
+        return null;
     }
 
     @SuppressWarnings("unchecked")
@@ -114,5 +125,10 @@ public class PravegaTableTable implements Table<Version> {
                    }), 
                 e -> Exceptions.unwrap(e) instanceof StoreExceptions.DataNotFoundException, 
                 null);
+    }
+
+    @Override
+    public Position versionToPosition(Version version) {
+        return new PravegaTablePosition(version);
     }
 }

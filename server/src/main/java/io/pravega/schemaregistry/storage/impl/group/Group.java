@@ -17,6 +17,7 @@ import io.pravega.common.concurrent.Futures;
 import io.pravega.common.util.Retry;
 import io.pravega.schemaregistry.ListWithToken;
 import io.pravega.schemaregistry.common.Either;
+import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.CompressionType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
@@ -29,6 +30,8 @@ import io.pravega.schemaregistry.contract.data.SchemaWithVersion;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
 import io.pravega.schemaregistry.storage.Position;
 import io.pravega.schemaregistry.storage.StoreExceptions;
+import io.pravega.schemaregistry.storage.records.CompatibilityRecord;
+import io.pravega.schemaregistry.storage.records.SchemaValidationRulesRecord;
 import io.pravega.schemaregistry.storage.records.TableRecords;
 
 import java.util.ArrayList;
@@ -62,7 +65,7 @@ public class Group<V> {
     private static final Comparator<Table.Entry> VERSION_COMPARATOR = (v1, v2) -> {
         TableRecords.VersionInfoKey version1 = (TableRecords.VersionInfoKey) v1.getKey();
         TableRecords.VersionInfoKey version2 = (TableRecords.VersionInfoKey) v2.getKey();
-        return Integer.compare(version1.getVersionInfo().getVersion(), version2.getVersionInfo().getVersion());
+        return Integer.compare(version1.getVersion().getVersion(), version2.getVersion().getVersion());
     };
     private static final Comparator<Table.Entry> ENCODING_ID_COMPARATOR = (v1, v2) -> {
         TableRecords.EncodingId id1 = (TableRecords.EncodingId) v1.getKey();
@@ -85,7 +88,14 @@ public class Group<V> {
         return getCurrentEtag()
                   .thenCompose(etag -> {
                       TableRecords.GroupPropertiesValue groupPropertiesRecord = new TableRecords.GroupPropertiesValue(schemaType, validateByObjectType, properties);
-                      TableRecords.ValidationRulesValue validationRulesRecord = new TableRecords.ValidationRulesValue(schemaValidationRules);
+                      TableRecords.ValidationRulesValue validationRulesRecord = new TableRecords.ValidationRulesValue(SchemaValidationRulesRecord.of(
+                              schemaValidationRules.getRules().entrySet().stream().map(x -> {
+                                  if (x.getValue() instanceof Compatibility) {
+                                      return new CompatibilityRecord((Compatibility) x.getValue());
+                                  } else {
+                                      throw new IllegalArgumentException();
+                                  }
+                              } ).collect(Collectors.toList())));
                       Operation.Add addGroupProp = new Operation.Add(GROUP_PROPERTY_KEY, groupPropertiesRecord);
                       Operation.Add addValidationRules = new Operation.Add(VALIDATION_POLICY_KEY, validationRulesRecord);
                       Operation.Add addEtag = new Operation.Add(ETAG_KEY, ETAG_KEY);
@@ -95,11 +105,13 @@ public class Group<V> {
     
     @SuppressWarnings("unchecked")
     public CompletableFuture<Position> getCurrentEtag() {
-        return table.getCurrentEtag();
+        return table.getRecordWithVersion(ETAG_KEY, TableRecords.Etag.class)
+            .thenApply(record -> table.versionToPosition(record.getVersion()));
     }
     
     public CompletableFuture<ListWithToken<String>> getObjectTypes() {
-        return table.getAllKeys()
+        // get all versions and extract their object types
+        return table.getRecord(new TableRecords.LatestSchemaVersionKey())
                     .thenApply(list -> {
                          List<String> objectTypes = list
                                  .stream().filter(x -> x instanceof TableRecords.VersionInfoKey)
@@ -110,8 +122,18 @@ public class Group<V> {
     }
 
     public CompletableFuture<ListWithToken<SchemaWithVersion>> getSchemas() {
-        
-        return getSchemasInternal(null, x -> x.getRecord() instanceof Record.SchemaRecord);
+        // 1. get latest encoding id
+        // 2. get all encoding infos corresponding to all previous encoding ids
+        return table.getRecord(LATEST_ENCODING_ID_KEY, TableRecords.LatestEncodingIdValue.class)
+                    .thenCompose(latest -> {
+
+                        List<TableRecords.Key> keys = new LinkedList<>();
+                        for (int i = 0; i < latest.getId(); i++) {
+                            keys.add(new TableRecords.EncodingId(new EncodingId(i)));
+                        }
+                        return table.getRecords(keys, TableRecords.EncodingInfo.class);
+                    }).thenApply(list -> list.stream().map(TableRecords.EncodingInfo::getCompressionType)
+                                             .distinct().collect(Collectors.toList()));
     }
     
     public CompletableFuture<ListWithToken<SchemaWithVersion>> getSchemas(VersionInfo from) {
@@ -505,20 +527,19 @@ public class Group<V> {
                       .thenApply(v -> found.get());
     }
 
-    private CompletableFuture<ListWithToken<SchemaWithVersion>> getSchemasInternal(Position position, Predicate<RecordWithPosition> predicate) {
-        public CompletableFuture<List<CompressionType>> getCompressions() {
-            // 1. get latest encoding id
-            // 2. get all encoding infos corresponding to all previous encoding ids
-            return table.getRecord(LATEST_ENCODING_ID_KEY, TableRecords.LatestEncodingIdValue.class)
-                        .thenCompose(latest -> {
+    private CompletableFuture<ListWithToken<SchemaWithVersion>> getSchemasInternal() {
+        // 1. get latest encoding id
+        // 2. get all encoding infos corresponding to all previous encoding ids
+        return table.getRecord(LATEST_ENCODING_ID_KEY, TableRecords.LatestEncodingIdValue.class)
+                    .thenCompose(latest -> {
 
-                            List<TableRecords.Key> keys = new LinkedList<>();
-                            for (int i = 0; i < latest.getEncodingId().getId(); i++) {
-                                keys.add(new TableRecords.EncodingId(new EncodingId(i)));
-                            }
-                            return table.getRecords(keys, TableRecords.EncodingInfo.class);
-                        }).thenApply(list -> list.stream().map(TableRecords.EncodingInfo::getCompressionType).distinct().collect(Collectors.toList()));
-        }
+                        List<TableRecords.Key> keys = new LinkedList<>();
+                        for (int i = 0; i < latest.getEncodingId().getId(); i++) {
+                            keys.add(new TableRecords.EncodingId(new EncodingId(i)));
+                        }
+                        return table.getRecords(keys, TableRecords.EncodingInfo.class);
+                    }).thenApply(list -> list.stream().map(TableRecords.EncodingInfo::getCompressionType)
+                                             .distinct().collect(Collectors.toList()));
 
     }
 }
