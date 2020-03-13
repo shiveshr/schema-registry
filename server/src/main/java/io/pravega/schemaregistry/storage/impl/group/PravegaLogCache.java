@@ -21,7 +21,6 @@ import io.pravega.client.state.RevisionedStreamClient;
 import io.pravega.client.state.SynchronizerConfig;
 import io.pravega.client.stream.Serializer;
 import io.pravega.schemaregistry.storage.StoreExceptions;
-import io.pravega.schemaregistry.storage.records.Record;
 import io.pravega.schemaregistry.storage.records.RecordSerializer;
 import lombok.Data;
 import lombok.NonNull;
@@ -128,7 +127,7 @@ public class PravegaLogCache {
         private final String id;
     }
 
-    static class RecordsSerializer<T extends Record> implements Serializer<T> {
+    static class RecordsSerializer<T> implements Serializer<T> {
         private final RecordSerializer baseSerializer;
 
         public RecordsSerializer() {

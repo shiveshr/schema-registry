@@ -19,8 +19,7 @@ import io.pravega.schemaregistry.storage.StoreExceptions;
 import io.pravega.schemaregistry.storage.client.TableStore;
 import io.pravega.schemaregistry.storage.impl.group.Group;
 import io.pravega.schemaregistry.storage.impl.group.PravegaLogCache;
-import io.pravega.schemaregistry.storage.impl.group.PravegaLog;
-import io.pravega.schemaregistry.storage.impl.group.PravegaTableIndex;
+import io.pravega.schemaregistry.storage.impl.group.PravegaTableTable;
 import lombok.Data;
 
 import java.util.UUID;
@@ -72,7 +71,7 @@ public class PravegaTableGroups implements Groups<Version> {
                            GroupObj groupObject = getGroupObject(group, entry.getObject());
                            Group<Version> grp = groupObject.getGroup();
                            PravegaLog log = groupObject.getLog();
-                           PravegaTableIndex index = groupObject.getIndex();
+                           PravegaTableTable index = groupObject.getIndex();
                            
                            boolean toReturn = entry.getObject().getId().equals(id);
                            return log.create().thenCompose(v -> index.create())
@@ -118,7 +117,7 @@ public class PravegaTableGroups implements Groups<Version> {
 
     private GroupObj getGroupObject(String groupName, GroupsValue value) {
         PravegaLog log = new PravegaLog(groupName, value.getId(), clientConfig, logCache, executor);
-        PravegaTableIndex index = new PravegaTableIndex(groupName, value.getId(), tableStore);
+        PravegaTableTable index = new PravegaTableTable(groupName, value.getId(), tableStore);
         Group<Version> group = new Group<>(log, index, executor);
         return new GroupObj(group, log, index);
     }
@@ -133,6 +132,6 @@ public class PravegaTableGroups implements Groups<Version> {
     private static class GroupObj {
         private final Group<Version> group;
         private final PravegaLog log;
-        private final PravegaTableIndex index;
+        private final PravegaTableTable index;
     } 
 }

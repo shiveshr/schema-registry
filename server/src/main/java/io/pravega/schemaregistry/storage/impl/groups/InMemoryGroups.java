@@ -12,10 +12,8 @@ package io.pravega.schemaregistry.storage.impl.groups;
 import io.pravega.schemaregistry.ListWithToken;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
 import io.pravega.schemaregistry.storage.impl.group.Group;
-import io.pravega.schemaregistry.storage.impl.group.InMemoryIndex;
-import io.pravega.schemaregistry.storage.impl.group.InMemoryLog;
-import io.pravega.schemaregistry.storage.impl.group.Index;
-import io.pravega.schemaregistry.storage.impl.group.Log;
+import io.pravega.schemaregistry.storage.impl.group.InMemoryTable;
+import io.pravega.schemaregistry.storage.impl.group.Table;
 import lombok.Synchronized;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -33,13 +31,13 @@ public class InMemoryGroups implements Groups<Integer> {
     @GuardedBy("$lock")
     private final Map<String, Group<Integer>> groups = new HashMap<>();
     private final Supplier<Log> walFactory;
-    private final Supplier<Index<Integer>> kvFactory;
+    private final Supplier<Table<Integer>> kvFactory;
     private final ScheduledExecutorService executor;
 
     public InMemoryGroups(ScheduledExecutorService executor) {
         this.executor = executor;
         this.walFactory = InMemoryLog::new;
-        this.kvFactory = InMemoryIndex::new;
+        this.kvFactory = InMemoryTable::new;
     }
 
     @Synchronized

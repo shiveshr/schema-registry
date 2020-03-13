@@ -12,7 +12,12 @@ package io.pravega.schemaregistry.storage.client;
 import io.netty.buffer.ByteBuf;
 import io.pravega.client.ClientConfig;
 import io.pravega.client.netty.impl.ConnectionFactoryImpl;
+import io.pravega.client.tables.impl.KeyVersionImpl;
+import io.pravega.client.tables.impl.TableEntry;
+import io.pravega.client.tables.impl.TableEntryImpl;
+import io.pravega.client.tables.impl.TableKeyImpl;
 import io.pravega.common.Exceptions;
+import io.pravega.common.tracing.RequestTag;
 import io.pravega.controller.server.SegmentHelper;
 import io.pravega.controller.server.rpc.auth.GrpcAuthHelper;
 import io.pravega.controller.store.stream.PravegaTablesStoreHelper;
@@ -22,6 +27,7 @@ import io.pravega.controller.store.stream.VersionedMetadata;
 import io.pravega.schemaregistry.storage.StoreExceptions;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.curator.shaded.com.google.common.base.Charsets;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -32,6 +38,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Wrapper class over {@link PravegaTablesStoreHelper}. Its implementation abstracts the caller classes from the library
@@ -79,9 +86,22 @@ public class TableStore {
     public CompletableFuture<Version> updateEntry(String tableName, String key, byte[] value, Version ver) {
         return exceptionally(tableName, tableStoreHelper.updateEntry(tableName, key, value, ver));
     }
-    
+
+    public CompletableFuture<List<Version>> updateEntries(String tableName, Map<String, Map.Entry<byte[], Version>> batch) {
+        List<TableEntry<byte[], byte[]>> entries = batch.entrySet().stream().map(x -> {
+            KeyVersionImpl version = new KeyVersionImpl(x.getValue().getValue().asLongVersion().getLongValue());
+
+            return new TableEntryImpl<>(new TableKeyImpl<>(x.getKey().getBytes(Charsets.UTF_8), version), x.getValue().getKey());
+        }).collect(Collectors.toList());
+        return segmentHelper.updateTableEntries(tableName, entries, authHelper.retrieveMasterToken(), RequestTag.NON_EXISTENT_ID);
+    }
+
     public <T> CompletableFuture<VersionedMetadata<T>> getEntry(String tableName, String key, Function<byte[], T> fromBytes) {
         return exceptionally(tableName, tableStoreHelper.getEntry(tableName, key, fromBytes));
+    }
+    
+    public <T> CompletableFuture<List<VersionedMetadata<T>>> getEntries(String tableName, List<String> key, Function<byte[], T> fromBytes) {
+        return exceptionally(tableName, tableStoreHelper.getEntries(tableName, key, fromBytes));
     }
 
     public CompletableFuture<Void> removeEntry(String tableName, String key) {

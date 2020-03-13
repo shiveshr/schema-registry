@@ -17,41 +17,43 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Base64;
 
-public class IndexKeySerializer extends VersionedSerializer.MultiType<IndexRecord.IndexKey> {
+public class IndexKeySerializer extends VersionedSerializer.MultiType<TableRecords.Key> {
 
     @Override
     protected void declareSerializers(Builder builder) {
         // Unused values (Do not repurpose!):
         // - 0: Unsupported Serializer.
-        builder.serializer(IndexRecord.VersionInfoKey.class, 1, new IndexRecord.VersionInfoKey.Serializer())
-               .serializer(IndexRecord.ValidationPolicyKey.class, 2, new IndexRecord.ValidationPolicyKey.Serializer())
-               .serializer(IndexRecord.SyncdTillKey.class, 3, new IndexRecord.SyncdTillKey.Serializer())
-               .serializer(IndexRecord.GroupPropertyKey.class, 4, new IndexRecord.GroupPropertyKey.Serializer())
-               .serializer(IndexRecord.SchemaInfoKey.class, 5, new IndexRecord.SchemaInfoKey.Serializer())
-               .serializer(IndexRecord.EncodingInfoIndex.class, 6, new IndexRecord.EncodingInfoIndex.Serializer())
-               .serializer(IndexRecord.EncodingIdIndex.class, 7, new IndexRecord.EncodingIdIndex.Serializer());
+        builder.serializer(TableRecords.VersionInfoKey.class, 1, new TableRecords.VersionInfoKey.Serializer())
+               .serializer(TableRecords.SchemaFingerprintKey.class, 2, new TableRecords.SchemaFingerprintKey.Serializer())
+               .serializer(TableRecords.LatestSchemaVersionKey.class, 3, new TableRecords.LatestSchemaVersionKey.Serializer())
+               .serializer(TableRecords.GroupPropertyKey.class, 4, new TableRecords.GroupPropertyKey.Serializer())
+               .serializer(TableRecords.ValidationRulesKey.class, 5, new TableRecords.ValidationRulesKey.Serializer())
+               .serializer(TableRecords.EncodingId.class, 6, new TableRecords.EncodingId.Serializer())
+               .serializer(TableRecords.EncodingInfo.class, 7, new TableRecords.EncodingInfo.Serializer())
+               .serializer(TableRecords.LatestEncodingIdKey.class, 8, new TableRecords.LatestEncodingIdKey.Serializer())
+               .serializer(TableRecords.Etag.class, 9, new TableRecords.Etag.Serializer());
     }
-
+    
     /**
-     * Serializes the given {@link IndexRecord.IndexKey} to a {@link ByteBuffer}.
+     * Serializes the given {@link TableRecords.Key} to a {@link ByteBuffer}.
      *
-     * @param value The {@link IndexRecord.IndexKey} to serialize.
+     * @param value The {@link TableRecords.Key} to serialize.
      * @return A base 64 encoding of wrapping an array that contains the serialization.
      */
     @SneakyThrows(IOException.class)
-    public String toKeyString(IndexRecord.IndexKey value) {
+    public String toKeyString(TableRecords.Key value) {
         ByteArraySegment s = serialize(value);
         return value.getClass().getSimpleName() + "_" + Base64.getEncoder().encodeToString(s.getCopy());
     }
     
     /**
-     * Deserializes the given base 64 encoded key string into a {@link IndexRecord.IndexKey} instance.
+     * Deserializes the given base 64 encoded key string into a {@link TableRecords.Key} instance.
      *
      * @param string string to deserialize into key.
-     * @return A new {@link IndexRecord.IndexKey} instance from the given serialization.
+     * @return A new {@link TableRecords.Key} instance from the given serialization.
      */
     @SneakyThrows(IOException.class)
-    public IndexRecord.IndexKey fromString(String string) {
+    public TableRecords.Key fromString(String string) {
         String[] tokens = string.split("_");
         
         byte[] buffer = Base64.getDecoder().decode(tokens[1]);

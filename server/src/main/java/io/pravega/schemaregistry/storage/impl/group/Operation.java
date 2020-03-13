@@ -9,13 +9,13 @@
  */
 package io.pravega.schemaregistry.storage.impl.group;
 
-import io.pravega.schemaregistry.storage.records.IndexRecord;
+import io.pravega.schemaregistry.storage.records.TableRecords;
 import lombok.Data;
 
 import java.util.function.Predicate;
 
 /**
- * Represents different operations on the Index. 
+ * Represents different operations on the Table. 
  */
 interface Operation {
     class Noop implements Operation {
@@ -26,8 +26,8 @@ interface Operation {
      */
     @Data
     class Add implements Operation {
-        private final IndexRecord.IndexKey key;
-        private final IndexRecord.IndexValue value;
+        private final TableRecords.Key key;
+        private final TableRecords.Record value;
     }
 
     /**
@@ -35,8 +35,8 @@ interface Operation {
      */
     @Data
     class AddToList implements Operation {
-        private final IndexRecord.IndexKey key;
-        private final IndexRecord.IndexValue value;
+        private final TableRecords.Key key;
+        private final TableRecords.Record value;
     }
 
     /**
@@ -44,8 +44,8 @@ interface Operation {
      */
     @Data
     class GetAndSet implements Operation {
-        private final IndexRecord.IndexKey key;
-        private final IndexRecord.IndexValue value;
-        private final Predicate<IndexRecord.IndexValue> condition;
+        private final TableRecords.Key key;
+        private final TableRecords.Record value;
+        private final Predicate<TableRecords.Record> condition;
     }
 }

@@ -11,7 +11,7 @@ package io.pravega.schemaregistry.storage.impl.group;
 
 import io.pravega.common.concurrent.Futures;
 import io.pravega.schemaregistry.storage.StoreExceptions;
-import io.pravega.schemaregistry.storage.records.IndexRecord;
+import io.pravega.schemaregistry.storage.records.TableRecords;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Synchronized;
@@ -28,14 +28,14 @@ import java.util.stream.Collectors;
 /**
  * In memory implementation of index. 
  */
-public class InMemoryIndex implements Index<Integer> {
+public class InMemoryTable implements Table<Integer> {
     @GuardedBy("$lock")
     @Getter(AccessLevel.NONE)
-    private final Map<IndexRecord.IndexKey, Value<IndexRecord.IndexValue, Integer>> index = new HashMap<>();
+    private final Map<TableRecords.Key, Value<TableRecords.Record, Integer>> index = new HashMap<>();
 
     @Override
     @Synchronized
-    public CompletableFuture<Collection<IndexRecord.IndexKey>> getAllKeys() {
+    public CompletableFuture<Collection<TableRecords.Key>> getAllKeys() {
         return CompletableFuture.completedFuture(index.keySet());
     }
 
@@ -48,21 +48,21 @@ public class InMemoryIndex implements Index<Integer> {
 
     @Override
     @Synchronized
-    public CompletableFuture<List<Entry>> getAllEntries(Predicate<IndexRecord.IndexKey> filterKeys) {
+    public CompletableFuture<List<Entry>> getAllEntries(Predicate<TableRecords.Key> filterKeys) {
         return CompletableFuture.completedFuture(index.entrySet().stream().filter(x -> filterKeys.test(x.getKey()))
                     .map(x -> new Entry(x.getKey(), x.getValue().getValue())).collect(Collectors.toList()));
     }
 
     @Override
     @Synchronized
-    public CompletableFuture<Void> addEntry(IndexRecord.IndexKey key, IndexRecord.IndexValue value) {
+    public CompletableFuture<Void> addEntry(TableRecords.Key key, TableRecords.Record value) {
         index.putIfAbsent(key, new Value<>(value, 0));
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     @Synchronized
-    public CompletableFuture<Void> updateEntry(IndexRecord.IndexKey key, IndexRecord.IndexValue value, Integer version) {
+    public CompletableFuture<Void> updateEntry(TableRecords.Key key, TableRecords.Record value, Integer version) {
         int currentVersion = index.containsKey(key) ? index.get(key).getVersion() : 0;
         if (currentVersion != version) {
             throw StoreExceptions.create(StoreExceptions.Type.WRITE_CONFLICT, key.getClass().toString());
@@ -75,12 +75,12 @@ public class InMemoryIndex implements Index<Integer> {
     @Override
     @SuppressWarnings("unchecked")
     @Synchronized
-    public <T extends IndexRecord.IndexValue> CompletableFuture<T> getRecord(IndexRecord.IndexKey key, Class<T> tClass) {
+    public <T extends TableRecords.Record> CompletableFuture<T> getRecord(TableRecords.Key key, Class<T> tClass) {
         if (!index.containsKey(key)) {
             return CompletableFuture.completedFuture(null);
         }
 
-        Value<IndexRecord.IndexValue, Integer> value = index.get(key);
+        Value<TableRecords.Record, Integer> value = index.get(key);
         if (tClass.isAssignableFrom(value.getValue().getClass())) {
             return CompletableFuture.completedFuture((T) value.getValue());
         } else {
@@ -91,12 +91,12 @@ public class InMemoryIndex implements Index<Integer> {
     @Override
     @SuppressWarnings("unchecked")
     @Synchronized
-    public <T extends IndexRecord.IndexValue> CompletableFuture<Value<T, Integer>> getRecordWithVersion(IndexRecord.IndexKey key, Class<T> tClass) {
+    public <T extends TableRecords.Record> CompletableFuture<Value<T, Integer>> getRecordWithVersion(TableRecords.Key key, Class<T> tClass) {
         if (!index.containsKey(key)) {
             return CompletableFuture.completedFuture(null);
         }
 
-        Value<? extends IndexRecord.IndexValue, Integer> value = index.get(key);
+        Value<? extends TableRecords.Record, Integer> value = index.get(key);
         if (tClass.isAssignableFrom(value.getValue().getClass())) {
             return CompletableFuture.completedFuture(new Value<>((T) value.getValue(), value.getVersion()));
         } else {
