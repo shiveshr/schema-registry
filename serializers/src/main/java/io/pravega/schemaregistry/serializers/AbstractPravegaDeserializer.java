@@ -1,22 +1,24 @@
 /**
  * Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.pravega.schemaregistry.serializers;
 
+import com.google.common.base.Strings;
 import io.pravega.client.stream.Serializer;
 import io.pravega.schemaregistry.cache.EncodingCache;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
+import io.pravega.schemaregistry.contract.data.VersionInfo;
 import io.pravega.schemaregistry.schemas.SchemaContainer;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
@@ -35,19 +37,21 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
 
     private final String groupId;
     private final String appId;
-    private final SchemaRegistryClient client;
+    private final RegistryClient client;
     // This can be null. If no schema is supplied, it means the intent is to deserialize into writer schema. 
     private final AtomicReference<SchemaInfo> schemaInfo;
     private final AtomicBoolean encodeHeader;
     private final BiFunction<CodecType, ByteBuffer, ByteBuffer> decode;
+    private final boolean registerSchema;
     private final boolean skipHeaders;
     private final EncodingCache encodingCache;
-    
+
     protected AbstractPravegaDeserializer(String groupId,
-                                          String appId, SchemaRegistryClient client,
+                                          String appId, RegistryClient client,
                                           @Nullable SchemaContainer<T> schema,
                                           boolean skipHeaders,
                                           BiFunction<CodecType, ByteBuffer, ByteBuffer> decode,
+                                          boolean registerSchema,
                                           EncodingCache encodingCache) {
         this.groupId = groupId;
         this.appId = appId;
@@ -59,8 +63,9 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
         }
         this.encodeHeader = new AtomicBoolean();
         this.skipHeaders = skipHeaders;
+        this.registerSchema = registerSchema;
         this.decode = decode;
-            
+
         initialize();
     }
 
@@ -73,9 +78,18 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
         this.encodeHeader.set(toEncodeHeader);
 
         if (schemaInfo.get() != null) {
-            log.info("Validate caller supplied schema.");
-            if (!client.canRead(groupId, schemaInfo.get())) {
-                throw new IllegalArgumentException("Cannot read using schema" + schemaInfo.get().getName());
+            if (registerSchema) {
+                client.addSchemaIfAbsent(groupId, schemaInfo.get());
+            } else {
+                log.info("Validate caller supplied schema.");
+                if (!client.canRead(groupId, schemaInfo.get())) {
+                    throw new IllegalArgumentException("Cannot read using schema" + schemaInfo.get().getName());
+                }
+            }
+
+            if (!Strings.isNullOrEmpty(appId)) {
+                VersionInfo versionInfo = client.getSchemaVersion(groupId, schemaInfo.get());
+                client.addReader(appId, groupId, versionInfo);
             }
         } else if (!this.encodeHeader.get()) {
             log.info("Retrieving latest schema from the registry for reads.");
@@ -84,12 +98,12 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
             log.info("Read using writer schema.");
         }
     }
-    
+
     @Override
     public ByteBuffer serialize(T obj) {
         throw new IllegalStateException();
     }
-    
+
     @Override
     public T deserialize(ByteBuffer data) {
         if (this.encodeHeader.get()) {
@@ -105,9 +119,9 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
                 codecType = encodingInfo.getCodec();
                 writerSchema = encodingInfo.getSchemaInfo();
             }
-            
+
             ByteBuffer uncompressed = decode.apply(codecType, data);
-            
+
             if (schemaInfo.get() == null) { // deserialize into writer schema
                 // pass writer schema for schema to be read into
                 return deserialize(uncompressed, writerSchema, writerSchema);
@@ -120,6 +134,6 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
             return deserialize(data, null, schemaInfo.get());
         }
     }
-    
+
     protected abstract T deserialize(ByteBuffer buffer, SchemaInfo writerSchema, SchemaInfo readerSchema);
 }

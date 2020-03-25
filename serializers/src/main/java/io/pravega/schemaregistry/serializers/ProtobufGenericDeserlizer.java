@@ -17,6 +17,7 @@ import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import io.pravega.schemaregistry.cache.EncodingCache;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
@@ -31,9 +32,9 @@ import java.util.function.BiFunction;
 public class ProtobufGenericDeserlizer extends AbstractPravegaDeserializer<DynamicMessage> {
     private final LoadingCache<SchemaInfo, Descriptors.Descriptor> knownSchemas;
 
-    ProtobufGenericDeserlizer(String groupId, String appId, SchemaRegistryClient client, @Nullable ProtobufSchema<DynamicMessage> schema,
-                              BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, EncodingCache encodingCache) {
-        super(groupId, appId, client, schema, false, decode, encodingCache);
+    ProtobufGenericDeserlizer(String groupId, String appId, RegistryClient client, @Nullable ProtobufSchema<DynamicMessage> schema,
+                              BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, boolean registerSchema, EncodingCache encodingCache) {
+        super(groupId, appId, client, schema, false, decode, registerSchema, encodingCache);
         this.knownSchemas = CacheBuilder.newBuilder().build(new CacheLoader<SchemaInfo, Descriptors.Descriptor>() {
             @Override
             public Descriptors.Descriptor load(SchemaInfo schemaToUse) throws Exception {

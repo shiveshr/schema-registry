@@ -27,9 +27,9 @@ import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.schemaregistry.GroupIdGenerator;
-import io.pravega.schemaregistry.client.RegistryClientFactory;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.client.RegistryClientConfig;
+import io.pravega.schemaregistry.client.RegistryClientFactory;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaType;
@@ -58,7 +58,7 @@ import java.util.Map;
 
 public class SpecificAndGenericConsumerProto {
     private final ClientConfig clientConfig;
-    private final SchemaRegistryClient client;
+    private final RegistryClient client;
     private final String scope;
     private final String stream;
     private final EventStreamReader<Either<GeneratedMessageV3, DynamicMessage>> reader;

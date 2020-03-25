@@ -11,31 +11,35 @@ package io.pravega.schemaregistry.client.impl;
 
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import io.pravega.schemaregistry.client.ApplicationRegistryClient;
 import io.pravega.schemaregistry.client.RegistryClient;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
-import io.pravega.schemaregistry.contract.data.Application;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
-import io.pravega.schemaregistry.contract.data.SchemaValidationRule;
 import io.pravega.schemaregistry.contract.data.SchemaEvolution;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SchemaValidationRule;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.data.SchemaWithVersion;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
 import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
+import io.pravega.schemaregistry.contract.exceptions.NotFoundException;
 import io.pravega.schemaregistry.contract.exceptions.SchemaTypeMismatchException;
+import io.pravega.schemaregistry.contract.generated.rest.model.AddReaderRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddSchemaToGroupRequest;
+import io.pravega.schemaregistry.contract.generated.rest.model.AddWriterRequest;
+import io.pravega.schemaregistry.contract.generated.rest.model.Application;
+import io.pravega.schemaregistry.contract.generated.rest.model.ApplicationsInGroup;
 import io.pravega.schemaregistry.contract.generated.rest.model.CanRead;
 import io.pravega.schemaregistry.contract.generated.rest.model.CanReadRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.CodecsList;
+import io.pravega.schemaregistry.contract.generated.rest.model.CreateApplicationRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.CreateGroupRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.GetEncodingIdRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.GetSchemaVersion;
 import io.pravega.schemaregistry.contract.generated.rest.model.GroupsList;
+import io.pravega.schemaregistry.contract.generated.rest.model.IncompatibleSchema;
 import io.pravega.schemaregistry.contract.generated.rest.model.ObjectTypesList;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaList;
 import io.pravega.schemaregistry.contract.generated.rest.model.UpdateValidationRulesPolicyRequest;
@@ -56,8 +60,6 @@ import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class RegistryClientImpl implements RegistryClient {
@@ -130,7 +132,7 @@ public class RegistryClientImpl implements RegistryClient {
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             return ModelHelper.decode(response.readEntity(io.pravega.schemaregistry.contract.generated.rest.model.GroupProperties.class));
         } else if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-            throw new RuntimeException("Group not found.");
+            throw new NotFoundException("Group not found.");
         } else {
             throw new RuntimeException("Internal error. Failed to get group properties.");
         }
@@ -184,7 +186,7 @@ public class RegistryClientImpl implements RegistryClient {
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             return ModelHelper.decode(response.readEntity(io.pravega.schemaregistry.contract.generated.rest.model.VersionInfo.class));
         } else if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-            throw new RuntimeException("Group not found.");
+            throw new NotFoundException("Group not found.");
         } else if (response.getStatus() == Response.Status.CONFLICT.getStatusCode()) {
             throw new IncompatibleSchemaException("Schema is incompatible.");
         } else if (response.getStatus() == Response.Status.EXPECTATION_FAILED.getStatusCode()) {
@@ -204,7 +206,7 @@ public class RegistryClientImpl implements RegistryClient {
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             return ModelHelper.decode(response.readEntity(io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo.class));
         } else if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-            throw new RuntimeException("Schema not found.");
+            throw new NotFoundException("Schema not found.");
         } else {
             throw new RuntimeException("Internal Service error. Failed to get schema.");
         }
@@ -218,7 +220,7 @@ public class RegistryClientImpl implements RegistryClient {
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             return ModelHelper.decode(response.readEntity(io.pravega.schemaregistry.contract.generated.rest.model.EncodingInfo.class));
         } else if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-            throw new RuntimeException("Encoding not found.");
+            throw new NotFoundException("Encoding not found.");
         } else {
             throw new RuntimeException("Internal Service error. Failed to get encoding info.");
         }
@@ -344,7 +346,7 @@ public class RegistryClientImpl implements RegistryClient {
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             return ModelHelper.decode(response.readEntity(io.pravega.schemaregistry.contract.generated.rest.model.VersionInfo.class));
         } else if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-            throw new RuntimeException("Schema not found.");
+            throw new NotFoundException("Schema not found.");
         } else {
             throw new RuntimeException("Internal Service error. Failed to get schema version.");
         }
@@ -361,7 +363,7 @@ public class RegistryClientImpl implements RegistryClient {
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             return response.readEntity(Valid.class).isValid();
         } else if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-            throw new RuntimeException("Schema not found.");
+            throw new NotFoundException("Schema not found.");
         } else {
             throw new RuntimeException("Internal Service error.");
         }
@@ -377,7 +379,7 @@ public class RegistryClientImpl implements RegistryClient {
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             return response.readEntity(CanRead.class).isCompatible();
         } else if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-            throw new RuntimeException("Schema not found.");
+            throw new NotFoundException("Schema not found.");
         } else {
             throw new RuntimeException("Internal Service error.");
         }
@@ -398,42 +400,113 @@ public class RegistryClientImpl implements RegistryClient {
     }
 
     @Override
-    public CompletableFuture<Void> addApplication(String appId, Map<String, String> properties) {
-        return null;
+    public void addApplication(String appId, Map<String, String> properties) {
+        WebTarget webTarget = client.target(uri).path("v1/applications");
+        Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
+        CreateApplicationRequest request = new CreateApplicationRequest()
+                .applicationName(appId).properties(properties);
+        Response response = invocationBuilder.post(Entity.entity(request, MediaType.APPLICATION_JSON));
+
+        if (!(response.getStatus() == Response.Status.OK.getStatusCode())) {
+            throw new RuntimeException("Failed to add application");
+        }
     }
 
     @Override
-    public CompletableFuture<Application> getApplication(String appId, Function<VersionInfo, CompletableFuture<SchemaInfo>> getSchemaFromVersion) {
-        return null;
+    public io.pravega.schemaregistry.contract.data.Application getApplication(String appId) {
+        WebTarget webTarget = client.target(uri).path("v1/applications").path(appId);
+        Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
+        Response response = invocationBuilder.get();
+
+        if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+            Application app = response.readEntity(Application.class);
+            return ModelHelper.decode(app);
+        } else {
+            throw new RuntimeException("Failed to add application");
+        }
     }
 
     @Override
-    public CompletableFuture<Void> addWriter(String appId, String groupId, VersionInfo schemaVersion, Function<String, CompletableFuture<GroupProperties>> groupProperties, Function<String, CompletableFuture<List<SchemaEvolution>>> groupHistory) {
-        return null;
+    public void addWriter(String appId, String groupId, VersionInfo schemaVersion) {
+        WebTarget webTarget = client.target(uri).path("v1/applications").path(appId).path("writers");
+        Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
+        AddWriterRequest request = new AddWriterRequest()
+                .groupId(groupId).version(ModelHelper.encode(schemaVersion));
+        Response response = invocationBuilder.post(Entity.entity(request, MediaType.APPLICATION_JSON));
+
+        if (response.getStatus() == Response.Status.CONFLICT.getStatusCode()) {
+            IncompatibleSchema error = response.readEntity(IncompatibleSchema.class);
+            throw new IncompatibleSchemaException(error.getErrorMessage());
+        } else if (!(response.getStatus() == Response.Status.OK.getStatusCode())) {
+            throw new RuntimeException("Failed to add writer application");
+        }
     }
 
     @Override
-    public CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion, Function<String, CompletableFuture<GroupProperties>> groupProperties, Function<String, CompletableFuture<List<SchemaEvolution>>> groupHistory) {
-        return null;
+    public void addReader(String appId, String groupId, VersionInfo schemaVersion) {
+        WebTarget webTarget = client.target(uri).path("v1/applications").path(appId).path("readers");
+        Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
+        AddReaderRequest request = new AddReaderRequest()
+                .groupId(groupId).version(ModelHelper.encode(schemaVersion));
+        Response response = invocationBuilder.post(Entity.entity(request, MediaType.APPLICATION_JSON));
+
+        if (response.getStatus() == Response.Status.CONFLICT.getStatusCode()) {
+            IncompatibleSchema error = response.readEntity(IncompatibleSchema.class);
+            throw new IncompatibleSchemaException(error.getErrorMessage());
+        } else if (!(response.getStatus() == Response.Status.OK.getStatusCode())) {
+            throw new RuntimeException("Failed to add reader application");
+        }
     }
 
     @Override
-    public CompletableFuture<Void> removeWriter(String appId, String groupId) {
-        return null;
+    public void removeWriter(String appId, String groupId) {
+        WebTarget webTarget = client.target(uri).path("v1/applications").path(appId).path("groups").path(groupId).path("reader");
+        Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
+        Response response = invocationBuilder.delete();
+
+        if (!(response.getStatus() == Response.Status.NO_CONTENT.getStatusCode())) {
+            throw new RuntimeException("Failed to add reader application");
+        }
     }
 
     @Override
-    public CompletableFuture<Void> removeReader(String appId, String groupId) {
-        return null;
+    public void removeReader(String appId, String groupId) {
+        WebTarget webTarget = client.target(uri).path("v1/applications").path(appId).path("groups").path(groupId).path("writer");
+        Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
+        Response response = invocationBuilder.delete();
+
+        if (!(response.getStatus() == Response.Status.NO_CONTENT.getStatusCode())) {
+            throw new RuntimeException("Failed to add reader application");
+        }
     }
 
     @Override
-    public CompletableFuture<Map<String, List<VersionInfo>>> listWriterAppsInGroup(String groupId) {
-        return null;
+    public Map<String, List<VersionInfo>> listWriterAppsInGroup(String groupId) {
+        WebTarget webTarget = client.target(uri).path("v1/applications/groups").path(groupId).path("writers");
+        Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
+        Response response = invocationBuilder.get();
+
+        if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+            ApplicationsInGroup app = response.readEntity(ApplicationsInGroup.class);
+            return app.getMap().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, 
+                    x -> x.getValue().getVersions().stream().map(ModelHelper::decode).collect(Collectors.toList())));
+        } else {
+            throw new RuntimeException("Failed to get writers in group");
+        }
     }
 
     @Override
-    public CompletableFuture<Map<String, List<VersionInfo>>> listReaderAppsInGroup(String groupId) {
-        return null;
+    public Map<String, List<VersionInfo>> listReaderAppsInGroup(String groupId) {
+        WebTarget webTarget = client.target(uri).path("v1/applications/groups").path(groupId).path("readers");
+        Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
+        Response response = invocationBuilder.get();
+
+        if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+            ApplicationsInGroup app = response.readEntity(ApplicationsInGroup.class);
+            return app.getMap().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+                    x -> x.getValue().getVersions().stream().map(ModelHelper::decode).collect(Collectors.toList())));
+        } else {
+            throw new RuntimeException("Failed to get writers in group");
+        }
     }
 }

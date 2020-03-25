@@ -10,15 +10,16 @@
 package io.pravega.schemaregistry.test.integrationtest;
 
 import io.pravega.schemaregistry.MapWithToken;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
+import io.pravega.schemaregistry.contract.data.Application;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
-import io.pravega.schemaregistry.contract.data.SchemaValidationRule;
 import io.pravega.schemaregistry.contract.data.SchemaEvolution;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SchemaValidationRule;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.data.SchemaWithVersion;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
@@ -29,7 +30,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
-public class PassthruRegistryClient implements SchemaRegistryClient {
+public class PassthruRegistryClient implements RegistryClient {
     private final SchemaRegistryService service;
 
     public PassthruRegistryClient(SchemaRegistryService service) {
@@ -125,5 +126,45 @@ public class PassthruRegistryClient implements SchemaRegistryClient {
     @Override
     public List<CodecType> getCodecs(String group) {
         return service.getCodecTypes(group).join();
+    }
+
+    @Override
+    public void addApplication(String appId, Map<String, String> properties) {
+        
+    }
+
+    @Override
+    public Application getApplication(String appId) {
+        return null;
+    }
+
+    @Override
+    public void addWriter(String appId, String groupId, VersionInfo schemaVersion) {
+
+    }
+
+    @Override
+    public void addReader(String appId, String groupId, VersionInfo schemaVersion) {
+
+    }
+
+    @Override
+    public void removeWriter(String appId, String groupId) {
+
+    }
+
+    @Override
+    public void removeReader(String appId, String groupId) {
+
+    }
+
+    @Override
+    public Map<String, List<VersionInfo>> listWriterAppsInGroup(String groupId) {
+        return null;
+    }
+
+    @Override
+    public Map<String, List<VersionInfo>> listReaderAppsInGroup(String groupId) {
+        return null;
     }
 }

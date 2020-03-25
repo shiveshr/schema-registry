@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import io.pravega.schemaregistry.cache.EncodingCache;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.schemas.JSONSchema;
@@ -30,10 +30,10 @@ class JsonDeserlizer<T> extends AbstractPravegaDeserializer<T> {
     private final JSONSchema<T> jsonSchema;
     private final ObjectMapper objectMapper;
 
-    JsonDeserlizer(String groupId, String appId, SchemaRegistryClient client,
+    JsonDeserlizer(String groupId, String appId, RegistryClient client,
                    JSONSchema<T> schema,
-                   BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, EncodingCache encodingCache) {
-        super(groupId, appId, client, schema, true, decode, encodingCache);
+                   BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, boolean registerSchema, EncodingCache encodingCache) {
+        super(groupId, appId, client, schema, true, decode, registerSchema, encodingCache);
         Preconditions.checkNotNull(schema);
         this.jsonSchema = schema;
         this.objectMapper = new ObjectMapper();

@@ -109,6 +109,40 @@ public class ApplicationsApi  {
     throws NotFoundException {
         return delegate.createApplication(createApplicationRequest,securityContext);
     }
+    @DELETE
+    @Path("/{appId}/groups/{groupId}/reader")
+    
+    
+    @io.swagger.annotations.ApiOperation(value = "", notes = "Delete a reader from an app", response = Void.class, tags={ "Application", })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 204, message = "Successfully deleted reader", response = Void.class),
+        
+        @io.swagger.annotations.ApiResponse(code = 404, message = "App not found", response = Void.class),
+        
+        @io.swagger.annotations.ApiResponse(code = 500, message = "Internal server error while deleting the reader app", response = Void.class) })
+    public Response deleteReaderFromApp(@ApiParam(value = "appId",required=true) @PathParam("appId") String appId
+,@ApiParam(value = "groupId",required=true) @PathParam("groupId") String groupId
+,@Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.deleteReaderFromApp(appId,groupId,securityContext);
+    }
+    @DELETE
+    @Path("/{appId}/groups/{groupId}/writer")
+    
+    
+    @io.swagger.annotations.ApiOperation(value = "", notes = "Delete a writer from an app", response = Void.class, tags={ "Application", })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 204, message = "Successfully deleted writer", response = Void.class),
+        
+        @io.swagger.annotations.ApiResponse(code = 404, message = "App not found", response = Void.class),
+        
+        @io.swagger.annotations.ApiResponse(code = 500, message = "Internal server error while deleting the writer app", response = Void.class) })
+    public Response deleteWriterFromApp(@ApiParam(value = "appId",required=true) @PathParam("appId") String appId
+,@ApiParam(value = "groupId",required=true) @PathParam("groupId") String groupId
+,@Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.deleteWriterFromApp(appId,groupId,securityContext);
+    }
     @GET
     @Path("/{appId}")
     

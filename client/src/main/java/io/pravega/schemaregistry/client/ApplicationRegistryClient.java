@@ -1,34 +1,34 @@
+/**
+ * Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ */
 package io.pravega.schemaregistry.client;
 
 import io.pravega.schemaregistry.contract.data.Application;
-import io.pravega.schemaregistry.contract.data.GroupProperties;
-import io.pravega.schemaregistry.contract.data.SchemaEvolution;
-import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 public interface ApplicationRegistryClient {
-    CompletableFuture<Void> addApplication(String appId, Map<String, String> properties);
+    void addApplication(String appId, Map<String, String> properties);
 
-    CompletableFuture<Application> getApplication(String appId, Function<VersionInfo, CompletableFuture<SchemaInfo>> getSchemaFromVersion);
+    Application getApplication(String appId);
 
-    CompletableFuture<Void> addWriter(String appId, String groupId, VersionInfo schemaVersion,
-                                             Function<String, CompletableFuture<GroupProperties>> groupProperties,
-                                             Function<String, CompletableFuture<List<SchemaEvolution>>> groupHistory);
+    void addWriter(String appId, String groupId, VersionInfo schemaVersion);
 
-    CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion,
-                                             Function<String, CompletableFuture<GroupProperties>> groupProperties,
-                                             Function<String, CompletableFuture<List<SchemaEvolution>>> groupHistory);
+    void addReader(String appId, String groupId, VersionInfo schemaVersion);
 
-    CompletableFuture<Void> removeWriter(String appId, String groupId);
+    void removeWriter(String appId, String groupId);
 
-    CompletableFuture<Void> removeReader(String appId, String groupId);
+    void removeReader(String appId, String groupId);
 
-    CompletableFuture<Map<String, List<VersionInfo>>> listWriterAppsInGroup(String groupId);
+    Map<String, List<VersionInfo>> listWriterAppsInGroup(String groupId);
 
-    CompletableFuture<Map<String, List<VersionInfo>>> listReaderAppsInGroup(String groupId);
+    Map<String, List<VersionInfo>> listReaderAppsInGroup(String groupId);
 }

@@ -30,12 +30,12 @@ import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.common.Exceptions;
 import io.pravega.schemaregistry.GroupIdGenerator;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
-import io.pravega.schemaregistry.common.Either;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.codec.Codec;
 import io.pravega.schemaregistry.codec.CodecFactory;
-import io.pravega.schemaregistry.contract.data.Compatibility;
+import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.CodecType;
+import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaType;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
@@ -47,7 +47,7 @@ import io.pravega.schemaregistry.serializers.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
 import io.pravega.schemaregistry.storage.SchemaStore;
-import io.pravega.schemaregistry.storage.ApplicationStoreFactory;
+import io.pravega.schemaregistry.storage.SchemaStoreFactory;
 import io.pravega.schemaregistry.test.integrationtest.demo.objects.Address;
 import io.pravega.schemaregistry.test.integrationtest.demo.objects.DerivedUser1;
 import io.pravega.schemaregistry.test.integrationtest.demo.objects.DerivedUser2;
@@ -124,7 +124,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
     private final SchemaStore schemaStore;
     private final ScheduledExecutorService executor;
     private final SchemaRegistryService service;
-    private final SchemaRegistryClient client;
+    private final RegistryClient client;
     private final PravegaStandaloneUtils pravegaStandaloneUtils;
     private Random random;
 
@@ -134,7 +134,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
 
         clientConfig = ClientConfig.builder().controllerURI(URI.create(pravegaStandaloneUtils.getControllerURI())).build();
 
-        schemaStore = ApplicationStoreFactory.createPravegaStore(clientConfig, executor);
+        schemaStore = SchemaStoreFactory.createPravegaStore(clientConfig, executor);
 
         service = new SchemaRegistryService(schemaStore, executor);
         client = new PassthruRegistryClient(service);

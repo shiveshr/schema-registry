@@ -22,7 +22,7 @@ import io.pravega.common.Exceptions;
 import io.pravega.common.concurrent.Futures;
 import io.pravega.schemaregistry.GroupIdGenerator;
 import io.pravega.schemaregistry.client.RegistryClientFactory;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.client.RegistryClientConfig;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
@@ -68,7 +68,7 @@ public class Writer2 {
     private static final Random RANDOM = new Random();
 
     private final ClientConfig clientConfig;
-    private final SchemaRegistryClient client;
+    private final RegistryClient client;
     private final String scope;
     private final String stream;
     private final EventStreamWriter<GenericRecord> writer;

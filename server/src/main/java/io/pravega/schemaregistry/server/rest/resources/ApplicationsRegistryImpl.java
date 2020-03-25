@@ -167,4 +167,36 @@ public class ApplicationsRegistryImpl implements ApiV1.ApplicationsApi {
                                       return response;
                                   });
     }
+
+    @Override
+    public void deleteReaderFromApp(String appId, String groupId, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+        applicationRegistryService.removeReader(appId, groupId)
+                                  .thenApply(v -> {
+                                      return Response.status(Response.Status.NO_CONTENT).build();
+                                  })
+                                  .exceptionally(exception -> {
+                                      log.warn("add application failed with exception: ", exception);
+                                      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+                                  })
+                                  .thenApply(response -> {
+                                      asyncResponse.resume(response);
+                                      return response;
+                                  });
+    }
+
+    @Override
+    public void deleteWriterFromApp(String appId, String groupId, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+        applicationRegistryService.removeWriter(appId, groupId)
+                                  .thenApply(v -> {
+                                      return Response.status(Response.Status.NO_CONTENT).build();
+                                  })
+                                  .exceptionally(exception -> {
+                                      log.warn("add application failed with exception: ", exception);
+                                      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+                                  })
+                                  .thenApply(response -> {
+                                      asyncResponse.resume(response);
+                                      return response;
+                                  });
+    }
 }

@@ -24,16 +24,16 @@ import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.schemaregistry.GroupIdGenerator;
-import io.pravega.schemaregistry.client.RegistryClientFactory;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.client.RegistryClientConfig;
+import io.pravega.schemaregistry.client.RegistryClientFactory;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaType;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.schemas.AvroSchema;
-import io.pravega.schemaregistry.serializers.SerializerFactory;
 import io.pravega.schemaregistry.serializers.SerializerConfig;
+import io.pravega.schemaregistry.serializers.SerializerFactory;
 import io.pravega.schemaregistry.test.integrationtest.generated.Type1;
 import io.pravega.schemaregistry.test.integrationtest.generated.Type2;
 import io.pravega.schemaregistry.test.integrationtest.generated.Type3;
@@ -54,7 +54,7 @@ import java.util.Map;
 
 public class MessageBusConsumer {
     private final ClientConfig clientConfig;
-    private final SchemaRegistryClient client;
+    private final RegistryClient client;
     private final String scope;
     private final String stream;
     private final EventStreamReader<SpecificRecordBase> reader;

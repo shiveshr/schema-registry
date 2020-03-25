@@ -704,6 +704,30 @@ paths:
           description: Schema incompatible
         500:
           description: Internal server error while adding reader to group
+  /applications/{appId}/groups/{groupId}/reader:
+    parameters:
+      - in: path
+        name: appId
+        description: appId
+        required: true
+        type: string
+      - in: path
+        name: groupId
+        description: groupId
+        required: true
+        type: string
+    delete:
+        tags:
+        - "Application"
+        operationId: deleteReaderFromApp
+        description: Delete a reader from an app
+        responses:
+          204:
+            description: Successfully deleted reader
+          404:
+            description: App not found
+          500:
+            description: Internal server error while deleting the reader app
   /applications/{appId}/writer:
     parameters:
       - in: path
@@ -740,6 +764,30 @@ paths:
 
         500:
           description: Internal server error while adding writer to group
+  /applications/{appId}/groups/{groupId}/writer:
+    parameters:
+      - in: path
+        name: appId
+        description: appId
+        required: true
+        type: string
+      - in: path
+        name: groupId
+        description: groupId
+        required: true
+        type: string
+    delete:
+        tags:
+        - "Application"
+        operationId: deleteWriterFromApp
+        description: Delete a writer from an app
+        responses:
+          204:
+            description: Successfully deleted writer
+          404:
+            description: App not found
+          500:
+            description: Internal server error while deleting the writer app
   /applications/groups/{groupId}/readers:
     parameters:
       - in: path

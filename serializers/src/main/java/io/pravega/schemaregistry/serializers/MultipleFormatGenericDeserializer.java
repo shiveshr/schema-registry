@@ -11,7 +11,7 @@ package io.pravega.schemaregistry.serializers;
 
 import com.google.common.base.Preconditions;
 import io.pravega.schemaregistry.cache.EncodingCache;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.SchemaType;
@@ -23,11 +23,11 @@ import java.util.function.BiFunction;
 class MultipleFormatGenericDeserializer extends AbstractPravegaDeserializer<Object> {
     private final Map<SchemaType, AbstractPravegaDeserializer> genericDeserializers;
 
-    MultipleFormatGenericDeserializer(String groupId, String appId, SchemaRegistryClient client,
+    MultipleFormatGenericDeserializer(String groupId, String appId, RegistryClient client,
                                       Map<SchemaType, AbstractPravegaDeserializer> genericDeserializers,
-                                      BiFunction<CodecType, ByteBuffer, ByteBuffer> decoder,
+                                      BiFunction<CodecType, ByteBuffer, ByteBuffer> decoder, boolean registerSchema,
                                       EncodingCache encodingCache) {
-        super(groupId, appId, client, null, false, decoder, encodingCache);
+        super(groupId, appId, client, null, false, decoder, registerSchema, encodingCache);
         this.genericDeserializers = genericDeserializers;
     }
 

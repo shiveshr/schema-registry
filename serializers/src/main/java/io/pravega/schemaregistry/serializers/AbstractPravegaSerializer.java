@@ -1,18 +1,20 @@
 /**
  * Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.pravega.schemaregistry.serializers;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.pravega.client.stream.Serializer;
 import io.pravega.common.util.BitConverter;
 import io.pravega.schemaregistry.cache.EncodingCache;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
 import io.pravega.schemaregistry.codec.Codec;
 import io.pravega.schemaregistry.contract.data.EncodingId;
@@ -38,14 +40,14 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
     private final SchemaInfo schemaInfo;
     private final AtomicReference<VersionInfo> version;
     private final AtomicBoolean encodeHeader;
-    private final SchemaRegistryClient client;
+    private final RegistryClient client;
     @Getter
     private final Codec codec;
     private final boolean registerSchema;
     private final EncodingCache encodingCache;
 
     protected AbstractPravegaSerializer(String groupId,
-                                        String appId, SchemaRegistryClient client,
+                                        String appId, RegistryClient client,
                                         SchemaContainer<T> schema,
                                         Codec codec,
                                         boolean registerSchema,
@@ -56,7 +58,7 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
         Preconditions.checkNotNull(codec);
         Preconditions.checkNotNull(encodingCache);
         Preconditions.checkNotNull(schema);
-        
+
         this.groupId = groupId;
         this.client = client;
         this.schemaInfo = schema.getSchemaInfo();
@@ -67,7 +69,7 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
         this.encodeHeader = new AtomicBoolean();
         initialize();
     }
-    
+
     private void initialize() {
         GroupProperties groupProperties = client.getGroupProperties(groupId);
 
@@ -76,20 +78,23 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
         encodeHeader.set(toEncodeHeader);
         if (registerSchema) {
             // register schema
-            this.version.compareAndSet(null, 
+            this.version.compareAndSet(null,
                     client.addSchemaIfAbsent(groupId, schemaInfo));
         } else {
             // get already registered schema version. If schema is not registered, this will throw an exception. 
             this.version.compareAndSet(null, encodingCache.getVersionFromSchema(schemaInfo));
         }
+        if (!Strings.isNullOrEmpty(appId)) {
+            client.addWriter(appId, groupId, version.get());
+        }
     }
-    
+
     @SneakyThrows
     @Override
     public ByteBuffer serialize(T obj) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
-        
+
         if (this.encodeHeader.get()) {
             Preconditions.checkNotNull(schemaInfo);
             EncodingId encodingId = encodingCache.getEncodingId(schemaInfo, codec.getCodecType());
@@ -97,7 +102,7 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
             outputStream.write(PROTOCOL);
             BitConverter.writeInt(outputStream, encodingId.getId());
         }
-        
+
         // if schema is not null, pass the schema to the serializer implementation
         if (schemaInfo != null) {
             serialize(obj, schemaInfo, dataStream);

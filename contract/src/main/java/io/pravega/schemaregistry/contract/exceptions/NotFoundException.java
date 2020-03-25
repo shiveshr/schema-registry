@@ -7,7 +7,13 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.pravega.schemaregistry.client;
+package io.pravega.schemaregistry.contract.exceptions;
 
-public interface RegistryClient extends SchemaRegistryClient, ApplicationRegistryClient {
+/**
+ * Exception thrown when operation was attempted on a non existent resource. 
+ */
+public class NotFoundException extends RuntimeException {
+    public NotFoundException(String message) {
+        super(message);
+    }
 }

@@ -22,7 +22,7 @@ import io.pravega.client.stream.ReaderGroupConfig;
 import io.pravega.client.stream.Serializer;
 import io.pravega.schemaregistry.GroupIdGenerator;
 import io.pravega.schemaregistry.client.RegistryClientFactory;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.client.RegistryClientConfig;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
@@ -63,9 +63,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class SQLApp {
-    private  final SchemaRegistryClient client;
+    private  final RegistryClient client;
     private  final ClientConfig clientConfig;
-    public SQLApp(ClientConfig clientConfig, SchemaRegistryClient client) {
+    public SQLApp(ClientConfig clientConfig, RegistryClient client) {
         this.clientConfig = clientConfig;
         this.client = client;
     }
@@ -100,7 +100,7 @@ public class SQLApp {
 
         ClientConfig clientConfig = ClientConfig.builder().controllerURI(URI.create(controllerUri)).build();
         RegistryClientConfig config = new RegistryClientConfig(URI.create(registryUri));
-        SchemaRegistryClient client = RegistryClientFactory.createRegistryClient(config);
+        RegistryClient client = RegistryClientFactory.createRegistryClient(config);
 
         while (true) {
             System.out.println("sql> ");

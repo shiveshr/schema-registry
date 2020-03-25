@@ -15,7 +15,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.pravega.schemaregistry.cache.EncodingCache;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.schemas.AvroSchema;
@@ -33,9 +33,9 @@ import java.util.function.BiFunction;
 class AvroGenericDeserlizer extends AbstractPravegaDeserializer<GenericRecord> {
     private final LoadingCache<byte[], Schema> knownSchemas;
 
-    AvroGenericDeserlizer(String groupId, String appId, SchemaRegistryClient client, @Nullable AvroSchema<GenericRecord> schema,
-                          BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, EncodingCache encodingCache) {
-        super(groupId, appId, client, schema, false, decode, encodingCache);
+    AvroGenericDeserlizer(String groupId, String appId, RegistryClient client, @Nullable AvroSchema<GenericRecord> schema,
+                          BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, boolean registerSchema, EncodingCache encodingCache) {
+        super(groupId, appId, client, schema, false, decode, registerSchema, encodingCache);
         this.knownSchemas = CacheBuilder.newBuilder().build(new CacheLoader<byte[], Schema>() {
             @Override
             public Schema load(byte[] schemaData) throws Exception {

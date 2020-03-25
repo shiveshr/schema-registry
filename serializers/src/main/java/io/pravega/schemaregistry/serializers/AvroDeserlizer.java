@@ -15,10 +15,10 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.pravega.schemaregistry.cache.EncodingCache;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.schemas.AvroSchema;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
 import lombok.SneakyThrows;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.IndexedRecord;
@@ -33,10 +33,12 @@ class AvroDeserlizer<T extends IndexedRecord> extends AbstractPravegaDeserialize
     private final AvroSchema<T> avroSchema;
     private final LoadingCache<byte[], Schema> knownSchemas;
 
-    AvroDeserlizer(String groupId, String appId, SchemaRegistryClient client,
+    AvroDeserlizer(String groupId, String appId, RegistryClient client,
                    AvroSchema<T> schema,
-                   BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, EncodingCache encodingCache) {
-        super(groupId, appId, client, schema, false, decode, encodingCache);
+                   BiFunction<CodecType, ByteBuffer, ByteBuffer> decode,
+                   boolean registerSchema,
+                   EncodingCache encodingCache) {
+        super(groupId, appId, client, schema, false, decode, registerSchema, encodingCache);
         Preconditions.checkNotNull(schema);
         this.avroSchema = schema;
         this.knownSchemas = CacheBuilder.newBuilder().build(new CacheLoader<byte[], Schema>() {
