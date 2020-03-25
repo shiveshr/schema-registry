@@ -9,7 +9,7 @@
  */
 package io.pravega.schemaregistry.serializers;
 
-import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
+import io.pravega.schemaregistry.client.RegistryClientConfig;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.codec.Codec;
@@ -38,10 +38,14 @@ public class SerializerConfig {
      */
     private final String groupId;
     /**
-     * Either the registry client or the {@link SchemaRegistryClientConfig} that can be used for creating a new registry client.
+     * Name of the application.
+     */
+    private final String application;
+    /**
+     * Either the registry client or the {@link RegistryClientConfig} that can be used for creating a new registry client.
      * Exactly one of the two option has to be supplied. 
      */
-    private final Either<SchemaRegistryClientConfig, SchemaRegistryClient> registryConfigOrClient;
+    private final Either<RegistryClientConfig, SchemaRegistryClient> registryConfigOrClient;
     /**
      * Flag to tell the serializer if the schema should be automatically registered before using it in {@link io.pravega.client.stream.EventStreamWriter}. 
      * It is recommended to register keep this flag as false in production systems and manage schema evolution explicitly and
@@ -76,6 +80,7 @@ public class SerializerConfig {
         };
         
         private boolean autoRegisterSchema = false;
+        private String application = "";
         
         public SerializerConfigBuilder addDecoder(CodecType codecType, Function<ByteBuffer, ByteBuffer> decoder) {
             BiFunction<CodecType, ByteBuffer, ByteBuffer> existing = this.decoder;

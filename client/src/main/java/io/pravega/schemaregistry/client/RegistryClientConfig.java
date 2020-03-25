@@ -17,15 +17,15 @@ import java.net.URI;
  * Registry client configuration used to create registry client. 
  */
 @Data
-public class SchemaRegistryClientConfig {
-    private final URI schemaRegistryUri;
+public class RegistryClientConfig {
+    private final URI registryUri;
 
     /**
      * URI for connecting with registry client.
      * 
      * @return return schema registry uri. 
      */
-    public URI getSchemaRegistryUri() {
-        return schemaRegistryUri;
+    public URI getRegistryUri() {
+        return registryUri;
     }
 }

@@ -23,7 +23,7 @@ import io.pravega.client.stream.Serializer;
 import io.pravega.schemaregistry.GroupIdGenerator;
 import io.pravega.schemaregistry.client.RegistryClientFactory;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
-import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
+import io.pravega.schemaregistry.client.RegistryClientConfig;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
@@ -99,7 +99,7 @@ public class SQLApp {
         String registryUri = cmd.getOptionValue("registryUri");
 
         ClientConfig clientConfig = ClientConfig.builder().controllerURI(URI.create(controllerUri)).build();
-        SchemaRegistryClientConfig config = new SchemaRegistryClientConfig(URI.create(registryUri));
+        RegistryClientConfig config = new RegistryClientConfig(URI.create(registryUri));
         SchemaRegistryClient client = RegistryClientFactory.createRegistryClient(config);
 
         while (true) {

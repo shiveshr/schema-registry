@@ -34,7 +34,7 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
     private static final byte PROTOCOL = 0x0;
 
     private final String groupId;
-    
+    private final String appId;
     private final SchemaInfo schemaInfo;
     private final AtomicReference<VersionInfo> version;
     private final AtomicBoolean encodeHeader;
@@ -45,11 +45,12 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
     private final EncodingCache encodingCache;
 
     protected AbstractPravegaSerializer(String groupId,
-                                        SchemaRegistryClient client,
+                                        String appId, SchemaRegistryClient client,
                                         SchemaContainer<T> schema,
-                                        Codec codec, 
+                                        Codec codec,
                                         boolean registerSchema,
                                         EncodingCache encodingCache) {
+        this.appId = appId;
         Preconditions.checkNotNull(groupId);
         Preconditions.checkNotNull(client);
         Preconditions.checkNotNull(codec);

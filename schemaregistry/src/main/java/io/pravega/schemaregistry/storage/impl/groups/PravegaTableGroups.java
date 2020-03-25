@@ -125,7 +125,7 @@ public class PravegaTableGroups implements Groups<Version> {
 
     private <T> CompletableFuture<T> withCreateGroupsTableIfAbsent(Supplier<CompletableFuture<T>> supplier) {
         return Futures.exceptionallyComposeExpecting(supplier.get(),
-                e -> Exceptions.unwrap(e) instanceof StoreExceptions.DataNotFoundException,
+                e -> Exceptions.unwrap(e) instanceof StoreExceptions.DataContainerNotFoundException,
                 () -> tableStore.createTable(GROUPS).thenCompose(v -> supplier.get()));
     }
     

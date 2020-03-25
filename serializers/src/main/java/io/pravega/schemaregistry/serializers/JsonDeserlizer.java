@@ -30,10 +30,10 @@ class JsonDeserlizer<T> extends AbstractPravegaDeserializer<T> {
     private final JSONSchema<T> jsonSchema;
     private final ObjectMapper objectMapper;
 
-    JsonDeserlizer(String groupId, SchemaRegistryClient client,
+    JsonDeserlizer(String groupId, String appId, SchemaRegistryClient client,
                    JSONSchema<T> schema,
                    BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, EncodingCache encodingCache) {
-        super(groupId, client, schema, true, decode, encodingCache);
+        super(groupId, appId, client, schema, true, decode, encodingCache);
         Preconditions.checkNotNull(schema);
         this.jsonSchema = schema;
         this.objectMapper = new ObjectMapper();

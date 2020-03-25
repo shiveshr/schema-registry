@@ -22,11 +22,11 @@ import java.util.function.BiFunction;
 class MultiplexedDeserializer<T> extends AbstractPravegaDeserializer<T> {
     private final Map<String, AbstractPravegaDeserializer<T>> deserializers;
 
-    MultiplexedDeserializer(String groupId, SchemaRegistryClient client,
+    MultiplexedDeserializer(String groupId, String appId, SchemaRegistryClient client,
                             Map<String, AbstractPravegaDeserializer<T>> deserializers,
                             BiFunction<CodecType, ByteBuffer, ByteBuffer> decode,
                             EncodingCache encodingCache) {
-        super(groupId, client, null, false, decode, encodingCache);
+        super(groupId, appId, client, null, false, decode, encodingCache);
         this.deserializers = deserializers; 
     }
 

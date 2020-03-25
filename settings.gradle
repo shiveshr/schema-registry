@@ -15,4 +15,7 @@ include 'client',
         'server',
         'serializers',
         'contract',
-        'samples'
+        'samples',
+        'shared',
+        'schemaregistry',
+        'applicationregistry'

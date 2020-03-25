@@ -47,7 +47,7 @@ import io.pravega.schemaregistry.serializers.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
 import io.pravega.schemaregistry.storage.SchemaStore;
-import io.pravega.schemaregistry.storage.SchemaStoreFactory;
+import io.pravega.schemaregistry.storage.ApplicationStoreFactory;
 import io.pravega.schemaregistry.test.integrationtest.demo.objects.Address;
 import io.pravega.schemaregistry.test.integrationtest.demo.objects.DerivedUser1;
 import io.pravega.schemaregistry.test.integrationtest.demo.objects.DerivedUser2;
@@ -134,7 +134,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
 
         clientConfig = ClientConfig.builder().controllerURI(URI.create(pravegaStandaloneUtils.getControllerURI())).build();
 
-        schemaStore = SchemaStoreFactory.createPravegaStore(clientConfig, executor);
+        schemaStore = ApplicationStoreFactory.createPravegaStore(clientConfig, executor);
 
         service = new SchemaRegistryService(schemaStore, executor);
         client = new PassthruRegistryClient(service);

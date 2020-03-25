@@ -10,10 +10,10 @@
 package io.pravega.schemaregistry.test.integrationtest;
 
 import io.pravega.schemaregistry.storage.SchemaStore;
-import io.pravega.schemaregistry.storage.SchemaStoreFactory;
+import io.pravega.schemaregistry.storage.ApplicationStoreFactory;
 
 public class TestInMemoryEndToEnd extends TestEndToEnd {
     SchemaStore getStore() {
-        return SchemaStoreFactory.createInMemoryStore(executor);
+        return ApplicationStoreFactory.createInMemoryStore(executor);
     }
 }

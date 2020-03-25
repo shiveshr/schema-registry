@@ -18,8 +18,10 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.core.UriBuilder;
 
+import io.pravega.schemaregistry.server.rest.resources.ApplicationsRegistryImpl;
 import io.pravega.schemaregistry.server.rest.resources.PingImpl;
 import io.pravega.schemaregistry.server.rest.resources.SchemaRegistryResourceImpl;
+import io.pravega.schemaregistry.service.ApplicationRegistryService;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
 import lombok.extern.slf4j.Slf4j;
 import org.glassfish.grizzly.GrizzlyFuture;
@@ -39,7 +41,7 @@ public class RestServer extends AbstractIdleService {
     private final ResourceConfig resourceConfig;
     private HttpServer httpServer;
 
-    public RestServer(SchemaRegistryService registryService, ServiceConfig restServerConfig) {
+    public RestServer(SchemaRegistryService schemaRegistry, ApplicationRegistryService applicationRegistry, ServiceConfig restServerConfig) {
         this.objectId = "RestServer";
         this.restServerConfig = restServerConfig;
         final String serverURI = "http://" + restServerConfig.getHost() + "/";
@@ -47,7 +49,8 @@ public class RestServer extends AbstractIdleService {
 
         final Set<Object> resourceObjs = new HashSet<>();
         resourceObjs.add(new PingImpl());
-        resourceObjs.add(new SchemaRegistryResourceImpl(registryService));
+        resourceObjs.add(new SchemaRegistryResourceImpl(schemaRegistry));
+        resourceObjs.add(new ApplicationsRegistryImpl(applicationRegistry, schemaRegistry));
 
         final RegistryApplication application = new RegistryApplication(resourceObjs);
         this.resourceConfig = ResourceConfig.forApplication(application);

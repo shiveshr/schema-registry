@@ -33,9 +33,9 @@ import java.util.function.BiFunction;
 class AvroGenericDeserlizer extends AbstractPravegaDeserializer<GenericRecord> {
     private final LoadingCache<byte[], Schema> knownSchemas;
 
-    AvroGenericDeserlizer(String groupId, SchemaRegistryClient client, @Nullable AvroSchema<GenericRecord> schema,
+    AvroGenericDeserlizer(String groupId, String appId, SchemaRegistryClient client, @Nullable AvroSchema<GenericRecord> schema,
                           BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, EncodingCache encodingCache) {
-        super(groupId, client, schema, false, decode, encodingCache);
+        super(groupId, appId, client, schema, false, decode, encodingCache);
         this.knownSchemas = CacheBuilder.newBuilder().build(new CacheLoader<byte[], Schema>() {
             @Override
             public Schema load(byte[] schemaData) throws Exception {

@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Always true implementation of Compatibility Checker that returns true for each of the checks. 
  */
-public class AlwaysTrueCompatibilityChecker implements CompatibilityChecker {
+public class AlwaysTrueCompatibilityChecker implements io.pravega.schemaregistry.rules.CompatibilityChecker {
     @Override
     public boolean canRead(SchemaInfo toValidate, List<SchemaInfo> toValidateAgainst) {
         return true;

@@ -32,9 +32,9 @@ class JsonGenericDeserlizer extends AbstractPravegaDeserializer<JSonGenericObjec
     private final ObjectMapper objectMapper;
     private final LoadingCache<byte[], JsonSchema> knownSchemas;
 
-    JsonGenericDeserlizer(String groupId, SchemaRegistryClient client,
+    JsonGenericDeserlizer(String groupId, String appId, SchemaRegistryClient client,
                           BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, EncodingCache encodingCache) {
-        super(groupId, client, null, false, decode, encodingCache);
+        super(groupId, appId, client, null, false, decode, encodingCache);
         this.objectMapper = new ObjectMapper();
         this.knownSchemas = CacheBuilder.newBuilder().build(new CacheLoader<byte[], JsonSchema>() {
             @Override

@@ -31,9 +31,9 @@ import java.util.function.BiFunction;
 public class ProtobufGenericDeserlizer extends AbstractPravegaDeserializer<DynamicMessage> {
     private final LoadingCache<SchemaInfo, Descriptors.Descriptor> knownSchemas;
 
-    ProtobufGenericDeserlizer(String groupId, SchemaRegistryClient client, @Nullable ProtobufSchema<DynamicMessage> schema,
+    ProtobufGenericDeserlizer(String groupId, String appId, SchemaRegistryClient client, @Nullable ProtobufSchema<DynamicMessage> schema,
                               BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, EncodingCache encodingCache) {
-        super(groupId, client, schema, false, decode, encodingCache);
+        super(groupId, appId, client, schema, false, decode, encodingCache);
         this.knownSchemas = CacheBuilder.newBuilder().build(new CacheLoader<SchemaInfo, Descriptors.Descriptor>() {
             @Override
             public Descriptors.Descriptor load(SchemaInfo schemaToUse) throws Exception {

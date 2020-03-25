@@ -1,11 +1,11 @@
 /**
  * Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.pravega.schemaregistry.server.rest.resources;
 
@@ -66,7 +66,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     @Context
     HttpHeaders headers;
 
-    private SchemaRegistryService registryService;
+    private final SchemaRegistryService registryService;
 
     public SchemaRegistryResourceImpl(SchemaRegistryService registryService) {
         this.registryService = registryService;
@@ -79,13 +79,15 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                        .thenApply(groups -> {
                            GroupsList groupsList = new GroupsList();
                            groups.getMap().forEach((x, y) -> groupsList.addGroupsItem(ModelHelper.encode(x, y)));
-                           return Response.status(Status.OK).entity(groupsList).build(); })
+                           return Response.status(Status.OK).entity(groupsList).build();
+                       })
                        .exceptionally(exception -> {
                            if (Exceptions.unwrap(exception) instanceof NotFoundException) {
                                return Response.status(Status.NOT_FOUND).build();
                            }
                            log.warn("listGroups failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -109,7 +111,8 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                        })
                        .exceptionally(exception -> {
                            log.warn("createGroup failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -123,7 +126,8 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                        .thenApply(groupProperty -> Response.status(Status.OK).entity(ModelHelper.encode(groupProperty)).build())
                        .exceptionally(exception -> {
                            log.warn("getGroupProperties failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -154,16 +158,18 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     public void getSchemaValidationRules(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         throw new NotImplementedException("get schema validation rules");
     }
-    
+
     @Override
     public void deleteGroup(String groupName, SecurityContext securityContext,
                             AsyncResponse asyncResponse) throws NotFoundException {
         registryService.deleteGroup(groupName)
                        .thenApply(status -> {
-                           return Response.status(Status.OK).build(); })
+                           return Response.status(Status.OK).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("deleteGroup failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -177,10 +183,12 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                        .thenApply(schemasEvolutionList -> {
                            SchemaList list = new SchemaList()
                                    .schemas(schemasEvolutionList.stream().map(ModelHelper::encode).collect(Collectors.toList()));
-                           return Response.status(Status.OK).entity(list).build(); })
+                           return Response.status(Status.OK).entity(list).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("getGroupSchemas failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -193,16 +201,18 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         registryService.getLatestSchema(groupName, null)
                        .thenApply(schemaWithVersion -> {
                            SchemaWithVersion schema = ModelHelper.encode(schemaWithVersion);
-                           return Response.status(Status.OK).entity(schema).build(); })
+                           return Response.status(Status.OK).entity(schema).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("getLatestGroupSchema failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
                        });
     }
-    
+
     @Override
     public void addSchemaToGroupIfAbsent(String groupName, AddSchemaToGroupRequest addSchemaRequest,
                                          SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
@@ -211,7 +221,8 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         registryService.addSchemaIfAbsent(groupName, schemaInfo)
                        .thenApply(versionInfo -> {
                            VersionInfo version = ModelHelper.encode(versionInfo);
-                           return Response.status(Status.OK).entity(version).build(); })
+                           return Response.status(Status.OK).entity(version).build();
+                       })
                        .exceptionally(exception -> {
                            if (Exceptions.unwrap(exception) instanceof IncompatibleSchemaException) {
                                log.info("addSchemaToGroupIfAbsent incompatible schema {}", groupName);
@@ -224,7 +235,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                                return Response.status(Status.PRECONDITION_FAILED).build();
                            } else {
                                log.warn("addSchemaToGroupIfAbsent failed with exception: ", exception);
-                               return Response.status(Status.INTERNAL_SERVER_ERROR).build(); 
+                               return Response.status(Status.INTERNAL_SERVER_ERROR).build();
                            }
                        })
                        .thenApply(response -> {
@@ -238,10 +249,12 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         io.pravega.schemaregistry.contract.data.SchemaInfo schemaInfo = ModelHelper.decode(validateRequest.getSchemaInfo());
         registryService.validateSchema(groupName, schemaInfo)
                        .thenApply(compatible -> {
-                           return Response.status(Status.OK).entity(new Valid().valid(compatible)).build(); })
+                           return Response.status(Status.OK).entity(new Valid().valid(compatible)).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("validate failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -253,16 +266,18 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         io.pravega.schemaregistry.contract.data.SchemaInfo schemaInfo = ModelHelper.decode(canReadRequest.getSchemaInfo());
         registryService.canRead(groupName, schemaInfo)
                        .thenApply(canRead -> {
-                           return Response.status(Status.OK).entity(new CanRead().compatible(canRead)).build(); })
+                           return Response.status(Status.OK).entity(new CanRead().compatible(canRead)).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("can read failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
                        });
     }
-    
+
     @Override
     public void getSchemaFromVersion(String groupName, String versionId, GetSchemaFromVersionRequest getSchemaFromVersionRequest,
                                      SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
@@ -270,10 +285,12 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         registryService.getSchema(groupName, versionInfo)
                        .thenApply(schemaWithVersion -> {
                            SchemaInfo schema = ModelHelper.encode(schemaWithVersion);
-                           return Response.status(Status.OK).entity(schema).build(); })
+                           return Response.status(Status.OK).entity(schema).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("getSchemaFromVersion failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -288,10 +305,12 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         registryService.getEncodingId(groupName, version, codecType)
                        .thenApply(encodingId -> {
                            EncodingId id = ModelHelper.encode(encodingId);
-                           return Response.status(Status.OK).entity(id).build(); })
+                           return Response.status(Status.OK).entity(id).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("getOrGenerateEncodingId failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -305,10 +324,12 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         registryService.getSchemaVersion(groupName, schemaInfo)
                        .thenApply(version -> {
                            VersionInfo versionInfo = ModelHelper.encode(version);
-                           return Response.status(Status.OK).entity(versionInfo).build(); })
+                           return Response.status(Status.OK).entity(versionInfo).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("getSchemaVersion failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -321,10 +342,12 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                        .thenApply(schemaEpochs -> {
                            SchemaList list = new SchemaList()
                                    .schemas(schemaEpochs.stream().map(ModelHelper::encode).collect(Collectors.toList()));
-                           return Response.status(Status.OK).entity(list).build(); })
+                           return Response.status(Status.OK).entity(list).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("getObjectTypeSchemas failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -336,10 +359,12 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         registryService.getObjectTypes(groupName, null)
                        .thenApply(objectTypes -> {
                            ObjectTypesList objectTypesList = new ObjectTypesList().groups(objectTypes.getList());
-                           return Response.status(Status.OK).entity(objectTypesList).build(); })
+                           return Response.status(Status.OK).entity(objectTypesList).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("getObjectTypes failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -352,10 +377,12 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         registryService.getLatestSchema(groupName, objectTypeName)
                        .thenApply(schemaWithVersion -> {
                            SchemaWithVersion schema = ModelHelper.encode(schemaWithVersion);
-                           return Response.status(Status.OK).entity(schema).build(); })
+                           return Response.status(Status.OK).entity(schema).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("getLatestSchemaForObjectType failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -364,18 +391,20 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
 
     @Override
     public void getSchemaFromVersionForObjectType(String groupName, String objectType, Integer versionId,
-                                                 GetSchemaForObjectTypeByVersionRequest getSchemaForObjectTypeByVersionRequest,
-                                                 SecurityContext securityContext, AsyncResponse asyncResponse) 
+                                                  GetSchemaForObjectTypeByVersionRequest getSchemaForObjectTypeByVersionRequest,
+                                                  SecurityContext securityContext, AsyncResponse asyncResponse)
             throws NotFoundException {
         io.pravega.schemaregistry.contract.data.VersionInfo versionInfo = ModelHelper.decode(
                 getSchemaForObjectTypeByVersionRequest.getVersionInfo());
         registryService.getSchema(groupName, versionInfo)
                        .thenApply(schemaWithVersion -> {
                            SchemaInfo schema = ModelHelper.encode(schemaWithVersion);
-                           return Response.status(Status.OK).entity(schema).build(); })
+                           return Response.status(Status.OK).entity(schema).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("getSchemaFromVersionForObjectType failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -388,10 +417,12 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         registryService.getEncodingInfo(groupName, id)
                        .thenApply(encodingInfo -> {
                            EncodingInfo encoding = ModelHelper.encode(encodingInfo);
-                           return Response.status(Status.OK).entity(encoding).build(); })
+                           return Response.status(Status.OK).entity(encoding).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("getEncodingInfo failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;
@@ -401,15 +432,17 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
 
     @Override
     public void getCodecsList(String groupName, SecurityContext securityContext,
-                                    AsyncResponse asyncResponse) throws NotFoundException {
+                              AsyncResponse asyncResponse) throws NotFoundException {
         registryService.getCodecTypes(groupName)
                        .thenApply(list -> {
                            CodecsList codecsList = new CodecsList()
                                    .codecTypes(list.stream().map(ModelHelper::encode).collect(Collectors.toList()));
-                           return Response.status(Status.OK).entity(codecsList).build(); })
+                           return Response.status(Status.OK).entity(codecsList).build();
+                       })
                        .exceptionally(exception -> {
                            log.warn("getCodecsList failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build(); })
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
                            return response;

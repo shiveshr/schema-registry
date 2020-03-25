@@ -23,10 +23,10 @@ import java.util.function.BiFunction;
 
 public class ProtobufDeserlizer<T extends GeneratedMessageV3> extends AbstractPravegaDeserializer<T> {
     private final ProtobufSchema<T> protobufSchema;
-    ProtobufDeserlizer(String groupId, SchemaRegistryClient client,
+    ProtobufDeserlizer(String groupId, String appId, SchemaRegistryClient client,
                        ProtobufSchema<T> schema, BiFunction<CodecType, ByteBuffer, ByteBuffer> decode,
                        EncodingCache encodingCache) {
-        super(groupId, client, schema, true, decode, encodingCache);
+        super(groupId, appId, client, schema, true, decode, encodingCache);
         Preconditions.checkNotNull(schema);
         this.protobufSchema = schema;
     }

@@ -234,6 +234,40 @@ project('server') {
     dependencies {
         compile project(':common')
         compile project(':contract')
+        compile project(':schemaregistry')
+        compile project(':applicationregistry')
+        compile group: 'javax.servlet', name: 'javax.servlet-api', version: javaxServletApiVersion
+        compile(group: 'io.swagger', name : 'swagger-jersey2-jaxrs', version :swaggerJersey2JaxrsVersion) {
+            exclude group: 'com.google.guava', module: 'guava'
+        }
+        compile group: 'org.glassfish.jersey.containers', name: 'jersey-container-grizzly2-http', version: jerseyVersion
+        compile group: 'org.glassfish.jersey.inject', name: 'jersey-hk2', version: jerseyVersion
+        compile group: 'org.glassfish.jersey.media', name: 'jersey-media-json-jackson', version: jerseyVersion
+        compile group: 'javax.xml.bind', name: 'jaxb-api', version: jaxbVersion
+        compile group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: jaxbVersion
+        testCompile group: 'org.glassfish.jersey.test-framework.providers', name: 'jersey-test-framework-provider-grizzly2', version: jerseyVersion
+    }
+
+    javadoc {
+        title = "Registry Server"
+        dependsOn delombok
+        source = delombok.outputDir
+        failOnError = false
+        exclude "**/impl/**";
+        options.addBooleanOption("Xdoclint:all,-reference", true)
+    }
+}
+
+project('schemaregistry') {
+    sourceSets {
+        main.resources.srcDirs += "$projectDir/src/conf"
+        test.resources.srcDirs += "$rootDir/resources"
+    }
+
+    dependencies {
+        compile project(':common')
+        compile project(':shared')
+        compile project(':shared')
         compile group: 'io.pravega', name: 'pravega-client', version: pravegaVersion
         compile group: 'io.pravega', name: 'pravega-controller', version: pravegaVersion
         compile group: 'org.apache.avro', name: 'avro', version: avroVersion
@@ -250,12 +284,33 @@ project('server') {
         compile group: 'org.glassfish.jersey.media', name: 'jersey-media-json-jackson', version: jerseyVersion
         compile group: 'javax.xml.bind', name: 'jaxb-api', version: jaxbVersion
         compile group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: jaxbVersion
-//        testCompile group: 'org.glassfish.jersey.test-framework.providers', name: 'jersey-test-framework-provider-inmemory', version: jerseyVersion
         testCompile group: 'org.glassfish.jersey.test-framework.providers', name: 'jersey-test-framework-provider-grizzly2', version: jerseyVersion
     }
 
     javadoc {
-        title = "Registry Server"
+        title = "Schema store"
+        dependsOn delombok
+        source = delombok.outputDir
+        failOnError = false
+        exclude "**/impl/**";
+        options.addBooleanOption("Xdoclint:all,-reference", true)
+    }
+}
+
+project('applicationregistry') {
+    sourceSets {
+        main.resources.srcDirs += "$projectDir/src/conf"
+        test.resources.srcDirs += "$rootDir/resources"
+    }
+    
+    dependencies {
+        compile project(':common')
+        compile project(':contract')
+        compile project(':shared')
+    }
+
+    javadoc {
+        title = "Application store"
         dependsOn delombok
         source = delombok.outputDir
         failOnError = false
@@ -275,6 +330,29 @@ project('serializers') {
         compile group: 'io.pravega', name: 'pravega-client', version: pravegaVersion
         compile group: 'org.xerial.snappy', name: 'snappy-java', version: snappyVersion
         compile group: 'com.fasterxml.jackson.module', name: 'jackson-module-jsonSchema', version: jacksonVersion
+        testCompile group: 'org.slf4j', name: 'log4j-over-slf4j', version: slf4jApiVersion
+        testCompile group: 'ch.qos.logback', name: 'logback-classic', version: qosLogbackVersion
+    }
+
+    javadoc {
+        title = "Serializers"
+        dependsOn delombok
+        source = delombok.outputDir
+        failOnError = false
+        exclude "**/impl/**";
+        options.addBooleanOption("Xdoclint:all,-reference", true)
+    }
+}
+
+project('shared') {
+    dependencies {
+        compile project(':common')
+        compile project(':client')
+        compile group: 'io.pravega', name: 'pravega-client', version: pravegaVersion
+        compile group: 'io.pravega', name: 'pravega-controller', version: pravegaVersion
+        compile group: 'org.apache.avro', name: 'avro', version: avroVersion
+        compile group: 'org.apache.avro', name: 'avro-protobuf', version: avroProtobufVersion
+        compile group: 'com.google.protobuf', name: 'protobuf-java', version: protobufProtocVersion
         testCompile group: 'org.slf4j', name: 'log4j-over-slf4j', version: slf4jApiVersion
         testCompile group: 'ch.qos.logback', name: 'logback-classic', version: qosLogbackVersion
     }

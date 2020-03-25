@@ -33,10 +33,10 @@ class AvroDeserlizer<T extends IndexedRecord> extends AbstractPravegaDeserialize
     private final AvroSchema<T> avroSchema;
     private final LoadingCache<byte[], Schema> knownSchemas;
 
-    AvroDeserlizer(String groupId, SchemaRegistryClient client,
+    AvroDeserlizer(String groupId, String appId, SchemaRegistryClient client,
                    AvroSchema<T> schema,
                    BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, EncodingCache encodingCache) {
-        super(groupId, client, schema, false, decode, encodingCache);
+        super(groupId, appId, client, schema, false, decode, encodingCache);
         Preconditions.checkNotNull(schema);
         this.avroSchema = schema;
         this.knownSchemas = CacheBuilder.newBuilder().build(new CacheLoader<byte[], Schema>() {

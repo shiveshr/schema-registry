@@ -11,7 +11,10 @@ package io.pravega.schemaregistry.client.impl;
 
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import io.pravega.schemaregistry.client.ApplicationRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.contract.data.Application;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
@@ -53,14 +56,16 @@ import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class SchemaRegistryClientImpl implements SchemaRegistryClient {
+public class RegistryClientImpl implements RegistryClient {
     private static final HashFunction HASH = Hashing.murmur3_128();
     private final Client client = ClientBuilder.newClient(new ClientConfig());
     private final URI uri;
 
-    public SchemaRegistryClientImpl(URI uri) {
+    public RegistryClientImpl(URI uri) {
         this.uri = uri;
     }
     
@@ -390,5 +395,45 @@ public class SchemaRegistryClientImpl implements SchemaRegistryClient {
         } else {
             throw new RuntimeException("Failed to get codecs");
         }    
+    }
+
+    @Override
+    public CompletableFuture<Void> addApplication(String appId, Map<String, String> properties) {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<Application> getApplication(String appId, Function<VersionInfo, CompletableFuture<SchemaInfo>> getSchemaFromVersion) {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<Void> addWriter(String appId, String groupId, VersionInfo schemaVersion, Function<String, CompletableFuture<GroupProperties>> groupProperties, Function<String, CompletableFuture<List<SchemaEvolution>>> groupHistory) {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion, Function<String, CompletableFuture<GroupProperties>> groupProperties, Function<String, CompletableFuture<List<SchemaEvolution>>> groupHistory) {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<Void> removeWriter(String appId, String groupId) {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<Void> removeReader(String appId, String groupId) {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<Map<String, List<VersionInfo>>> listWriterAppsInGroup(String groupId) {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<Map<String, List<VersionInfo>>> listReaderAppsInGroup(String groupId) {
+        return null;
     }
 }

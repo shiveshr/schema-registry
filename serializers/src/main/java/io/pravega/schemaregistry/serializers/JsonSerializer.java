@@ -21,9 +21,9 @@ import java.io.OutputStream;
 
 class JsonSerializer<T> extends AbstractPravegaSerializer<T> {
     private final ObjectMapper objectMapper;
-    JsonSerializer(String groupId, SchemaRegistryClient client, JSONSchema<T> schema,
+    JsonSerializer(String groupId, String appId, SchemaRegistryClient client, JSONSchema<T> schema,
                    Codec codec, boolean registerSchema, EncodingCache encodingCache) {
-        super(groupId, client, schema, codec, registerSchema, encodingCache);
+        super(groupId, appId, client, schema, codec, registerSchema, encodingCache);
         objectMapper = new ObjectMapper();
     }
 

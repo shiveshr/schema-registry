@@ -12,11 +12,13 @@ package io.pravega.schemaregistry.contract.transform;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.pravega.schemaregistry.contract.data.SchemaEvolution;
+import io.pravega.schemaregistry.contract.generated.rest.model.Application;
 import io.pravega.schemaregistry.contract.generated.rest.model.CodecType;
 import io.pravega.schemaregistry.contract.generated.rest.model.EncodingId;
 import io.pravega.schemaregistry.contract.generated.rest.model.EncodingInfo;
 import io.pravega.schemaregistry.contract.generated.rest.model.GroupProperties;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo;
+import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfoList;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaType;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaValidationRule;
@@ -113,6 +115,23 @@ public class ModelHelper {
         return new io.pravega.schemaregistry.contract.data.GroupProperties(decode(groupProperties.getSchemaType()),
                 decode(groupProperties.getSchemaValidationRules()), groupProperties.isValidateByObjectType(),
                 groupProperties.getProperties());
+    }
+    
+    public static io.pravega.schemaregistry.contract.data.Application decode(Application application) {
+        Map<String, List<io.pravega.schemaregistry.contract.data.SchemaInfo>> writingTo = application
+                .getWritingTo().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> {
+                    return x.getValue().getSchemas().stream().map(ModelHelper::decode).collect(Collectors.toList());
+                }));
+        Map<String, List<io.pravega.schemaregistry.contract.data.SchemaInfo>> readingFrom = application
+                .getReadingFrom().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> {
+                            return x.getValue().getSchemas().stream().map(ModelHelper::decode).collect(Collectors.toList());
+                        }));
+                            
+        return new io.pravega.schemaregistry.contract.data.Application(
+                application.getName(),
+                writingTo,
+                readingFrom,
+                application.getProperties());
     }
     // endregion
 
@@ -214,6 +233,18 @@ public class ModelHelper {
                                       .schemaInfo(encode(encodingInfo.getSchemaInfo()));
     }
 
+    public static Application encode(io.pravega.schemaregistry.contract.data.Application application) {
+        Map<String, SchemaInfoList> writingTo = application.getWritingToUsing().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, 
+                        x -> new SchemaInfoList().schemas(x.getValue().stream().map(ModelHelper::encode).collect(Collectors.toList()))));
+        Map<String, SchemaInfoList> readingFrom = application.getReadingFromUsing().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, 
+                        x -> new SchemaInfoList().schemas(x.getValue().stream().map(ModelHelper::encode).collect(Collectors.toList()))));
+        return new Application().name(application.getName())
+                                .properties(application.getProperties())
+                                .writingTo(writingTo)
+                                .readingFrom(readingFrom);
+    }
     // endregion
 
     private static <T extends Enum<?>> T searchEnum(Class<T> enumeration, String search) {

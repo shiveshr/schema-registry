@@ -23,7 +23,7 @@ import io.pravega.common.concurrent.Futures;
 import io.pravega.schemaregistry.GroupIdGenerator;
 import io.pravega.schemaregistry.client.RegistryClientFactory;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
-import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
+import io.pravega.schemaregistry.client.RegistryClientConfig;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaType;
@@ -72,7 +72,7 @@ public class Writer1 {
 
     private Writer1(String controllerURI, String registryUri, String scope, String stream) {
         clientConfig = ClientConfig.builder().controllerURI(URI.create(controllerURI)).build();
-        SchemaRegistryClientConfig config = new SchemaRegistryClientConfig(URI.create(registryUri));
+        RegistryClientConfig config = new RegistryClientConfig(URI.create(registryUri));
         client = RegistryClientFactory.createRegistryClient(config);
         this.scope = scope;
         this.stream = stream;

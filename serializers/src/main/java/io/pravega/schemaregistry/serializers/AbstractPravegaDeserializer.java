@@ -34,6 +34,7 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
     private static final int HEADER_SIZE = 1 + Integer.BYTES;
 
     private final String groupId;
+    private final String appId;
     private final SchemaRegistryClient client;
     // This can be null. If no schema is supplied, it means the intent is to deserialize into writer schema. 
     private final AtomicReference<SchemaInfo> schemaInfo;
@@ -43,12 +44,13 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
     private final EncodingCache encodingCache;
     
     protected AbstractPravegaDeserializer(String groupId,
-                                          SchemaRegistryClient client,
+                                          String appId, SchemaRegistryClient client,
                                           @Nullable SchemaContainer<T> schema,
                                           boolean skipHeaders,
-                                          BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, 
+                                          BiFunction<CodecType, ByteBuffer, ByteBuffer> decode,
                                           EncodingCache encodingCache) {
         this.groupId = groupId;
+        this.appId = appId;
         this.client = client;
         this.encodingCache = encodingCache;
         this.schemaInfo = new AtomicReference<>();

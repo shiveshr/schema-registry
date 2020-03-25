@@ -41,5 +41,4 @@ public class SchemaValidationRules {
 
     public static class SchemaValidationRulesBuilder implements ObjectBuilder<SchemaValidationRules> {
     }
-
 }

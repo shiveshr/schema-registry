@@ -12,7 +12,9 @@ package io.pravega.schemaregistry.service;
 import io.pravega.client.ClientConfig;
 import io.pravega.schemaregistry.server.rest.ServiceConfig;
 import io.pravega.schemaregistry.server.rest.RestServer;
+import io.pravega.schemaregistry.storage.ApplicationStore;
 import io.pravega.schemaregistry.storage.SchemaStore;
+import io.pravega.schemaregistry.storage.ApplicationStoreFactory;
 import io.pravega.schemaregistry.storage.SchemaStoreFactory;
 import io.pravega.schemaregistry.storage.StoreType;
 import lombok.extern.slf4j.Slf4j;
@@ -38,9 +40,19 @@ public class Main {
             throw new IllegalArgumentException(String.format("Store Type %s not supported", Config.STORE_TYPE));
         }
         
+        ApplicationStore applicationStore;
+        if (Config.STORE_TYPE.equals(StoreType.Pravega.name())) {
+            applicationStore = ApplicationStoreFactory.createPravegaStore(clientConfig, executor);
+        } else if (Config.STORE_TYPE.equals(StoreType.Pravega.name())) {
+            applicationStore = ApplicationStoreFactory.createInMemoryStore(executor);
+        } else {
+            throw new IllegalArgumentException(String.format("Store Type %s not supported", Config.STORE_TYPE));
+        }
+        
         SchemaRegistryService service = new SchemaRegistryService(schemaStore, executor);
+        ApplicationRegistryService appService = new ApplicationRegistryService(applicationStore);
 
-        RestServer restServer = new RestServer(service, config);
+        RestServer restServer = new RestServer(service, appService, config);
         restServer.startAsync();
         log.info("Awaiting start of REST server");
         restServer.awaitRunning();

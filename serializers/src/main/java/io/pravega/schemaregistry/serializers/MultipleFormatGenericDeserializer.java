@@ -23,11 +23,11 @@ import java.util.function.BiFunction;
 class MultipleFormatGenericDeserializer extends AbstractPravegaDeserializer<Object> {
     private final Map<SchemaType, AbstractPravegaDeserializer> genericDeserializers;
 
-    MultipleFormatGenericDeserializer(String groupId, SchemaRegistryClient client,
+    MultipleFormatGenericDeserializer(String groupId, String appId, SchemaRegistryClient client,
                                       Map<SchemaType, AbstractPravegaDeserializer> genericDeserializers,
                                       BiFunction<CodecType, ByteBuffer, ByteBuffer> decoder,
                                       EncodingCache encodingCache) {
-        super(groupId, client, null, false, decoder, encodingCache);
+        super(groupId, appId, client, null, false, decoder, encodingCache);
         this.genericDeserializers = genericDeserializers;
     }
 

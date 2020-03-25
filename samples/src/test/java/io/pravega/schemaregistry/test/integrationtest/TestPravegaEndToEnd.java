@@ -11,7 +11,7 @@ package io.pravega.schemaregistry.test.integrationtest;
 
 import io.pravega.client.ClientConfig;
 import io.pravega.schemaregistry.storage.SchemaStore;
-import io.pravega.schemaregistry.storage.SchemaStoreFactory;
+import io.pravega.schemaregistry.storage.ApplicationStoreFactory;
 import org.junit.Before;
 
 import java.net.URI;
@@ -26,6 +26,6 @@ public class TestPravegaEndToEnd extends TestEndToEnd {
     }
     
     SchemaStore getStore() {
-        return SchemaStoreFactory.createPravegaStore(clientConfig, executor);
+        return ApplicationStoreFactory.createPravegaStore(clientConfig, executor);
     }
 }
