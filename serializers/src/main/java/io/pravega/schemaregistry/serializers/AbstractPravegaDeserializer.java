@@ -88,6 +88,8 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
             }
 
             if (!Strings.isNullOrEmpty(appId)) {
+                // Only registered schemas can be registered with the reader application.
+                // if the schema is not registered, this will throw an exception.
                 VersionInfo versionInfo = client.getSchemaVersion(groupId, schemaInfo.get());
                 client.addReader(appId, groupId, versionInfo);
             }

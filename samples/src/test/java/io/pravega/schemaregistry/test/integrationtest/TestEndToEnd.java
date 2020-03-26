@@ -19,7 +19,9 @@ import io.pravega.schemaregistry.contract.data.SchemaType;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
+import io.pravega.schemaregistry.service.ApplicationRegistryService;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
+import io.pravega.schemaregistry.storage.ApplicationStore;
 import io.pravega.schemaregistry.storage.SchemaStore;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
@@ -97,8 +99,10 @@ public abstract class TestEndToEnd {
     @Test
     public void testEndToEnd() {
         SchemaStore store = getStore();
+        ApplicationStore appStore = getAppStore();
         SchemaRegistryService service = new SchemaRegistryService(store, executor);
-        SchemaRegistryClient client = new PassthruRegistryClient(service);
+        ApplicationRegistryService appService = new ApplicationRegistryService(appStore);
+        SchemaRegistryClient client = new PassthruRegistryClient(service, appService);
         
         String group = "group";
 
@@ -155,5 +159,6 @@ public abstract class TestEndToEnd {
 
     abstract SchemaStore getStore();
 
+    abstract ApplicationStore getAppStore();
 }
 

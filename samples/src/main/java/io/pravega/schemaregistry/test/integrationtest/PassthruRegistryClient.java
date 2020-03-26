@@ -23,6 +23,7 @@ import io.pravega.schemaregistry.contract.data.SchemaValidationRule;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.data.SchemaWithVersion;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
+import io.pravega.schemaregistry.service.ApplicationRegistryService;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -32,9 +33,11 @@ import java.util.Map;
 
 public class PassthruRegistryClient implements RegistryClient {
     private final SchemaRegistryService service;
+    private final ApplicationRegistryService appService;
 
-    public PassthruRegistryClient(SchemaRegistryService service) {
+    public PassthruRegistryClient(SchemaRegistryService service, ApplicationRegistryService appService) {
         this.service = service;
+        this.appService = appService;
     }
     
     @Override
@@ -130,41 +133,43 @@ public class PassthruRegistryClient implements RegistryClient {
 
     @Override
     public void addApplication(String appId, Map<String, String> properties) {
-        
+        appService.addApplication(appId, properties).join();
     }
 
     @Override
     public Application getApplication(String appId) {
-        return null;
+        return appService.getApplication(appId, service::getSchema).join();
     }
 
     @Override
     public void addWriter(String appId, String groupId, VersionInfo schemaVersion) {
-
+        appService.addWriter(appId, groupId, schemaVersion, service::getGroupProperties, 
+                x -> service.getGroupEvolutionHistory(x, null)).join();
     }
 
     @Override
     public void addReader(String appId, String groupId, VersionInfo schemaVersion) {
-
+        appService.addReader(appId, groupId, schemaVersion, service::getGroupProperties,
+                x -> service.getGroupEvolutionHistory(x, null)).join();
     }
 
     @Override
     public void removeWriter(String appId, String groupId) {
-
+        appService.removeWriter(appId, groupId).join();
     }
 
     @Override
     public void removeReader(String appId, String groupId) {
-
+        appService.removeReader(appId, groupId).join();
     }
 
     @Override
     public Map<String, List<VersionInfo>> listWriterAppsInGroup(String groupId) {
-        return null;
+        return appService.listWriterAppsInGroup(groupId).join();
     }
 
     @Override
     public Map<String, List<VersionInfo>> listReaderAppsInGroup(String groupId) {
-        return null;
+        return appService.listReaderAppsInGroup(groupId).join();
     }
 }

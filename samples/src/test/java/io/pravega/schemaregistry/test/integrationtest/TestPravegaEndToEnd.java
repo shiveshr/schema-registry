@@ -10,6 +10,8 @@
 package io.pravega.schemaregistry.test.integrationtest;
 
 import io.pravega.client.ClientConfig;
+import io.pravega.schemaregistry.storage.ApplicationStore;
+import io.pravega.schemaregistry.storage.ApplicationStoreFactory;
 import io.pravega.schemaregistry.storage.SchemaStore;
 import io.pravega.schemaregistry.storage.SchemaStoreFactory;
 import org.junit.Before;
@@ -27,5 +29,10 @@ public class TestPravegaEndToEnd extends TestEndToEnd {
     
     SchemaStore getStore() {
         return SchemaStoreFactory.createPravegaStore(clientConfig, executor);
+    }
+
+    @Override
+    ApplicationStore getAppStore() {
+        return ApplicationStoreFactory.createPravegaStore(clientConfig, executor);
     }
 }

@@ -16,7 +16,6 @@ import io.pravega.schemaregistry.contract.generated.rest.model.AddWriterRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.Application;
 import io.pravega.schemaregistry.contract.generated.rest.model.ApplicationsInGroup;
 import io.pravega.schemaregistry.contract.generated.rest.model.CreateApplicationRequest;
-import io.pravega.schemaregistry.contract.generated.rest.model.GroupsList;
 import io.pravega.schemaregistry.contract.generated.rest.model.IncompatibleSchema;
 import io.pravega.schemaregistry.contract.generated.rest.model.VersionInfoList;
 import io.pravega.schemaregistry.contract.generated.rest.server.api.NotFoundException;
@@ -24,7 +23,6 @@ import io.pravega.schemaregistry.contract.transform.ModelHelper;
 import io.pravega.schemaregistry.server.rest.v1.ApiV1;
 import io.pravega.schemaregistry.service.ApplicationRegistryService;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
-import io.swagger.models.Model;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.ws.rs.container.AsyncResponse;

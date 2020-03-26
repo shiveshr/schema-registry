@@ -110,6 +110,8 @@ public class ApplicationRegistryService {
                                     boolean isValid;
                                     int atLeast;
                                     int atMost;
+                                    int forwardTill = getTillVersion(compatibility.getForwardTill(), history, prop, schemaVersion);
+                                    int backwardTill = getTillVersion(compatibility.getBackwardTill(), history, prop, schemaVersion);
                                     switch (compatibility.getCompatibility()) {
                                         case ForwardTransitive:
                                             // writer should be greater than equal to highest reader.
@@ -117,11 +119,11 @@ public class ApplicationRegistryService {
                                             isValid = schemaVersion.getVersion() >= atLeast;
                                             break;
                                         case ForwardTill:
-                                            atLeast = Integer.max(compatibility.getForwardTill().getVersion(), maxReaderVersion);
+                                            atLeast = Integer.max(forwardTill, maxReaderVersion);
                                             // if there is a reader behind forwardTill, fail the check until the reader is updated 
                                             // or removed.
                                             isValid = schemaVersion.getVersion() >= atLeast && 
-                                                    minReaderVersion >= compatibility.getForwardTill().getVersion(); 
+                                                    minReaderVersion >= forwardTill; 
                                             break;
                                         case Forward:
                                             atLeast = Integer.max(latestSchemaVersion - 1, maxReaderVersion);
@@ -140,7 +142,7 @@ public class ApplicationRegistryService {
                                             // all readers should be ahead or equal to this writer version
                                             // the writer should be ahead of backwardTill
                                             atMost = Integer.min(minReaderVersion, latestSchemaVersion);
-                                            atLeast = compatibility.getBackwardTill().getVersion();
+                                            atLeast = backwardTill;
                                             isValid = schemaVersion.getVersion() >= atLeast && schemaVersion.getVersion() <= atMost;
                                             break;
                                         case BackwardTransitive:
@@ -151,9 +153,9 @@ public class ApplicationRegistryService {
                                         case BackwardAndForwardTill:
                                             // there shouldnt be any reader older than compatibility.getForwardTill().getVersion()
                                             // if there are, dont allow this writer until the reader is upgraded or removed. 
-                                            atLeast = compatibility.getBackwardTill().getVersion();
+                                            atLeast = backwardTill; 
                                             isValid = schemaVersion.getVersion() >= atLeast && 
-                                                    minReaderVersion >= compatibility.getForwardTill().getVersion();
+                                                    minReaderVersion >= forwardTill;
                                             break;
                                         case Full:
                                             // if there is a reader older than latestSchemaVersion - 1 then disallow this writer. 
@@ -179,6 +181,28 @@ public class ApplicationRegistryService {
                                         throw new IncompatibleSchemaException("Writer schema not allowed.");
                                     }
                 });
+    }
+
+    private int getTillVersion(VersionInfo till, List<SchemaEvolution> history, GroupProperties prop, VersionInfo schemaToCheck) {
+        if (till == null) {
+            return Integer.MIN_VALUE;
+        }
+        if (prop.isValidateByObjectType()) {
+            boolean found = false;
+            int schemaVersion = Integer.MIN_VALUE;
+            for (SchemaEvolution schema : history) {
+                if (!found) {
+                    found = schema.getVersion().equals(till);
+                }
+                if (found && schema.getVersion().getSchemaName().equals(schemaToCheck.getSchemaName())) {
+                    schemaVersion = schema.getVersion().getVersion();
+                    break;
+                }
+            }
+            return schemaVersion;
+        } else {
+            return till.getVersion();
+        }
     }
 
     public CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion,
@@ -215,6 +239,9 @@ public class ApplicationRegistryService {
                                     boolean isValid;
                                     int atLeast;
                                     int atMost;
+                                    int forwardTill = getTillVersion(compatibility.getForwardTill(), history, prop, schemaVersion);
+                                    int backwardTill = getTillVersion(compatibility.getBackwardTill(), history, prop, schemaVersion);
+
                                     switch (compatibility.getCompatibility()) {
                                         case ForwardTransitive:
                                             // reader should be less than equal to lowest writer.
@@ -224,7 +251,7 @@ public class ApplicationRegistryService {
                                         case ForwardTill:
                                             // less than max writer version while ahead of forward till/
                                             atMost = Integer.min(maxWriterVersion, latestSchemaVersion);
-                                            atLeast = compatibility.getForwardTill().getVersion();
+                                            atLeast = forwardTill;
                                             isValid = schemaVersion.getVersion() <= atMost && schemaVersion.getVersion() >= atLeast;
                                             break;
                                         case Forward:
@@ -242,9 +269,9 @@ public class ApplicationRegistryService {
                                         case BackwardTill:
                                             // reader schema should be ahead of max writer
                                             // all writers should be ahead of backward till.
-                                            atLeast = Integer.max(maxWriterVersion, compatibility.getBackwardTill().getVersion());
+                                            atLeast = Integer.max(maxWriterVersion, backwardTill);
                                             isValid = schemaVersion.getVersion() >= atLeast &&
-                                                    minWriterVersion >= compatibility.getBackwardTill().getVersion();
+                                                    minWriterVersion >= backwardTill;
                                             break;
                                         case BackwardTransitive:
                                             // reader should be ahead of max writer
@@ -255,9 +282,9 @@ public class ApplicationRegistryService {
                                             // reader should be ahead of forwardTill
                                             // there shouldnt be any writer older than compatibility.getBackwardTill().getVersion()
                                             // if there are, dont allow this writer until the reader is also upgraded or removed. 
-                                            atLeast = compatibility.getForwardTill().getVersion();
+                                            atLeast = forwardTill;
                                             isValid = schemaVersion.getVersion() >= atLeast &&
-                                                    minWriterVersion >= compatibility.getBackwardTill().getVersion();
+                                                    minWriterVersion >= backwardTill;
                                             break;
                                         case Full:
                                             // if there is a writer older than latestSchemaVersion - 1 then disallow this reader. 
