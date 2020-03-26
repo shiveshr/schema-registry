@@ -79,6 +79,12 @@ public class InMemoryTable implements Table<Integer> {
 
     @Synchronized
     @Override
+    public CompletableFuture<Void> addRecord(TableKey key, TableValue value) {
+        return updateEntry(key, value, null); 
+    }
+
+    @Synchronized
+    @Override
     public CompletableFuture<Void> deleteRecord(TableKey key) {
         table.remove(key);
         return CompletableFuture.completedFuture(null);

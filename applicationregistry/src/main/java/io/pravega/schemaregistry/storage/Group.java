@@ -11,7 +11,6 @@ package io.pravega.schemaregistry.storage;
 
 import com.google.common.collect.Lists;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
-import io.pravega.schemaregistry.service.AppsInGroupList;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,10 +29,16 @@ public class Group<V> {
 
     private CompletableFuture<Etag> getGroupEtag() {
         return table.getRecordWithVersion(ETAG, Table.TableEtag.class)
-                .thenApply(etagWithVersion -> table.toEtag(etagWithVersion.getVersion()));
+                .thenCompose(etagWithVersion -> {
+                    if (etagWithVersion == null) {
+                        return table.addRecord(ETAG, ETAG).thenCompose(v -> getGroupEtag());       
+                    } else {
+                        return CompletableFuture.completedFuture(table.toEtag(etagWithVersion.getVersion()));
+                    }
+                });
     }
 
-    CompletableFuture<AppsInGroupList> getReaderApps() {
+    CompletableFuture<AppsInGroupWithEtag> getReaderApps() {
         Map<String, List<VersionInfo>> readers = new HashMap<>();
         return getGroupEtag()
                 .thenCompose(etag -> table.getAllRecords()
@@ -45,11 +50,11 @@ public class Group<V> {
                                                       readers.put(appId, Lists.newArrayList(value.getVersions().values()));
                                                   }
                                               });
-                                              return new AppsInGroupList(readers, etag);
+                                              return new AppsInGroupWithEtag(readers, etag);
                                           }));
     }
     
-    CompletableFuture<AppsInGroupList> getWriterApps() {
+    CompletableFuture<AppsInGroupWithEtag> getWriterApps() {
         Map<String, List<VersionInfo>> writers = new HashMap<>();
         return getGroupEtag()
                 .thenCompose(etag -> table.getAllRecords()
@@ -61,7 +66,7 @@ public class Group<V> {
                                                       writers.put(appId, Lists.newArrayList(value.getVersions().values()));
                                                   }
                                               });
-                                              return new AppsInGroupList(writers, etag);
+                                              return new AppsInGroupWithEtag(writers, etag);
                                           }));
 
     }

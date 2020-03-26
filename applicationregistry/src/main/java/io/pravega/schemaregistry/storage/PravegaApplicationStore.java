@@ -13,7 +13,6 @@ import io.pravega.common.Exceptions;
 import io.pravega.common.concurrent.Futures;
 import io.pravega.controller.store.stream.Version;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
-import io.pravega.schemaregistry.service.AppsInGroupList;
 import io.pravega.schemaregistry.storage.client.TableStore;
 
 import java.util.Collections;
@@ -21,10 +20,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class PravegaApplicationStore implements ApplicationStore {
-    public static final String APPLICATIONS = "schema-registry/applications/0";
+    public static final String APPLICATIONS = "registryService/applications/0";
     public static final String GROUP_TABLE_NAME_FORMAT = "applications-%s/table/0";
 
     private final TableStore tableStore;
@@ -38,12 +38,12 @@ public class PravegaApplicationStore implements ApplicationStore {
         // add application to the applications table
         ApplicationRecord.ApplicationValue applicationValue = new ApplicationRecord.ApplicationValue(Collections.emptyList(), Collections.emptyList(), 
                 properties);
-        return tableStore.addNewEntryIfAbsent(APPLICATIONS, appId, applicationValue.toBytes());
+        return withCreateTableIfAbsent(APPLICATIONS, () -> tableStore.addNewEntryIfAbsent(APPLICATIONS, appId, applicationValue.toBytes()));
     }
 
     @Override
     public CompletableFuture<ApplicationRecord.Application> getApplication(String appId) {
-        return tableStore.getEntry(APPLICATIONS, appId, ApplicationRecord.ApplicationValue::fromBytes)
+        return withCreateTableIfAbsent(APPLICATIONS, () -> tableStore.getEntry(APPLICATIONS, appId, ApplicationRecord.ApplicationValue::fromBytes)
                          .thenCompose(x -> {
                              ApplicationRecord.ApplicationValue appValue = x.getObject();
                              // go to the group table and fetch the key against app id
@@ -68,31 +68,28 @@ public class PravegaApplicationStore implements ApplicationStore {
                                     Map<String, List<VersionInfo>> writers = writersFuture.join();
                                     return new ApplicationRecord.Application(appId, writers, readers, appValue.getProperties());
                                 });
-                         });
+                         }));
     }
 
     @Override
-    public CompletableFuture<AppsInGroupList> getReaderApps(String groupId) {
+    public CompletableFuture<AppsInGroupWithEtag> getReaderApps(String groupId) {
         Group<Version> group = getGroupObj(groupId);
-        return Futures.exceptionallyComposeExpecting(group.getReaderApps(), 
-                e -> Exceptions.unwrap(e) instanceof StoreExceptions.DataContainerNotFoundException, 
-                () -> tableStore.createTable(getGroupTableName(groupId))
-                                .thenCompose(v -> group.getReaderApps()));
+        return withCreateTableIfAbsent(getGroupTableName(groupId), group::getReaderApps);
     }
 
     @Override
-    public CompletableFuture<AppsInGroupList> getWriterApps(String groupId) {
+    public CompletableFuture<AppsInGroupWithEtag> getWriterApps(String groupId) {
         Group<Version> group = getGroupObj(groupId);
-        return Futures.exceptionallyComposeExpecting(group.getWriterApps(),
-                e -> Exceptions.unwrap(e) instanceof StoreExceptions.DataContainerNotFoundException,
-                () -> tableStore.createTable(getGroupTableName(groupId))
-                                .thenCompose(v -> group.getWriterApps()));
+        return withCreateTableIfAbsent(getGroupTableName(groupId), group::getWriterApps);
     }
 
     @Override
     public CompletableFuture<Void> addWriter(String appId, String groupId, VersionInfo schemaVersion, Etag etag) {
         return tableStore.getEntry(APPLICATIONS, appId, ApplicationRecord.ApplicationValue::fromBytes)
                 .thenCompose(entry -> {
+                    if (entry == null) {
+                        throw StoreExceptions.create(StoreExceptions.Type.DATA_NOT_FOUND, String.format("%s not found", appId));
+                    }
                     ApplicationRecord.ApplicationValue existing = entry.getObject();
                     if (existing.getWritingTo().contains(groupId)) {
                         return CompletableFuture.completedFuture(null);
@@ -108,7 +105,7 @@ public class PravegaApplicationStore implements ApplicationStore {
                 .thenCompose(v -> {
                     // create group table if not exist
                     Group<Version> group = getGroupObj(groupId);
-                    return group.addWriter(appId, schemaVersion, etag);
+                    return withCreateTableIfAbsent(getGroupTableName(groupId), () -> group.addWriter(appId, schemaVersion, etag));
                 });
     }
 
@@ -116,6 +113,9 @@ public class PravegaApplicationStore implements ApplicationStore {
     public CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion, Etag etag) {
         return tableStore.getEntry(APPLICATIONS, appId, ApplicationRecord.ApplicationValue::fromBytes)
                          .thenCompose(entry -> {
+                             if (entry == null) {
+                                 throw StoreExceptions.create(StoreExceptions.Type.DATA_NOT_FOUND, String.format("%s not found", appId));
+                             }
                              ApplicationRecord.ApplicationValue existing = entry.getObject();
                              if (existing.getWritingTo().contains(groupId)) {
                                  return CompletableFuture.completedFuture(null);
@@ -131,20 +131,20 @@ public class PravegaApplicationStore implements ApplicationStore {
                          .thenCompose(v -> {
                              // create group table if not exist
                              Group<Version> group = getGroupObj(groupId);
-                             return group.addReader(appId, schemaVersion, etag);
+                             return withCreateTableIfAbsent(getGroupTableName(groupId), () -> group.addReader(appId, schemaVersion, etag));
                          });
     }
 
     @Override
     public CompletableFuture<Void> removeWriter(String appId, String groupId) {
         Group<Version> group = getGroupObj(groupId);
-        return group.removeWriter(appId);
+        return withCreateTableIfAbsent(getGroupTableName(groupId), () -> group.removeWriter(appId));
     }
 
     @Override
     public CompletableFuture<Void> removeReader(String appId, String groupId) {
         Group<Version> group = getGroupObj(groupId);
-        return group.removeReader(appId);
+        return withCreateTableIfAbsent(getGroupTableName(groupId), () -> group.removeReader(appId));
     }
 
     private Group<Version> getGroupObj(String groupId) {
@@ -155,5 +155,11 @@ public class PravegaApplicationStore implements ApplicationStore {
 
     private String getGroupTableName(String groupId) {
         return String.format(GROUP_TABLE_NAME_FORMAT, groupId);
+    }
+
+    private <T> CompletableFuture<T> withCreateTableIfAbsent(String tableName, Supplier<CompletableFuture<T>> supplier) {
+        return Futures.exceptionallyComposeExpecting(supplier.get(),
+                e -> Exceptions.unwrap(e) instanceof StoreExceptions.DataContainerNotFoundException,
+                () -> tableStore.createTable(tableName).thenCompose(v -> supplier.get()));
     }
 }

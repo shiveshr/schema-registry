@@ -85,6 +85,11 @@ public class PravegaTable implements Table<Version> {
     }
 
     @Override
+    public CompletableFuture<Void> addRecord(TableKey key, TableValue value) {
+        return tablesStore.addNewEntryIfAbsent(tableName, KEY_SERIALIZER.toKeyString(key), value.toBytes());
+    }
+
+    @Override
     public CompletableFuture<Void> deleteRecord(TableKey key) {
         return tablesStore.removeEntry(tableName, KEY_SERIALIZER.toKeyString(key));
     }

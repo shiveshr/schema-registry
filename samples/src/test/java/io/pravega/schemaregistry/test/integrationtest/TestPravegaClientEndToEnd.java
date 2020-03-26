@@ -154,24 +154,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
     }
     
     @Test
-    public void test() throws IOException {
-        testJsonMultiplexed();
-        testCodec();
-        testAvroSchemaEvolution();
-
-        testAvroReflect();    
-        testAvroGenerated();    
-        testAvroMultiplexed();   
-
-        testProtobuf(true);
-        testProtobuf(false);
-        testProtobufMultiplexed();
-
-        testJson(true);
-        testJson(false);
-    }
-    
-    private void testAvroSchemaEvolution() {
+    public void testAvroSchemaEvolution() {
         // create stream
         String scope = "scope";
         String stream = "avroevolution";
@@ -180,7 +163,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         StreamManager streamManager = new StreamManagerImpl(clientConfig);
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
+        streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
         client.addGroup(groupId, schemaType,  
                 SchemaValidationRules.of(Compatibility.backward()), 
@@ -281,7 +264,8 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         // endregion
     }
 
-    private void testCodec() {
+    @Test
+    public void testCodec() {
         // create stream
         String scope = "scope";
         String stream = "avrocodec";
@@ -290,7 +274,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         StreamManager streamManager = new StreamManagerImpl(clientConfig);
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
+        streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
         client.addGroup(groupId, schemaType,
                 SchemaValidationRules.of(Compatibility.backward()),
@@ -457,7 +441,8 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         return Base64.getEncoder().encodeToString(array);
     }
 
-    private void testAvroReflect() throws IOException {
+    @Test
+    public void testAvroReflect() throws IOException {
         // create stream
         String scope = "scope";
         String stream = "avroreflect";
@@ -466,7 +451,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         StreamManager streamManager = new StreamManagerImpl(clientConfig);
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
+        streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
         client.addGroup(groupId, schemaType,  
                 SchemaValidationRules.of(Compatibility.backward()), 
@@ -520,8 +505,9 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         readerGroupManager.close();
         // endregion
     }
-    
-    private void testAvroGenerated() throws IOException {
+
+    @Test
+    public void testAvroGenerated() throws IOException {
         // create stream
         String scope = "scope";
         String stream = "avrogenerated";
@@ -530,7 +516,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         StreamManager streamManager = new StreamManagerImpl(clientConfig);
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
+        streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
         client.addGroup(groupId, schemaType,  
                 SchemaValidationRules.of(Compatibility.backward()), 
@@ -584,8 +570,9 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         readerGroupManager.close();
         // endregion
     }
-    
-    private void testAvroMultiplexed() throws IOException {
+
+    @Test
+    public void testAvroMultiplexed() throws IOException {
         // create stream
         String scope = "scope";
         String stream = "avromultiplexed";
@@ -594,7 +581,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         StreamManager streamManager = new StreamManagerImpl(clientConfig);
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
+        streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
         client.addGroup(groupId, schemaType,  
                 SchemaValidationRules.of(Compatibility.backward()), 
@@ -693,7 +680,13 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         readerGroupManager.close();
         //endregion
     }
-    
+
+    @Test
+    public void testProtobuf() throws IOException {
+        testProtobuf(true);
+        testProtobuf(false);
+    }
+
     private void testProtobuf(boolean encodeHeaders) throws IOException {
         // create stream
         String scope = "scope";
@@ -703,7 +696,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         StreamManager streamManager = new StreamManagerImpl(clientConfig);
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
+        streamManager.close();
         SchemaType schemaType = SchemaType.Protobuf;
         client.addGroup(groupId, schemaType,
                 SchemaValidationRules.of(Compatibility.allowAny()), 
@@ -776,8 +769,9 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         readerGroupManager.close();
         // endregion
     }
-    
-    private void testProtobufMultiplexed() throws IOException {
+
+    @Test
+    public void testProtobufMultiplexed() throws IOException {
         // create stream
         String scope = "scope";
         String stream = "protomultiplexed";
@@ -786,7 +780,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         StreamManager streamManager = new StreamManagerImpl(clientConfig);
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
+        streamManager.close();
         SchemaType schemaType = SchemaType.Protobuf;
         client.addGroup(groupId, schemaType,
                 SchemaValidationRules.of(Compatibility.allowAny()), 
@@ -890,6 +884,12 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         //endregion
     }
 
+    @Test
+    public void testJson() throws IOException {
+        testJson(true);
+        testJson(false);
+    }
+
     private void testJson(boolean encodeHeaders) throws IOException {
         // create stream
         String scope = "scope";
@@ -899,7 +899,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         StreamManager streamManager = new StreamManagerImpl(clientConfig);
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
+        streamManager.close();
         SchemaType schemaType = SchemaType.Json;
         client.addGroup(groupId, schemaType,
                 SchemaValidationRules.of(Compatibility.allowAny()), 
@@ -959,8 +959,9 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         readerGroupManager.close();
         // endregion
     }
-    
-    private void testJsonMultiplexed() throws IOException {
+
+    @Test
+    public void testJsonMultiplexed() throws IOException {
         // create stream
         String scope = "scope";
         String stream = "jsonmultiplexed1";
@@ -969,7 +970,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         StreamManager streamManager = new StreamManagerImpl(clientConfig);
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
+        streamManager.close();
         SchemaType schemaType = SchemaType.Json;
         client.addGroup(groupId, schemaType,
                 SchemaValidationRules.of(Compatibility.allowAny()), 

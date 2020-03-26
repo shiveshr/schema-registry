@@ -7,17 +7,16 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.pravega.schemaregistry.service;
+package io.pravega.schemaregistry.storage;
 
 import io.pravega.schemaregistry.contract.data.VersionInfo;
-import io.pravega.schemaregistry.storage.Etag;
 import lombok.Data;
 
 import java.util.List;
 import java.util.Map;
 
 @Data
-public class AppsInGroupList {
+public class AppsInGroupWithEtag {
     private final Map<String, List<VersionInfo>> appIdWithSchemaVersions;
     private final Etag etag;
 }

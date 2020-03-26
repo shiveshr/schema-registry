@@ -45,6 +45,8 @@ public interface Table<V> {
 
     <T extends TableValue> CompletableFuture<T> getRecord(TableKey key, Class<T> tClass);
     
+    CompletableFuture<Void> addRecord(TableKey key, TableValue value);
+    
     CompletableFuture<Void> deleteRecord(TableKey key);
     
     <T extends TableValue> CompletableFuture<ValueWithVersion<T, V>> getRecordWithVersion(TableKey key, Class<T> tClass);

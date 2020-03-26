@@ -11,12 +11,13 @@ package io.pravega.schemaregistry.test.integrationtest;
 
 import com.google.common.collect.ImmutableMap;
 import io.pravega.common.Exceptions;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaEvolution;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.SchemaType;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
+import io.pravega.schemaregistry.contract.data.VersionInfo;
 import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
 import io.pravega.schemaregistry.service.ApplicationRegistryService;
@@ -74,6 +75,17 @@ public abstract class TestEndToEnd {
             .type(Schema.create(Schema.Type.STRING))
             .noDefault()
             .endRecord();
+    
+    private final Schema schema3Compatible = SchemaBuilder
+            .record("MyTest")
+            .fields()
+            .name("a")
+            .type(Schema.create(Schema.Type.STRING))
+            .noDefault()
+            .name("b")
+            .type(Schema.create(Schema.Type.STRING))
+            .withDefault("default")
+            .endRecord();
 
     private final Schema schemaTest2 = SchemaBuilder
             .record("MyTest2")
@@ -102,7 +114,7 @@ public abstract class TestEndToEnd {
         ApplicationStore appStore = getAppStore();
         SchemaRegistryService service = new SchemaRegistryService(store, executor);
         ApplicationRegistryService appService = new ApplicationRegistryService(appStore);
-        SchemaRegistryClient client = new PassthruRegistryClient(service, appService);
+        RegistryClient client = new PassthruRegistryClient(service, appService);
         
         String group = "group";
 
@@ -120,11 +132,11 @@ public abstract class TestEndToEnd {
         client.addSchemaIfAbsent(group, schemaInfo);
 
         // attempt to add an existing schema
-        client.addSchemaIfAbsent(group, schemaInfo);
+        VersionInfo version1 = client.addSchemaIfAbsent(group, schemaInfo);
 
         SchemaInfo schemaInfo2 = new SchemaInfo(myTest, SchemaType.Avro,
                 schema2.toString().getBytes(Charsets.UTF_8), ImmutableMap.of());
-        client.addSchemaIfAbsent(group, schemaInfo2);
+        VersionInfo version2 = client.addSchemaIfAbsent(group, schemaInfo2);
 
         client.updateSchemaValidationRules(group, SchemaValidationRules.of(Compatibility.fullTransitive()));
 
@@ -143,7 +155,7 @@ public abstract class TestEndToEnd {
         String myTest2 = "MyTest2";
         SchemaInfo schemaInfo4 = new SchemaInfo(myTest2, SchemaType.Avro,
                 schemaTest2.toString().getBytes(Charsets.UTF_8), ImmutableMap.of());
-        client.addSchemaIfAbsent(group, schemaInfo4);
+        VersionInfo version4 = client.addSchemaIfAbsent(group, schemaInfo4);
 
         List<String> objectTypes = client.getObjectTypes(group);
         assertEquals(objectTypes.size(), 2);
@@ -155,6 +167,36 @@ public abstract class TestEndToEnd {
         assertEquals(myTestHistory.size(), 2);
         List<SchemaEvolution> myTest2History = client.getGroupEvolutionHistory(group, myTest2);
         assertEquals(myTest2History.size(), 1);
+
+        client.updateSchemaValidationRules(group, SchemaValidationRules.of(Compatibility.backward()));
+
+        client.addApplication("myapp", Collections.emptyMap());
+        
+        client.addWriter("myapp", group, version1);
+        client.addWriter("myapp", group, version2);
+        // we should not be allowed to add a reader older than latest writer.
+        try {
+            client.addReader("myapp", group, version1);
+        } catch (Exception e) {
+            Throwable unwrap = Exceptions.unwrap(e);
+            assertTrue(unwrap instanceof IncompatibleSchemaException);
+        }
+        client.addReader("myapp", group, version2);
+
+        SchemaInfo schemaInfo3Compatible = new SchemaInfo(myTest, SchemaType.Avro,
+                schema3Compatible.toString().getBytes(Charsets.UTF_8), ImmutableMap.of());
+        VersionInfo version3 = client.addSchemaIfAbsent(group, schemaInfo3Compatible);
+
+        // this should fail as no reader has moved to v3 yet
+        try {
+            client.addWriter("myapp", group, version3);
+        } catch (Exception e) {
+            Throwable unwrap = Exceptions.unwrap(e);
+            assertTrue(unwrap instanceof IncompatibleSchemaException);
+        }
+        
+        // this should be allowed as this is on a different object.
+        client.addWriter("myapp", group, version4);
     }
 
     abstract SchemaStore getStore();

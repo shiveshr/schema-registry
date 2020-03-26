@@ -10,7 +10,6 @@
 package io.pravega.schemaregistry.storage;
 
 import io.pravega.schemaregistry.contract.data.VersionInfo;
-import io.pravega.schemaregistry.service.AppsInGroupList;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -23,9 +22,9 @@ public interface ApplicationStore {
     
     CompletableFuture<ApplicationRecord.Application> getApplication(String appId);
 
-    CompletableFuture<AppsInGroupList> getReaderApps(String groupId);
+    CompletableFuture<AppsInGroupWithEtag> getReaderApps(String groupId);
     
-    CompletableFuture<AppsInGroupList> getWriterApps(String groupId);
+    CompletableFuture<AppsInGroupWithEtag> getWriterApps(String groupId);
 
     CompletableFuture<Void> addWriter(String appId, String groupId, VersionInfo schemaVersion, Etag etag);
     

@@ -11,7 +11,6 @@ package io.pravega.schemaregistry.storage;
 
 import com.google.common.collect.Lists;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
-import io.pravega.schemaregistry.service.AppsInGroupList;
 import lombok.Synchronized;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -56,7 +55,7 @@ public class InmemoryApplicationStore implements ApplicationStore {
 
     @Synchronized
     @Override
-    public CompletableFuture<AppsInGroupList> getReaderApps(String groupId) {
+    public CompletableFuture<AppsInGroupWithEtag> getReaderApps(String groupId) {
         Group<Integer> group = groups.get(groupId);
         if (group == null) {
             group = new Group<>(new InMemoryTable());
@@ -67,13 +66,13 @@ public class InmemoryApplicationStore implements ApplicationStore {
 
     @Synchronized
     @Override
-    public CompletableFuture<AppsInGroupList> getWriterApps(String groupId) {
+    public CompletableFuture<AppsInGroupWithEtag> getWriterApps(String groupId) {
         Group<Integer> group = groups.get(groupId);
         if (group == null) {
             group = new Group<>(new InMemoryTable());
             groups.put(groupId, group);
         }
-        return group.getReaderApps();
+        return group.getWriterApps();
     }
 
     @Synchronized
@@ -84,6 +83,8 @@ public class InmemoryApplicationStore implements ApplicationStore {
         if (!writingTo.contains(groupId)) {
             writingTo.add(groupId);
         }
+        
+        applications.put(appId, new ApplicationRecord.ApplicationValue(writingTo, app.getReadingFrom(), app.getProperties()));
         Group<Integer> group = groups.get(groupId);
         
         return group.addWriter(appId, schemaVersion, etag);
@@ -93,13 +94,14 @@ public class InmemoryApplicationStore implements ApplicationStore {
     @Override
     public CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion, Etag etag) {
         ApplicationRecord.ApplicationValue app = applications.get(appId);
-        List<String> writingTo = Lists.newArrayList(app.getWritingTo());
-        if (!writingTo.contains(groupId)) {
-            writingTo.add(groupId);
+        List<String> readingFrom = Lists.newArrayList(app.getReadingFrom());
+        if (!readingFrom.contains(groupId)) {
+            readingFrom.add(groupId);
         }
+        applications.put(appId, new ApplicationRecord.ApplicationValue(app.getWritingTo(), readingFrom, app.getProperties()));
         Group<Integer> group = groups.get(groupId);
 
-        return group.addWriter(appId, schemaVersion, etag);
+        return group.addReader(appId, schemaVersion, etag);
     }
     
     @Synchronized

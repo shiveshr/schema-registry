@@ -20,6 +20,7 @@ import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
 import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
 import io.pravega.schemaregistry.storage.ApplicationStore;
+import io.pravega.schemaregistry.storage.AppsInGroupWithEtag;
 import io.pravega.schemaregistry.storage.Etag;
 import io.pravega.schemaregistry.storage.StoreExceptions;
 
@@ -80,8 +81,10 @@ public class ApplicationRegistryService {
                                              Function<String, CompletableFuture<GroupProperties>> groupProperties,
                                              Function<String, CompletableFuture<List<SchemaEvolution>>> groupHistory) {
         CompletableFuture<GroupProperties> grpProp = groupProperties.apply(groupId);
-        CompletableFuture<AppsInGroupList> readers = store.getReaderApps(groupId);
+        CompletableFuture<AppsInGroupWithEtag> readers = store.getReaderApps(groupId);
         CompletableFuture<List<SchemaEvolution>> grpHistory = groupHistory.apply(groupId);
+        StringBuilder cause = new StringBuilder();
+
         return CompletableFuture.allOf(grpProp, readers, grpHistory)
                                 .thenCompose(v -> {
                                     GroupProperties prop = grpProp.join();
@@ -117,13 +120,24 @@ public class ApplicationRegistryService {
                                             // writer should be greater than equal to highest reader.
                                             atLeast = Integer.max(0, maxReaderVersion);
                                             isValid = schemaVersion.getVersion() >= atLeast;
+                                            if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                cause.append(" Schema version should be at least ").append(atLeast).append(".");
+                                            }
                                             break;
                                         case ForwardTill:
                                             atLeast = Integer.max(forwardTill, maxReaderVersion);
                                             // if there is a reader behind forwardTill, fail the check until the reader is updated 
                                             // or removed.
                                             isValid = schemaVersion.getVersion() >= atLeast && 
-                                                    minReaderVersion >= forwardTill; 
+                                                    minReaderVersion >= forwardTill;
+                                            if (!isValid) {
+                                                if (!(minReaderVersion >= forwardTill)) {
+                                                    cause.append("All readers should be ahead of ").append(forwardTill).append(".");
+                                                }
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append(" Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                            }
                                             break;
                                         case Forward:
                                             atLeast = Integer.max(latestSchemaVersion - 1, maxReaderVersion);
@@ -131,12 +145,28 @@ public class ApplicationRegistryService {
                                             // updated or removed. 
                                             isValid = schemaVersion.getVersion() >= atLeast &&
                                                     Integer.min(minReaderVersion, latestSchemaVersion - 1) >= atLeast;
+                                            if (!isValid) {
+                                                if (!(Integer.min(minReaderVersion, latestSchemaVersion - 1) >= atLeast)) {
+                                                    cause.append("All readers should be ahead of ").append(atLeast).append(".");
+                                                }
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append(" Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                            }
                                             break;
                                         case Backward:
                                             // one level behind or at par with lowest reader version. 
                                             atMost = Integer.min(minReaderVersion, latestSchemaVersion);
                                             atLeast = latestSchemaVersion - 1;
                                             isValid = schemaVersion.getVersion() >= atLeast && schemaVersion.getVersion() <= atMost;
+                                            if (!isValid) {
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append("Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                                if (!(schemaVersion.getVersion() <= atMost)) {
+                                                    cause.append(" Schema version should be at most ").append(atMost).append(".");
+                                                }
+                                            }
                                             break;
                                         case BackwardTill:
                                             // all readers should be ahead or equal to this writer version
@@ -144,11 +174,23 @@ public class ApplicationRegistryService {
                                             atMost = Integer.min(minReaderVersion, latestSchemaVersion);
                                             atLeast = backwardTill;
                                             isValid = schemaVersion.getVersion() >= atLeast && schemaVersion.getVersion() <= atMost;
+                                            if (!isValid) {
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append("Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                                if (!(schemaVersion.getVersion() <= atMost)) {
+                                                    cause.append(" Schema version should be at most ").append(atMost).append(".");
+                                                }
+                                            }
                                             break;
                                         case BackwardTransitive:
                                             // all readers should be ahead of this writer version.
                                             atMost = Integer.min(minReaderVersion, latestSchemaVersion);
                                             isValid = schemaVersion.getVersion() <= atMost;
+                                            if (!(schemaVersion.getVersion() <= atMost)) {
+                                                cause.append(" Schema version should be at most ").append(atMost).append(".");
+                                            }
+
                                             break;
                                         case BackwardAndForwardTill:
                                             // there shouldnt be any reader older than compatibility.getForwardTill().getVersion()
@@ -156,11 +198,27 @@ public class ApplicationRegistryService {
                                             atLeast = backwardTill; 
                                             isValid = schemaVersion.getVersion() >= atLeast && 
                                                     minReaderVersion >= forwardTill;
+                                            if (!isValid) {
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append("Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                                if (!(minReaderVersion >= forwardTill)) {
+                                                    cause.append(" All readers should be ahead of ").append(forwardTill).append(".");
+                                                }
+                                            }
                                             break;
                                         case Full:
                                             // if there is a reader older than latestSchemaVersion - 1 then disallow this writer. 
                                             atLeast = latestSchemaVersion - 1;
                                             isValid = schemaVersion.getVersion() >= atLeast && minReaderVersion >= atLeast;
+                                            if (!isValid) {
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append("Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                                if (!(minReaderVersion >= atLeast)) {
+                                                    cause.append(" All readers should be ahead of ").append(atLeast).append(".");
+                                                }
+                                            }
                                             break;
                                         case FullTransitive:
                                             isValid = true;
@@ -170,15 +228,19 @@ public class ApplicationRegistryService {
                                             break;
                                         case DenyAll:
                                             isValid = schemaVersion.getVersion() == latestSchemaVersion;
+                                            if (!isValid) {
+                                                cause.append(" Schema version should be ").append(latestSchemaVersion).append(".");
+                                            }
                                             break;
                                         default:
                                             isValid = false;
+                                            cause.append(" Unknown policy.");
                                     }
                                     
                                     if (isValid) {
                                         return store.addWriter(appId, groupId, schemaVersion, etag);
                                     } else {
-                                        throw new IncompatibleSchemaException("Writer schema not allowed.");
+                                        throw new IncompatibleSchemaException(cause.toString());
                                     }
                 });
     }
@@ -209,8 +271,9 @@ public class ApplicationRegistryService {
                                              Function<String, CompletableFuture<GroupProperties>> groupProperties,
                                              Function<String, CompletableFuture<List<SchemaEvolution>>> groupHistory) {
         CompletableFuture<GroupProperties> grpProp = groupProperties.apply(groupId);
-        CompletableFuture<AppsInGroupList> writers = store.getWriterApps(groupId);
+        CompletableFuture<AppsInGroupWithEtag> writers = store.getWriterApps(groupId);
         CompletableFuture<List<SchemaEvolution>> grpHistory = groupHistory.apply(groupId);
+        StringBuilder cause = new StringBuilder();
         return CompletableFuture.allOf(grpProp, writers, grpHistory)
                                 .thenCompose(v -> {
                                     GroupProperties prop = grpProp.join();
@@ -247,24 +310,51 @@ public class ApplicationRegistryService {
                                             // reader should be less than equal to lowest writer.
                                             atMost = Integer.min(latestSchemaVersion, minWriterVersion);
                                             isValid = schemaVersion.getVersion() <= atMost;
+                                            if (!isValid) {
+                                                cause.append("Schema version should be at most ").append(atMost).append(".");
+                                            }
                                             break;
                                         case ForwardTill:
-                                            // less than max writer version while ahead of forward till/
-                                            atMost = Integer.min(maxWriterVersion, latestSchemaVersion);
+                                            // less than max writer version while ahead of forward till
+                                            atMost = Integer.min(Integer.max(0, maxWriterVersion), latestSchemaVersion);
                                             atLeast = forwardTill;
                                             isValid = schemaVersion.getVersion() <= atMost && schemaVersion.getVersion() >= atLeast;
+                                            if (!isValid) {
+                                                if (!(schemaVersion.getVersion() <= atMost)) {
+                                                    cause.append("Schema version should be at most ").append(atMost).append(".");
+                                                }
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append(" Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                            }
                                             break;
                                         case Forward:
                                             // less than min writer while ahead of latest - 1
                                             atMost = Integer.min(latestSchemaVersion, minWriterVersion);
                                             atLeast = latestSchemaVersion - 1;
                                             isValid = schemaVersion.getVersion() <= atMost && schemaVersion.getVersion() >= atLeast;
+                                            if (!isValid) {
+                                                if (!(schemaVersion.getVersion() <= atMost)) {
+                                                    cause.append("Schema version should be at most ").append(atMost).append(".");
+                                                }
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append(" Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                            }
                                             break;
                                         case Backward:
                                             // ahead of max writer with no writer behind latestSchema - 1
-                                            atLeast = Integer.min(latestSchemaVersion - 1, maxWriterVersion);
+                                            atLeast = Integer.max(latestSchemaVersion - 1, maxWriterVersion);
                                             isValid = schemaVersion.getVersion() >= atLeast 
                                                     && minWriterVersion >= latestSchemaVersion - 1;
+                                            if (!isValid) {
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append(" Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                                if (!(minWriterVersion >= latestSchemaVersion - 1)) {
+                                                    cause.append(" No writer should be behind version ").append(latestSchemaVersion - 1).append(".");
+                                                }
+                                            }
                                             break;
                                         case BackwardTill:
                                             // reader schema should be ahead of max writer
@@ -272,11 +362,24 @@ public class ApplicationRegistryService {
                                             atLeast = Integer.max(maxWriterVersion, backwardTill);
                                             isValid = schemaVersion.getVersion() >= atLeast &&
                                                     minWriterVersion >= backwardTill;
+                                            if (!isValid) {
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append(" Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                                if (!(minWriterVersion >= backwardTill)) {
+                                                    cause.append(" No writer should be behind version ").append(backwardTill).append(".");
+                                                }
+                                            }
                                             break;
                                         case BackwardTransitive:
                                             // reader should be ahead of max writer
                                             atLeast = Integer.max(maxWriterVersion, 0);
                                             isValid = schemaVersion.getVersion() >= atLeast;
+                                            if (!isValid) {
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append(" Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                            }
                                             break;
                                         case BackwardAndForwardTill:
                                             // reader should be ahead of forwardTill
@@ -285,11 +388,27 @@ public class ApplicationRegistryService {
                                             atLeast = forwardTill;
                                             isValid = schemaVersion.getVersion() >= atLeast &&
                                                     minWriterVersion >= backwardTill;
+                                            if (!isValid) {
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append(" Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                                if (!(minWriterVersion >= backwardTill)) {
+                                                    cause.append(" No writer should be behind version ").append(backwardTill).append(".");
+                                                }
+                                            }
                                             break;
                                         case Full:
                                             // if there is a writer older than latestSchemaVersion - 1 then disallow this reader. 
                                             atLeast = latestSchemaVersion - 1;
                                             isValid = schemaVersion.getVersion() >= atLeast && minWriterVersion >= atLeast;
+                                            if (!isValid) {
+                                                if (!(schemaVersion.getVersion() >= atLeast)) {
+                                                    cause.append(" Schema version should be at least ").append(atLeast).append(".");
+                                                }
+                                                if (!(minWriterVersion >= atLeast)) {
+                                                    cause.append(" No writer should be behind version ").append(atLeast).append(".");
+                                                }
+                                            }
                                             break;
                                         case FullTransitive:
                                             isValid = true;
@@ -299,15 +418,22 @@ public class ApplicationRegistryService {
                                             break;
                                         case DenyAll:
                                             isValid = schemaVersion.getVersion() == latestSchemaVersion;
+                                            if (!isValid) {
+                                                if (schemaVersion.getVersion() != latestSchemaVersion) {
+                                                    cause.append(" Schema version should be ").append(latestSchemaVersion).append(".");
+                                                }
+                                            }
                                             break;
                                         default:
                                             isValid = false;
+                                            cause.append("Unknown policy.");
+
                                     }
 
                                     if (isValid) {
                                         return store.addReader(appId, groupId, schemaVersion, etag);
                                     } else {
-                                        throw new IncompatibleSchemaException("Writer schema not allowed.");
+                                        throw new IncompatibleSchemaException(cause.toString());
                                     }
                                 });
     }
@@ -321,10 +447,10 @@ public class ApplicationRegistryService {
     }
 
     public CompletableFuture<Map<String, List<VersionInfo>>> listWriterAppsInGroup(String groupId) {
-        return store.getWriterApps(groupId).thenApply(AppsInGroupList::getAppIdWithSchemaVersions);
+        return store.getWriterApps(groupId).thenApply(AppsInGroupWithEtag::getAppIdWithSchemaVersions);
     }
 
     public CompletableFuture<Map<String, List<VersionInfo>>> listReaderAppsInGroup(String groupId) {
-        return store.getReaderApps(groupId).thenApply(AppsInGroupList::getAppIdWithSchemaVersions);
+        return store.getReaderApps(groupId).thenApply(AppsInGroupWithEtag::getAppIdWithSchemaVersions);
     }
 }

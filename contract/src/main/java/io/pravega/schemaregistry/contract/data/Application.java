@@ -14,8 +14,15 @@ import lombok.Data;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A class that represents an application instance which is writing to and reading from potentially more than one 
+ * data source and using one or ore schemas. 
+ */
 @Data
 public class Application {
+    /**
+     * Unique name for the specific application instance.
+     */
     private final String name;
     /**
      * Group to list of schema map.
@@ -25,5 +32,8 @@ public class Application {
      * Group to list of schema map.
      */
     private final Map<String, List<SchemaInfo>> readingFromUsing;
+    /**
+     * A properties map to store any meaningful key value pairs.
+     */
     private final Map<String, String> properties;
 }
