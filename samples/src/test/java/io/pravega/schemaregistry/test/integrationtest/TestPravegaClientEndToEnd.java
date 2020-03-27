@@ -239,9 +239,8 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         try {
             deserializer = SerializerFactory.avroGenericDeserializer(serializerConfig, readSchema);
         } catch (Exception ex) {
-            exceptionThrown = Exceptions.unwrap(ex) instanceof IncompatibleSchemaException;
+            assertTrue(Exceptions.unwrap(ex) instanceof IllegalArgumentException);
         }
-        assertTrue(exceptionThrown);
         reader.close();
         // endregion
         
