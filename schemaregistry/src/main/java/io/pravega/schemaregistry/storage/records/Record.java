@@ -38,10 +38,10 @@ public interface Record {
     @AllArgsConstructor
     public class SchemaRecord implements Record {
         public static final Serializer SERIALIZER = new Serializer();
-        
+
         private final SchemaInfo schemaInfo;
         private final VersionInfo versionInfo;
-        
+
         private static class SchemaRecordBuilder implements ObjectBuilder<SchemaRecord> {
         }
 
@@ -72,7 +72,7 @@ public interface Record {
             }
         }
     }
-    
+
     @Data
     @Builder
     @AllArgsConstructor
@@ -82,7 +82,7 @@ public interface Record {
         private final EncodingId encodingId;
         private final VersionInfo versionInfo;
         private final CodecType codecType;
-        
+
         private static class EncodingRecordBuilder implements ObjectBuilder<EncodingRecord> {
         }
 
@@ -115,7 +115,7 @@ public interface Record {
             }
         }
     }
-    
+
     @Data
     @Builder
     @AllArgsConstructor
@@ -123,7 +123,7 @@ public interface Record {
         public static final Serializer SERIALIZER = new Serializer();
 
         private final SchemaValidationRules validationRules;
-        
+
         private static class ValidationRecordBuilder implements ObjectBuilder<ValidationRecord> {
         }
 
@@ -152,7 +152,7 @@ public interface Record {
             }
         }
     }
-    
+
     @Data
     @Builder
     @AllArgsConstructor
@@ -195,6 +195,43 @@ public interface Record {
                  .validateByObjectType(source.readBoolean())
                  .properties(source.readMap(DataInput::readUTF, DataInput::readUTF))
                  .validationRules(SchemaValidationRulesSerializer.SERIALIZER.deserialize(source));
+            }
+        }
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    public class CodecRecord implements Record {
+        public static final Serializer SERIALIZER = new Serializer();
+
+        private final CodecType codecType;
+
+        private static class CodecRecordBuilder implements ObjectBuilder<CodecRecord> {
+        }
+
+        static class Serializer extends VersionedSerializer.WithBuilder<CodecRecord, CodecRecord.CodecRecordBuilder> {
+            @Override
+            protected CodecRecord.CodecRecordBuilder newBuilder() {
+                return CodecRecord.builder();
+            }
+
+            @Override
+            protected byte getWriteVersion() {
+                return 0;
+            }
+
+            @Override
+            protected void declareVersions() {
+                version(0).revision(0, this::write00, this::read00);
+            }
+
+            private void write00(CodecRecord e, RevisionDataOutput target) throws IOException {
+                CodecTypeRecord.SERIALIZER.serialize(target, new CodecTypeRecord(e.codecType));
+            }
+
+            private void read00(RevisionDataInput source, CodecRecord.CodecRecordBuilder b) throws IOException {
+                b.codecType(CodecTypeRecord.SERIALIZER.deserialize(source).getCodecType());
             }
         }
     }

@@ -64,7 +64,7 @@ public class SerializerFactory {
         String groupId = config.getGroupId();
         EncodingCache encodingCache = new EncodingCache(groupId, registryClient);
         return new AvroSerializer<>(groupId, config.getApplication(), registryClient, schemaData, config.getCodec(),
-                config.isAutoRegisterSchema(), encodingCache);
+                config.isAutoRegisterSchema(), config.isAutoRegisterCodec(), encodingCache);
     }
 
     /**
@@ -142,7 +142,7 @@ public class SerializerFactory {
         Map<Class<? extends T>, AbstractPravegaSerializer<T>> serializerMap = schemas
                 .entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                         x -> new AvroSerializer<>(groupId, config.getApplication(), registryClient, x.getValue(), config.getCodec(),
-                                config.isAutoRegisterSchema(), encodingCache)));
+                                config.isAutoRegisterSchema(), config.isAutoRegisterCodec(), encodingCache)));
         return new MultiplexedSerializer<>(serializerMap);
     }
 
@@ -233,7 +233,7 @@ public class SerializerFactory {
         EncodingCache encodingCache = new EncodingCache(groupId, registryClient);
 
         return new ProtobufSerializer<>(groupId, config.getApplication(), registryClient, schemaData, config.getCodec(),
-                config.isAutoRegisterSchema(), encodingCache);
+                config.isAutoRegisterSchema(), config.isAutoRegisterCodec(), encodingCache);
     }
 
     /**
@@ -306,7 +306,7 @@ public class SerializerFactory {
         Map<Class<? extends T>, AbstractPravegaSerializer<T>> serializerMap = schemas
                 .entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                         x -> new ProtobufSerializer<>(groupId, config.getApplication(), registryClient, x.getValue(), config.getCodec(),
-                                config.isAutoRegisterSchema(), encodingCache)));
+                                config.isAutoRegisterSchema(), config.isAutoRegisterCodec(), encodingCache)));
         return new MultiplexedSerializer<>(serializerMap);
     }
 
@@ -389,7 +389,7 @@ public class SerializerFactory {
         EncodingCache encodingCache = new EncodingCache(groupId, registryClient);
 
         return new JsonSerializer<>(groupId, config.getApplication(), registryClient, schemaData, config.getCodec(),
-                config.isAutoRegisterSchema(), encodingCache);
+                config.isAutoRegisterSchema(), config.isAutoRegisterCodec(), encodingCache);
     }
 
     /**
@@ -458,7 +458,7 @@ public class SerializerFactory {
         Map<Class<? extends T>, AbstractPravegaSerializer<T>> serializerMap = schemas
                 .entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                         x -> new JsonSerializer<>(groupId, config.getApplication(), registryClient, x.getValue(), config.getCodec(),
-                                config.isAutoRegisterSchema(), encodingCache)));
+                                config.isAutoRegisterSchema(), config.isAutoRegisterCodec(), encodingCache)));
         return new MultiplexedSerializer<>(serializerMap);
     }
 
@@ -539,7 +539,7 @@ public class SerializerFactory {
         EncodingCache encodingCache = new EncodingCache(groupId, registryClient);
 
         return new AbstractPravegaSerializer<T>(groupId, config.getApplication(), registryClient,
-                schema, config.getCodec(), config.isAutoRegisterSchema(), encodingCache) {
+                schema, config.getCodec(), config.isAutoRegisterSchema(), config.isAutoRegisterCodec(), encodingCache) {
             @Override
             protected void serialize(T var, SchemaInfo schema, OutputStream outputStream) {
                 serializer.serialize(var, schema, outputStream);

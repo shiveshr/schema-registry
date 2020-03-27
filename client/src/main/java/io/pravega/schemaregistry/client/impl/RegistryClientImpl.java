@@ -400,6 +400,17 @@ public class RegistryClientImpl implements RegistryClient {
     }
 
     @Override
+    public void addCodec(String group, CodecType codecType) {
+        WebTarget webTarget = client.target(uri).path("v1/groups").path(group).path("codecs");
+        Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
+        Response response = invocationBuilder.post(Entity.entity(ModelHelper.encode(codecType), MediaType.APPLICATION_JSON));
+
+        if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+            throw new RuntimeException("Failed to add codec");
+        }
+    }
+    
+    @Override
     public void addApplication(String appId, Map<String, String> properties) {
         WebTarget webTarget = client.target(uri).path("v1/applications");
         Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);

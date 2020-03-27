@@ -43,6 +43,7 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
     @Getter
     private final Codec codec;
     private final boolean registerSchema;
+    private final boolean registerCodec;
     private final EncodingCache encodingCache;
 
     protected AbstractPravegaSerializer(String groupId,
@@ -50,6 +51,7 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
                                         SchemaContainer<T> schema,
                                         Codec codec,
                                         boolean registerSchema,
+                                        boolean registerCodec,
                                         EncodingCache encodingCache) {
         this.appId = appId;
         Preconditions.checkNotNull(groupId);
@@ -63,6 +65,7 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
         this.schemaInfo = schema.getSchemaInfo();
         this.encodingCache = encodingCache;
         this.registerSchema = registerSchema;
+        this.registerCodec = registerCodec;
         this.version = new AtomicReference<>();
         this.codec = codec;
         this.encodeHeader = new AtomicBoolean();
@@ -83,6 +86,10 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
             // get already registered schema version. If schema is not registered, this will throw an exception. 
             this.version.compareAndSet(null, encodingCache.getVersionFromSchema(schemaInfo));
         }
+        if (registerCodec) {
+            client.addCodec(groupId, codec.getCodecType());
+        }
+
         if (!Strings.isNullOrEmpty(appId)) {
             client.addWriter(appId, groupId, version.get());
         }

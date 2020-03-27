@@ -10,8 +10,10 @@
 package io.pravega.schemaregistry.server.rest.resources;
 
 import io.pravega.common.Exceptions;
+import io.pravega.schemaregistry.contract.exceptions.CodecNotFoundException;
 import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
 import io.pravega.schemaregistry.contract.exceptions.SchemaTypeMismatchException;
+import io.pravega.schemaregistry.contract.generated.rest.model.AddCodec;
 import io.pravega.schemaregistry.contract.generated.rest.model.CanRead;
 import io.pravega.schemaregistry.contract.generated.rest.model.CanReadRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.GetSchemaForObjectTypeByVersionRequest;
@@ -442,6 +444,27 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                        .exceptionally(exception -> {
                            log.warn("getCodecsList failed with exception: ", exception);
                            return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
+                       .thenApply(response -> {
+                           asyncResponse.resume(response);
+                           return response;
+                       });
+    }
+
+    @Override
+    public void addCodec(String groupName, AddCodec addCodec, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+        registryService.addCodec(groupName, ModelHelper.decode(addCodec.getCodec()))
+                       .thenApply(v -> {
+                           return Response.status(Status.OK).build();
+                       })
+                       .exceptionally(exception -> {
+                           if (Exceptions.unwrap(exception) instanceof CodecNotFoundException) {
+                               log.info("addCodec failed Codec Not Found {}", groupName);
+                               return Response.status(Status.PRECONDITION_FAILED).build();
+                           } else {
+                               log.warn("addCodec failed with exception: ", exception);
+                               return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                           }
                        })
                        .thenApply(response -> {
                            asyncResponse.resume(response);

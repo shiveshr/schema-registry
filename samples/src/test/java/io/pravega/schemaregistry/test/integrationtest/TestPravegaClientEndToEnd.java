@@ -287,6 +287,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
                                                             .autoRegisterSchema(true)
+                                                            .autoRegisterCodec(true)
                                                             .registryConfigOrClient(Either.right(client))
                                                             .build();
 
@@ -312,6 +313,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         serializerConfig = SerializerConfig.builder()
                                            .groupId(groupId)
                                            .autoRegisterSchema(true)
+                                           .autoRegisterCodec(true)
                                            .codec(CodecFactory.gzip())
                                            .registryConfigOrClient(Either.right(client))
                                            .build();
@@ -331,6 +333,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         serializerConfig = SerializerConfig.builder()
                                            .groupId(groupId)
                                            .autoRegisterSchema(true)
+                                           .autoRegisterCodec(true)
                                            .codec(CodecFactory.snappy())
                                            .registryConfigOrClient(Either.right(client))
                                            .build();
@@ -389,6 +392,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         serializerConfig = SerializerConfig.builder()
                                            .groupId(groupId)
                                            .autoRegisterSchema(true)
+                                           .autoRegisterCodec(true)
                                            .codec(myCodec)
                                            .registryConfigOrClient(Either.right(client))
                                            .build();

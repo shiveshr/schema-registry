@@ -132,6 +132,11 @@ public class PassthruRegistryClient implements RegistryClient {
     }
 
     @Override
+    public void addCodec(String group, CodecType codecType) {
+        service.addCodec(group, codecType).join();
+    }
+
+    @Override
     public void addApplication(String appId, Map<String, String> properties) {
         appService.addApplication(appId, properties).join();
     }

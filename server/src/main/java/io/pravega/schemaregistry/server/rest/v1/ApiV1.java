@@ -9,6 +9,7 @@
  */
 package io.pravega.schemaregistry.server.rest.v1;
 
+import io.pravega.schemaregistry.contract.generated.rest.model.AddCodec;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddReaderRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddSchemaToGroupRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddWriterRequest;
@@ -122,6 +123,20 @@ public final class ApiV1 {
                 @io.swagger.annotations.ApiResponse(code = 500, message = "Internal server error while fetching Group details", response = Void.class)})
         void getCodecsList(@ApiParam(value = "Group name", required = true) @PathParam("groupName") String groupName,
                            @Context SecurityContext securityContext, @Suspended AsyncResponse asyncResponse)
+                throws NotFoundException;
+
+        @POST
+        @Path("/{groupName}/codecs")
+        @Consumes({"application/json"})
+        @io.swagger.annotations.ApiOperation(value = "", notes = "Adds a new codec to the group", response = Void.class, tags = {"Group", })
+        @io.swagger.annotations.ApiResponses(value = {
+                @io.swagger.annotations.ApiResponse(code = 201, message = "Successfully added codec to group", response = Void.class),
+                @io.swagger.annotations.ApiResponse(code = 404, message = "Group not found", response = Void.class),
+                @io.swagger.annotations.ApiResponse(code = 412, message = "Codec not found", response = Void.class),
+                @io.swagger.annotations.ApiResponse(code = 500, message = "Internal server error while creating a Group", response = Void.class)})
+        void addCodec(@ApiParam(value = "Group name", required = true) @PathParam("groupName") String groupName,
+                      @ApiParam(value = "The codec", required = true) AddCodec addCodec,
+                      @Context SecurityContext securityContext, @Suspended AsyncResponse asyncResponse)
                 throws NotFoundException;
 
         @GET

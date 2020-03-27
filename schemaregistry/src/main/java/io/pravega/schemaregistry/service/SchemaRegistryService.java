@@ -309,6 +309,16 @@ public class SchemaRegistryService {
         return store.getCodecTypes(group);
     }
 
+    /**
+     * Api to add a new codec to the group. 
+     * @param group group to add codec to. 
+     * @param codecType codec type to add. 
+     * @return Future which is completed successfully if the codec is added. 
+     */
+    public CompletableFuture<Void> addCodec(String group, CodecType codecType) {
+        return store.addCodec(group, codecType);
+    }
+    
     private CompletableFuture<VersionInfo> getNextVersion(String group, SchemaInfo schema, GroupProperties prop) {
         CompletableFuture<VersionInfo> latest;
         if (prop.isValidateByObjectType()) {
