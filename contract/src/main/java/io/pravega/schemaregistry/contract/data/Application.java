@@ -36,4 +36,16 @@ public class Application {
      * A properties map to store any meaningful key value pairs.
      */
     private final Map<String, String> properties;
+    
+    @Data
+    public static class Writer {
+        private final SchemaInfo schemaInfo;
+        private final CodecType codecType;
+    }
+
+    @Data
+    public static class Reader {
+        private final SchemaInfo schemaInfo;
+        private final List<CodecType> codecType;
+    }
 }

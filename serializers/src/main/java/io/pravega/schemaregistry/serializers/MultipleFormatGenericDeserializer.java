@@ -21,12 +21,12 @@ import java.util.Map;
 class MultipleFormatGenericDeserializer extends AbstractPravegaDeserializer<Object> {
     private final Map<SchemaType, AbstractPravegaDeserializer> genericDeserializers;
 
-    MultipleFormatGenericDeserializer(String groupId, String appId, RegistryClient client,
+    MultipleFormatGenericDeserializer(String groupId, RegistryClient client,
                                       Map<SchemaType, AbstractPravegaDeserializer> genericDeserializers,
                                       SerializerConfig.Decoder decoder,
                                       boolean failOnCodecMismatch,
                                       EncodingCache encodingCache) {
-        super(groupId, appId, client, null, false, decoder, failOnCodecMismatch, encodingCache);
+        super(groupId, null, client, null, false, decoder, failOnCodecMismatch, encodingCache);
         this.genericDeserializers = genericDeserializers;
     }
 

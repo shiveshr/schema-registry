@@ -165,8 +165,9 @@ public class SerializerFactory {
 
         Map<String, AbstractPravegaDeserializer<T>> deserializerMap = schemas
                 .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getName(),
-                        x -> new AvroDeserlizer<>(groupId, config.getApplication(), registryClient, x, config.getDecoder(), config.isFailOnCodecMismatch(), encodingCache)));
-        return new MultiplexedDeserializer<>(groupId, config.getApplication(), registryClient,
+                        x -> new AvroDeserlizer<>(groupId, config.getApplication(), registryClient, x, config.getDecoder(), 
+                                config.isFailOnCodecMismatch(), encodingCache)));
+        return new MultiplexedDeserializer<>(groupId, registryClient,
                 deserializerMap, config.getDecoder(), config.isFailOnCodecMismatch(), encodingCache);
     }
 
@@ -197,7 +198,7 @@ public class SerializerFactory {
                         x -> new AvroDeserlizer<>(groupId, config.getApplication(), registryClient, x, config.getDecoder(), config.isFailOnCodecMismatch(), encodingCache)));
         AbstractPravegaDeserializer<GenericRecord> genericDeserializer = new AvroGenericDeserlizer(groupId, config.getApplication(), registryClient,
                 null, config.getDecoder(), config.isFailOnCodecMismatch(), encodingCache);
-        return new MultiplexedAndGenericDeserializer<>(groupId, config.getApplication(), registryClient,
+        return new MultiplexedAndGenericDeserializer<>(groupId, registryClient,
                 deserializerMap, genericDeserializer, config.getDecoder(), config.isFailOnCodecMismatch(), encodingCache);
     }
     // endregion
@@ -322,7 +323,7 @@ public class SerializerFactory {
                 .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getName(),
                         x -> new ProtobufDeserlizer<>(groupId, config.getApplication(), registryClient, x, config.getDecoder(),
                                 config.isFailOnCodecMismatch(), encodingCache)));
-        return new MultiplexedDeserializer<>(groupId, config.getApplication(), registryClient,
+        return new MultiplexedDeserializer<>(groupId, registryClient,
                 deserializerMap, config.getDecoder(), config.isFailOnCodecMismatch(), encodingCache);
     }
 
@@ -350,7 +351,7 @@ public class SerializerFactory {
                                 config.isFailOnCodecMismatch(), encodingCache)));
         ProtobufGenericDeserlizer genericDeserializer = new ProtobufGenericDeserlizer(groupId, config.getApplication(), registryClient, null,
                 config.getDecoder(), config.isFailOnCodecMismatch(), encodingCache);
-        return new MultiplexedAndGenericDeserializer<>(groupId, config.getApplication(), registryClient,
+        return new MultiplexedAndGenericDeserializer<>(groupId, registryClient,
                 deserializerMap, genericDeserializer, config.getDecoder(), config.isFailOnCodecMismatch(), encodingCache);
     }
     //endregion
@@ -471,7 +472,7 @@ public class SerializerFactory {
                 .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getName(),
                         x -> new JsonDeserlizer<>(groupId, config.getApplication(), registryClient, x, 
                                 config.getDecoder(), config.isFailOnCodecMismatch(), encodingCache)));
-        return new MultiplexedDeserializer<>(groupId, config.getApplication(), registryClient,
+        return new MultiplexedDeserializer<>(groupId, registryClient,
                 deserializerMap, config.getDecoder(), config.isFailOnCodecMismatch(), encodingCache);
     }
 
@@ -500,7 +501,7 @@ public class SerializerFactory {
         JsonGenericDeserlizer genericDeserializer = new JsonGenericDeserlizer(groupId, config.getApplication(),
                 registryClient, config.getDecoder(), config.isFailOnCodecMismatch(), encodingCache);
 
-        return new MultiplexedAndGenericDeserializer<>(groupId, config.getApplication(), registryClient,
+        return new MultiplexedAndGenericDeserializer<>(groupId, registryClient,
                 deserializerMap, genericDeserializer, config.getDecoder(), config.isFailOnCodecMismatch(), encodingCache);
     }
     //endregion
@@ -588,7 +589,7 @@ public class SerializerFactory {
         map.put(SchemaType.Json, json);
         map.put(SchemaType.Avro, avro);
         map.put(SchemaType.Protobuf, protobuf);
-        return new MultipleFormatGenericDeserializer(groupId, config.getApplication(), registryClient, map, config.getDecoder(),
+        return new MultipleFormatGenericDeserializer(groupId, registryClient, map, config.getDecoder(),
                 config.isFailOnCodecMismatch(), encodingCache);
     }
     // endregion

@@ -18,6 +18,7 @@ import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
+import io.pravega.schemaregistry.contract.data.SchemaWithVersion;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
 import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
 import io.pravega.schemaregistry.schemas.SchemaContainer;
@@ -77,25 +78,27 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
         boolean toEncodeHeader = Boolean.parseBoolean(properties.get(SerializerFactory.ENCODE));
         this.encodeHeader.set(toEncodeHeader);
 
+        VersionInfo versionInfo = null;
         if (schemaInfo.get() != null) {
             log.info("Validate caller supplied schema.");
             if (!client.canRead(groupId, schemaInfo.get())) {
-                throw new IncompatibleSchemaException(String.format("Cannot read using schema %s", schemaInfo.get().getName()));
-            }
-
-            if (!Strings.isNullOrEmpty(appId)) {
-                // Only registered schemas can be registered with the reader application.
-                // if the schema is not registered, this will throw an exception.
-                VersionInfo versionInfo = client.getSchemaVersion(groupId, schemaInfo.get());
-                client.addReader(appId, groupId, versionInfo, decoder.getCodecs());
+                throw new IllegalArgumentException("Cannot read using schema" + schemaInfo.get().getName());
             }
         } else if (!this.encodeHeader.get()) {
             log.info("Retrieving latest schema from the registry for reads.");
-            schemaInfo.set(client.getLatestSchema(groupId, null).getSchema());
+            SchemaWithVersion latestSchema = client.getLatestSchema(groupId, null);
+            schemaInfo.set(latestSchema.getSchema());
+            versionInfo = latestSchema.getVersion();
         } else {
             log.info("Read using writer schema.");
         }
-        
+
+        if (!Strings.isNullOrEmpty(appId)) {
+            // if the schema is not registered, this will throw an exception.
+            versionInfo = versionInfo != null ? versionInfo : client.getSchemaVersion(groupId, schemaInfo.get());
+            client.addReader(appId, groupId, versionInfo, decoder.getCodecs());
+        }
+
         List<CodecType> codecsInGroup = client.getCodecs(groupId);
         if (!decoder.getCodecs().containsAll(codecsInGroup)) {
             log.warn("Not all Codecs are supported by reader. Required codecs = {}", codecsInGroup);
