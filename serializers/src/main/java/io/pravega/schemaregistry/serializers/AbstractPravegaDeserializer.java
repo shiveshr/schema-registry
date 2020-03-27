@@ -20,14 +20,12 @@ import io.pravega.schemaregistry.contract.data.GroupProperties;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.SchemaWithVersion;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
-import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
 import io.pravega.schemaregistry.schemas.SchemaContainer;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,7 +51,6 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
                                           @Nullable SchemaContainer<T> schema,
                                           boolean skipHeaders,
                                           SerializerConfig.Decoder decoder,
-                                          boolean failOnCodecMismatch,
                                           EncodingCache encodingCache) {
         this.groupId = groupId;
         this.appId = appId;
@@ -67,11 +64,11 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
         this.skipHeaders = skipHeaders;
         this.decoder = decoder;
             
-        initialize(failOnCodecMismatch);
+        initialize();
     }
 
     @Synchronized
-    private void initialize(boolean failOnCodecMismatch) {
+    private void initialize() {
         GroupProperties groupProperties = client.getGroupProperties(groupId);
 
         Map<String, String> properties = groupProperties.getProperties();
@@ -97,14 +94,6 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
             // if the schema is not registered, this will throw an exception.
             versionInfo = versionInfo != null ? versionInfo : client.getSchemaVersion(groupId, schemaInfo.get());
             client.addReader(appId, groupId, versionInfo, decoder.getCodecs());
-        }
-
-        List<CodecType> codecsInGroup = client.getCodecs(groupId);
-        if (!decoder.getCodecs().containsAll(codecsInGroup)) {
-            log.warn("Not all Codecs are supported by reader. Required codecs = {}", codecsInGroup);
-            if (failOnCodecMismatch) {
-                throw new RuntimeException(String.format("Need all codecs in %s", codecsInGroup.toString()));
-            }
         }
     }
 

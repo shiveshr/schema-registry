@@ -22,9 +22,9 @@ class MultiplexedDeserializer<T> extends AbstractPravegaDeserializer<T> {
 
     MultiplexedDeserializer(String groupId, RegistryClient client,
                             Map<String, AbstractPravegaDeserializer<T>> deserializers,
-                            SerializerConfig.Decoder decoder, boolean failOnCodecMismatch,
+                            SerializerConfig.Decoder decoder, 
                             EncodingCache encodingCache) {
-        super(groupId, null, client, null, false, decoder, failOnCodecMismatch, encodingCache);
+        super(groupId, null, client, null, false, decoder, encodingCache);
         this.deserializers = deserializers; 
     }
 

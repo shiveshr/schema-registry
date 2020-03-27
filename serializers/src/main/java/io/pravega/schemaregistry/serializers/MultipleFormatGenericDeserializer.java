@@ -24,9 +24,8 @@ class MultipleFormatGenericDeserializer extends AbstractPravegaDeserializer<Obje
     MultipleFormatGenericDeserializer(String groupId, RegistryClient client,
                                       Map<SchemaType, AbstractPravegaDeserializer> genericDeserializers,
                                       SerializerConfig.Decoder decoder,
-                                      boolean failOnCodecMismatch,
                                       EncodingCache encodingCache) {
-        super(groupId, null, client, null, false, decoder, failOnCodecMismatch, encodingCache);
+        super(groupId, null, client, null, false, decoder, encodingCache);
         this.genericDeserializers = genericDeserializers;
     }
 
