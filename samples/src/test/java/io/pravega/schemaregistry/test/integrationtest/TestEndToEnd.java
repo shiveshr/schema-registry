@@ -12,6 +12,7 @@ package io.pravega.schemaregistry.test.integrationtest;
 import com.google.common.collect.ImmutableMap;
 import io.pravega.common.Exceptions;
 import io.pravega.schemaregistry.client.RegistryClient;
+import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaEvolution;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
@@ -33,6 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -172,16 +174,20 @@ public abstract class TestEndToEnd {
 
         client.addApplication("myapp", Collections.emptyMap());
         
-        client.addWriter("myapp", group, version1);
-        client.addWriter("myapp", group, version2);
+        client.addWriter("myapp", group, version1, CodecType.None);
+        client.addWriter("myapp", group, version2, CodecType.None);
         // we should not be allowed to add a reader older than latest writer.
+        HashSet<CodecType> set = new HashSet<>();
+        set.add(CodecType.None);
+        set.add(CodecType.Snappy);
+        set.add(CodecType.GZip);
         try {
-            client.addReader("myapp", group, version1);
+            client.addReader("myapp", group, version1, set);
         } catch (Exception e) {
             Throwable unwrap = Exceptions.unwrap(e);
             assertTrue(unwrap instanceof IncompatibleSchemaException);
         }
-        client.addReader("myapp", group, version2);
+        client.addReader("myapp", group, version2, set);
 
         SchemaInfo schemaInfo3Compatible = new SchemaInfo(myTest, SchemaType.Avro,
                 schema3Compatible.toString().getBytes(Charsets.UTF_8), ImmutableMap.of());
@@ -189,14 +195,14 @@ public abstract class TestEndToEnd {
 
         // this should fail as no reader has moved to v3 yet
         try {
-            client.addWriter("myapp", group, version3);
+            client.addWriter("myapp", group, version3, CodecType.None);
         } catch (Exception e) {
             Throwable unwrap = Exceptions.unwrap(e);
             assertTrue(unwrap instanceof IncompatibleSchemaException);
         }
         
         // this should be allowed as this is on a different object.
-        client.addWriter("myapp", group, version4);
+        client.addWriter("myapp", group, version4, CodecType.None);
     }
 
     abstract SchemaStore getStore();

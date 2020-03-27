@@ -16,13 +16,11 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import io.pravega.schemaregistry.cache.EncodingCache;
 import io.pravega.schemaregistry.client.RegistryClient;
-import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.schemas.JSONSchema;
 import lombok.SneakyThrows;
 
 import java.nio.ByteBuffer;
-import java.util.function.BiFunction;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 
@@ -32,8 +30,8 @@ class JsonDeserlizer<T> extends AbstractPravegaDeserializer<T> {
 
     JsonDeserlizer(String groupId, String appId, RegistryClient client,
                    JSONSchema<T> schema,
-                   BiFunction<CodecType, ByteBuffer, ByteBuffer> decode, boolean registerSchema, EncodingCache encodingCache) {
-        super(groupId, appId, client, schema, true, decode, registerSchema, encodingCache);
+                   SerializerConfig.Decoder decoder, boolean failOnCodecMismatch, EncodingCache encodingCache) {
+        super(groupId, appId, client, schema, true, decoder, failOnCodecMismatch, encodingCache);
         Preconditions.checkNotNull(schema);
         this.jsonSchema = schema;
         this.objectMapper = new ObjectMapper();

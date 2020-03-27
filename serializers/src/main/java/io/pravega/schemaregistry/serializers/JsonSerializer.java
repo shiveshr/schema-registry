@@ -11,7 +11,6 @@ package io.pravega.schemaregistry.serializers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
-import io.pravega.schemaregistry.cache.EncodingCache;
 import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.codec.Codec;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
@@ -23,8 +22,8 @@ import java.io.OutputStream;
 class JsonSerializer<T> extends AbstractPravegaSerializer<T> {
     private final ObjectMapper objectMapper;
     JsonSerializer(String groupId, String appId, RegistryClient client, JSONSchema<T> schema,
-                   Codec codec, boolean registerSchema, boolean registerCodec, EncodingCache encodingCache) {
-        super(groupId, appId, client, schema, codec, registerSchema, registerCodec, encodingCache);
+                   Codec codec, boolean registerSchema, boolean registerCodec) {
+        super(groupId, appId, client, schema, codec, registerSchema, registerCodec);
         objectMapper = new ObjectMapper();
     }
 

@@ -19,16 +19,17 @@ import io.pravega.schemaregistry.contract.data.EncodingInfo;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
+import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
 import io.pravega.schemaregistry.schemas.SchemaContainer;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
 
 @Slf4j
 abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
@@ -39,10 +40,10 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
     private final String appId;
     private final RegistryClient client;
     // This can be null. If no schema is supplied, it means the intent is to deserialize into writer schema. 
+    // If headers are not encoded, then this will be the latest schema from the registry
     private final AtomicReference<SchemaInfo> schemaInfo;
     private final AtomicBoolean encodeHeader;
-    private final BiFunction<CodecType, ByteBuffer, ByteBuffer> decode;
-    private final boolean registerSchema;
+    private final SerializerConfig.Decoder decoder;
     private final boolean skipHeaders;
     private final EncodingCache encodingCache;
 
@@ -50,8 +51,8 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
                                           String appId, RegistryClient client,
                                           @Nullable SchemaContainer<T> schema,
                                           boolean skipHeaders,
-                                          BiFunction<CodecType, ByteBuffer, ByteBuffer> decode,
-                                          boolean registerSchema,
+                                          SerializerConfig.Decoder decoder,
+                                          boolean failOnCodecMismatch,
                                           EncodingCache encodingCache) {
         this.groupId = groupId;
         this.appId = appId;
@@ -63,14 +64,13 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
         }
         this.encodeHeader = new AtomicBoolean();
         this.skipHeaders = skipHeaders;
-        this.registerSchema = registerSchema;
-        this.decode = decode;
-
-        initialize();
+        this.decoder = decoder;
+            
+        initialize(failOnCodecMismatch);
     }
 
     @Synchronized
-    private void initialize() {
+    private void initialize(boolean failOnCodecMismatch) {
         GroupProperties groupProperties = client.getGroupProperties(groupId);
 
         Map<String, String> properties = groupProperties.getProperties();
@@ -78,26 +78,30 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
         this.encodeHeader.set(toEncodeHeader);
 
         if (schemaInfo.get() != null) {
-            if (registerSchema) {
-                client.addSchemaIfAbsent(groupId, schemaInfo.get());
-            } else {
-                log.info("Validate caller supplied schema.");
-                if (!client.canRead(groupId, schemaInfo.get())) {
-                    throw new IllegalArgumentException("Cannot read using schema" + schemaInfo.get().getName());
-                }
+            log.info("Validate caller supplied schema.");
+            if (!client.canRead(groupId, schemaInfo.get())) {
+                throw new IncompatibleSchemaException(String.format("Cannot read using schema %s", schemaInfo.get().getName()));
             }
 
             if (!Strings.isNullOrEmpty(appId)) {
                 // Only registered schemas can be registered with the reader application.
                 // if the schema is not registered, this will throw an exception.
                 VersionInfo versionInfo = client.getSchemaVersion(groupId, schemaInfo.get());
-                client.addReader(appId, groupId, versionInfo);
+                client.addReader(appId, groupId, versionInfo, decoder.getCodecs());
             }
         } else if (!this.encodeHeader.get()) {
             log.info("Retrieving latest schema from the registry for reads.");
             schemaInfo.set(client.getLatestSchema(groupId, null).getSchema());
         } else {
             log.info("Read using writer schema.");
+        }
+        
+        List<CodecType> codecsInGroup = client.getCodecs(groupId);
+        if (!decoder.getCodecs().containsAll(codecsInGroup)) {
+            log.warn("Not all Codecs are supported by reader. Required codecs = {}", codecsInGroup);
+            if (failOnCodecMismatch) {
+                throw new RuntimeException(String.format("Need all codecs in %s", codecsInGroup.toString()));
+            }
         }
     }
 
@@ -121,9 +125,9 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
                 codecType = encodingInfo.getCodec();
                 writerSchema = encodingInfo.getSchemaInfo();
             }
-
-            ByteBuffer uncompressed = decode.apply(codecType, data);
-
+            
+            ByteBuffer uncompressed = decoder.decode(codecType, data);
+            
             if (schemaInfo.get() == null) { // deserialize into writer schema
                 // pass writer schema for schema to be read into
                 return deserialize(uncompressed, writerSchema, writerSchema);

@@ -30,6 +30,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class PassthruRegistryClient implements RegistryClient {
     private final SchemaRegistryService service;
@@ -147,13 +148,13 @@ public class PassthruRegistryClient implements RegistryClient {
     }
 
     @Override
-    public void addWriter(String appId, String groupId, VersionInfo schemaVersion) {
+    public void addWriter(String appId, String groupId, VersionInfo schemaVersion, CodecType codecType) {
         appService.addWriter(appId, groupId, schemaVersion, service::getGroupProperties, 
                 x -> service.getGroupEvolutionHistory(x, null)).join();
     }
 
     @Override
-    public void addReader(String appId, String groupId, VersionInfo schemaVersion) {
+    public void addReader(String appId, String groupId, VersionInfo schemaVersion, Set<CodecType> codecs) {
         appService.addReader(appId, groupId, schemaVersion, service::getGroupProperties,
                 x -> service.getGroupEvolutionHistory(x, null)).join();
     }

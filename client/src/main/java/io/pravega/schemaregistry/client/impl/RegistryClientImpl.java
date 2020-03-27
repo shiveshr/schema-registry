@@ -60,6 +60,7 @@ import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RegistryClientImpl implements RegistryClient {
@@ -438,7 +439,7 @@ public class RegistryClientImpl implements RegistryClient {
     }
 
     @Override
-    public void addWriter(String appId, String groupId, VersionInfo schemaVersion) {
+    public void addWriter(String appId, String groupId, VersionInfo schemaVersion, CodecType codecType) {
         WebTarget webTarget = client.target(uri).path("v1/applications").path(appId).path("writers");
         Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
         AddWriterRequest request = new AddWriterRequest()
@@ -454,7 +455,7 @@ public class RegistryClientImpl implements RegistryClient {
     }
 
     @Override
-    public void addReader(String appId, String groupId, VersionInfo schemaVersion) {
+    public void addReader(String appId, String groupId, VersionInfo schemaVersion, Set<CodecType> codecs) {
         WebTarget webTarget = client.target(uri).path("v1/applications").path(appId).path("readers");
         Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
         AddReaderRequest request = new AddReaderRequest()

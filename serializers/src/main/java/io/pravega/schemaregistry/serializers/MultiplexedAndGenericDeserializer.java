@@ -1,11 +1,11 @@
 /**
  * Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.pravega.schemaregistry.serializers;
 
@@ -13,12 +13,10 @@ import com.google.common.base.Preconditions;
 import io.pravega.schemaregistry.cache.EncodingCache;
 import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.common.Either;
-import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.function.BiFunction;
 
 class MultiplexedAndGenericDeserializer<T, G> extends AbstractPravegaDeserializer<Either<T, G>> {
     private final Map<String, AbstractPravegaDeserializer<T>> deserializers;
@@ -27,11 +25,11 @@ class MultiplexedAndGenericDeserializer<T, G> extends AbstractPravegaDeserialize
     MultiplexedAndGenericDeserializer(String groupId, String appId, RegistryClient client,
                                       Map<String, AbstractPravegaDeserializer<T>> deserializers,
                                       AbstractPravegaDeserializer<G> genericDeserializer,
-                                      BiFunction<CodecType, ByteBuffer, ByteBuffer> decode,
-                                      boolean registerSchema,
+                                      SerializerConfig.Decoder decoder,
+                                      boolean failOnCodecMismatch,
                                       EncodingCache encodingCache) {
-        super(groupId, appId, client, null, false, decode, registerSchema, encodingCache);
-        this.deserializers = deserializers; 
+        super(groupId, appId, client, null, false, decoder, failOnCodecMismatch, encodingCache);
+        this.deserializers = deserializers;
         this.genericDeserializer = genericDeserializer;
     }
 
