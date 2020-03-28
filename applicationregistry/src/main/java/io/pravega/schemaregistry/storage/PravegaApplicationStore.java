@@ -12,6 +12,8 @@ package io.pravega.schemaregistry.storage;
 import io.pravega.common.Exceptions;
 import io.pravega.common.concurrent.Futures;
 import io.pravega.controller.store.stream.Version;
+import io.pravega.schemaregistry.contract.data.Application;
+import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
 import io.pravega.schemaregistry.storage.client.TableStore;
 
@@ -24,8 +26,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class PravegaApplicationStore implements ApplicationStore {
-    public static final String APPLICATIONS = "registryService/applications/0";
-    public static final String GROUP_TABLE_NAME_FORMAT = "applications-%s/table/0";
+    private static final String APPLICATIONS = "registryService/applications/0";
+    private static final String GROUP_TABLE_NAME_FORMAT = "applications-%s/table/0";
 
     private final TableStore tableStore;
 
@@ -42,20 +44,20 @@ public class PravegaApplicationStore implements ApplicationStore {
     }
 
     @Override
-    public CompletableFuture<ApplicationRecord.Application> getApplication(String appId) {
+    public CompletableFuture<Application> getApplication(String appId) {
         return withCreateTableIfAbsent(APPLICATIONS, () -> tableStore.getEntry(APPLICATIONS, appId, ApplicationRecord.ApplicationValue::fromBytes)
                          .thenCompose(x -> {
                              ApplicationRecord.ApplicationValue appValue = x.getObject();
                              // go to the group table and fetch the key against app id
 
-                             CompletableFuture<Map<String, List<VersionInfo>>> readersFuture = Futures.allOfWithResults(
+                             CompletableFuture<Map<String, List<Application.Reader>>> readersFuture = Futures.allOfWithResults(
                                      appValue.getReadingFrom().stream().collect(Collectors.toMap(group -> group,
                                              group -> {
                                                  Group<Version> grp = getGroupObj(group);
                                                  return grp.getReaderSchemasForApp(appId);
                                              })));
                              
-                             CompletableFuture<Map<String, List<VersionInfo>>> writersFuture = Futures.allOfWithResults(
+                             CompletableFuture<Map<String, List<Application.Writer>>> writersFuture = Futures.allOfWithResults(
                                      appValue.getReadingFrom().stream().collect(Collectors.toMap(group -> group,
                                              group -> {
                                                  Group<Version> grp = getGroupObj(group);
@@ -64,27 +66,27 @@ public class PravegaApplicationStore implements ApplicationStore {
                              
                              return CompletableFuture.allOf(readersFuture, writersFuture)
                                 .thenApply(v -> {
-                                    Map<String, List<VersionInfo>> readers = readersFuture.join();
-                                    Map<String, List<VersionInfo>> writers = writersFuture.join();
-                                    return new ApplicationRecord.Application(appId, writers, readers, appValue.getProperties());
+                                    Map<String, List<Application.Reader>> readers = readersFuture.join();
+                                    Map<String, List<Application.Writer>> writers = writersFuture.join();
+                                    return new Application(appId, writers, readers, appValue.getProperties());
                                 });
                          }));
     }
 
     @Override
-    public CompletableFuture<AppsInGroupWithEtag> getReaderApps(String groupId) {
+    public CompletableFuture<ReadersInGroupWithEtag> getReaderApps(String groupId) {
         Group<Version> group = getGroupObj(groupId);
         return withCreateTableIfAbsent(getGroupTableName(groupId), group::getReaderApps);
     }
 
     @Override
-    public CompletableFuture<AppsInGroupWithEtag> getWriterApps(String groupId) {
+    public CompletableFuture<WritersInGroupWithEtag> getWriterApps(String groupId) {
         Group<Version> group = getGroupObj(groupId);
         return withCreateTableIfAbsent(getGroupTableName(groupId), group::getWriterApps);
     }
 
     @Override
-    public CompletableFuture<Void> addWriter(String appId, String groupId, VersionInfo schemaVersion, Etag etag) {
+    public CompletableFuture<Void> addWriter(String appId, String groupId, VersionInfo schemaVersion, CodecType codecType, Etag etag) {
         return tableStore.getEntry(APPLICATIONS, appId, ApplicationRecord.ApplicationValue::fromBytes)
                 .thenCompose(entry -> {
                     if (entry == null) {
@@ -105,12 +107,12 @@ public class PravegaApplicationStore implements ApplicationStore {
                 .thenCompose(v -> {
                     // create group table if not exist
                     Group<Version> group = getGroupObj(groupId);
-                    return withCreateTableIfAbsent(getGroupTableName(groupId), () -> group.addWriter(appId, schemaVersion, etag));
+                    return withCreateTableIfAbsent(getGroupTableName(groupId), () -> group.addWriter(appId, schemaVersion, codecType, etag));
                 });
     }
 
     @Override
-    public CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion, Etag etag) {
+    public CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion, List<CodecType> codecs, Etag etag) {
         return tableStore.getEntry(APPLICATIONS, appId, ApplicationRecord.ApplicationValue::fromBytes)
                          .thenCompose(entry -> {
                              if (entry == null) {
@@ -131,7 +133,7 @@ public class PravegaApplicationStore implements ApplicationStore {
                          .thenCompose(v -> {
                              // create group table if not exist
                              Group<Version> group = getGroupObj(groupId);
-                             return withCreateTableIfAbsent(getGroupTableName(groupId), () -> group.addReader(appId, schemaVersion, etag));
+                             return withCreateTableIfAbsent(getGroupTableName(groupId), () -> group.addReader(appId, schemaVersion, codecs, etag));
                          });
     }
 

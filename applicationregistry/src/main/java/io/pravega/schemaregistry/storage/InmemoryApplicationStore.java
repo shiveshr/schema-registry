@@ -10,6 +10,7 @@
 package io.pravega.schemaregistry.storage;
 
 import com.google.common.collect.Lists;
+import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
 import lombok.Synchronized;
 
@@ -77,7 +78,7 @@ public class InmemoryApplicationStore implements ApplicationStore {
 
     @Synchronized
     @Override
-    public CompletableFuture<Void> addWriter(String appId, String groupId, VersionInfo schemaVersion, Etag etag) {
+    public CompletableFuture<Void> addWriter(String appId, String groupId, VersionInfo schemaVersion, CodecType codecType, Etag etag) {
         ApplicationRecord.ApplicationValue app = applications.get(appId);
         List<String> writingTo = Lists.newArrayList(app.getWritingTo());
         if (!writingTo.contains(groupId)) {
@@ -87,12 +88,12 @@ public class InmemoryApplicationStore implements ApplicationStore {
         applications.put(appId, new ApplicationRecord.ApplicationValue(writingTo, app.getReadingFrom(), app.getProperties()));
         Group<Integer> group = groups.get(groupId);
         
-        return group.addWriter(appId, schemaVersion, etag);
+        return group.addWriter(appId, schemaVersion, codecType, etag);
     }
 
     @Synchronized
     @Override
-    public CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion, Etag etag) {
+    public CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion, CodecType codecType, Etag etag) {
         ApplicationRecord.ApplicationValue app = applications.get(appId);
         List<String> readingFrom = Lists.newArrayList(app.getReadingFrom());
         if (!readingFrom.contains(groupId)) {
@@ -101,7 +102,7 @@ public class InmemoryApplicationStore implements ApplicationStore {
         applications.put(appId, new ApplicationRecord.ApplicationValue(app.getWritingTo(), readingFrom, app.getProperties()));
         Group<Integer> group = groups.get(groupId);
 
-        return group.addReader(appId, schemaVersion, etag);
+        return group.addReader(appId, schemaVersion, codecType, etag);
     }
     
     @Synchronized

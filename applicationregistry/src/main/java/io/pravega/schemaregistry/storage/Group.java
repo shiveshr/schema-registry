@@ -10,13 +10,17 @@
 package io.pravega.schemaregistry.storage;
 
 import com.google.common.collect.Lists;
+import io.pravega.schemaregistry.contract.data.Application;
+import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class Group<V> {
     private static final Table.TableEtag ETAG = new Table.TableEtag();
@@ -38,23 +42,23 @@ public class Group<V> {
                 });
     }
 
-    CompletableFuture<AppsInGroupWithEtag> getReaderApps() {
-        Map<String, List<VersionInfo>> readers = new HashMap<>();
+    CompletableFuture<ReadersInGroupWithEtag> getReaderApps() {
+        Map<String, List<Application.Reader>> readers = new HashMap<>();
         return getGroupEtag()
                 .thenCompose(etag -> table.getAllRecords()
                                           .thenApply(records -> {
                                               records.forEach((x, y) -> {
                                                   if (x instanceof Table.Reader) {
                                                       String appId = ((Table.Reader) x).getAppId();
-                                                      Table.SchemaVersions value = (Table.SchemaVersions) y;
+                                                      Table.ReaderValue value = (Table.ReaderValue) y;
                                                       readers.put(appId, Lists.newArrayList(value.getVersions().values()));
                                                   }
                                               });
-                                              return new AppsInGroupWithEtag(readers, etag);
+                                              return new ReadersInGroupWithEtag(readers, etag);
                                           }));
     }
     
-    CompletableFuture<AppsInGroupWithEtag> getWriterApps() {
+    CompletableFuture<WritersInGroupWithEtag> getWriterApps() {
         Map<String, List<VersionInfo>> writers = new HashMap<>();
         return getGroupEtag()
                 .thenCompose(etag -> table.getAllRecords()
@@ -62,7 +66,7 @@ public class Group<V> {
                                               records.forEach((x, y) -> {
                                                   if (x instanceof Table.Writer) {
                                                       String appId = ((Table.Writer) x).getAppId();
-                                                      Table.SchemaVersions value = (Table.SchemaVersions) y;
+                                                      Table.ReaderValue value = (Table.ReaderValue) y;
                                                       writers.put(appId, Lists.newArrayList(value.getVersions().values()));
                                                   }
                                               });
@@ -71,46 +75,72 @@ public class Group<V> {
 
     }
 
-    CompletableFuture<List<VersionInfo>> getReaderSchemasForApp(String applicationId) {
-        return table.getRecord(new Table.Reader(applicationId), Table.SchemaVersions.class)
+    CompletableFuture<List<Application.Reader>> getReaderSchemasForApp(String applicationId) {
+        return table.getRecord(new Table.Reader(applicationId), Table.ReaderValue.class)
                     .thenApply(record -> {
                         if (record == null) {
                             return Collections.emptyList();
                         } else {
-                            return Lists.newArrayList(record.getVersions().values());
+                            Map<VersionInfo, Application.Reader> map = new HashMap<>();
+                            record.getVersions().forEach((encoding, version) -> map.compute(version, (a, b) -> {
+                                if (b == null) {
+                                    LinkedList<CodecType> codecTypes = new LinkedList<>();
+                                    codecTypes.add(encoding.getCodecType());
+                                    return new Application.Reader(a, codecTypes);
+                                } else {
+                                    LinkedList<CodecType> codecTypes = new LinkedList<>(b.getCodecs());
+                                    codecTypes.add(encoding.getCodecType());
+                                    return new Application.Reader(a, codecTypes);
+                                }
+                            }));
+                            return Lists.newArrayList(map.values());
                         }
                     });
     }
 
-    CompletableFuture<List<VersionInfo>> getWriterSchemasForApp(String applicationId) {
-        return table.getRecord(new Table.Reader(applicationId), Table.SchemaVersions.class)
+    CompletableFuture<List<Application.Writer>> getWriterSchemasForApp(String applicationId) {
+        return table.getRecord(new Table.Writer(applicationId), Table.WriterValue.class)
                     .thenApply(record -> {
                         if (record == null) {
                             return Collections.emptyList();
                         } else {
-                            return Lists.newArrayList(record.getVersions().values());
+                            Map<VersionInfo, Application.Writer> map = new HashMap<>();
+                            record.getVersions().forEach((encoding, version) -> map.compute(version, (a, b) -> {
+                                if (b == null) {
+                                    LinkedList<CodecType> codecTypes = new LinkedList<>();
+                                    codecTypes.add(encoding.getCodecType());
+                                    return new Application.Reader(a, codecTypes);
+                                } else {
+                                    LinkedList<CodecType> codecTypes = b.getCodecType());
+                                    codecTypes.add(encoding.getCodecType());
+                                    return new Application.Reader(a, codecTypes);
+                                }
+                            }));
+                            return Lists.newArrayList(map.values());
                         }
                     });
     }
     
-    CompletableFuture<Void> addWriter(String appId, VersionInfo schemaVersion, Etag etag) {
+    CompletableFuture<Void> addWriter(String appId, VersionInfo schemaVersion, CodecType codecType, Etag etag) {
         Table.Writer key = new Table.Writer(appId);
-        return table.getRecordWithVersion(key, Table.SchemaVersions.class)
+        return table.getRecordWithVersion(key, Table.ReaderValue.class)
                 .thenCompose(recordWithVersion -> {
-                    Table.SchemaVersions next;
+                    Table.ReaderValue next;
                     V nextVersion = recordWithVersion == null ? null : recordWithVersion.getVersion();
+                    Table.Encoding typeCodecPair = new Table.Encoding(schemaVersion.getSchemaName(), codecType);
                     if (recordWithVersion == null) {
                         // add a new record
-                        next = new Table.SchemaVersions(Collections.singletonMap(schemaVersion.getSchemaName(), schemaVersion));    
+                        next = new Table.ReaderValue(Collections.singletonMap(
+                                typeCodecPair, schemaVersion));    
                     } else {
-                        Table.SchemaVersions record = recordWithVersion.getValue();
-                        VersionInfo existing = record.getVersions().get(schemaVersion.getSchemaName());
+                        Table.ReaderValue record = recordWithVersion.getValue();
+                        VersionInfo existing = record.getVersions().get(typeCodecPair);
                         if (existing != null && existing.equals(schemaVersion)) {
                             return CompletableFuture.completedFuture(null);
                         } else {
-                            Map<String, VersionInfo> map = new HashMap<>(record.getVersions());
-                            map.put(schemaVersion.getSchemaName(), schemaVersion);
-                            next = new Table.SchemaVersions(map);
+                            Map<Table.Encoding, VersionInfo> map = new HashMap<>(record.getVersions());
+                            map.put(typeCodecPair, schemaVersion);
+                            next = new Table.ReaderValue(map);
                         }
                     }
                     Map<Table.TableKey, Table.ValueWithVersion<Table.TableValue, V>> entries = new HashMap<>();
@@ -122,24 +152,26 @@ public class Group<V> {
                 });
     }
 
-    CompletableFuture<Void> addReader(String appId, VersionInfo schemaVersion, Etag etag) {
+    CompletableFuture<Void> addReader(String appId, VersionInfo schemaVersion, List<CodecType> codecs, Etag etag) {
         Table.Reader key = new Table.Reader(appId);
-        return table.getRecordWithVersion(key, Table.SchemaVersions.class)
+        return table.getRecordWithVersion(key, Table.ReaderValue.class)
                     .thenCompose(recordWithVersion -> {
-                        Table.SchemaVersions next;
+                        Table.ReaderValue next;
                         V nextVersion = recordWithVersion == null ? null : recordWithVersion.getVersion();
+                        List<Table.Encoding> encodings = codecs.stream().map(x -> new Table.Encoding(schemaVersion, x)).collect(Collectors.toList());
                         if (recordWithVersion == null) {
                             // add a new record
-                            next = new Table.SchemaVersions(Collections.singletonMap(schemaVersion.getSchemaName(), schemaVersion));
+                            next = new Table.ReaderValue(encodings);
                         } else {
-                            Table.SchemaVersions record = recordWithVersion.getValue();
-                            VersionInfo existing = record.getVersions().get(schemaVersion.getSchemaName());
+                            Table.ReaderValue record = recordWithVersion.getValue();
+                            // check if reader exists. 
+//                            VersionInfo existing = record.getVersions().get(typeCodecPair);
                             if (existing != null && existing.equals(schemaVersion)) {
                                 return CompletableFuture.completedFuture(null);
                             } else {
-                                Map<String, VersionInfo> map = new HashMap<>(record.getVersions());
-                                map.put(schemaVersion.getSchemaName(), schemaVersion);
-                                next = new Table.SchemaVersions(map);
+                                Map<Table.Encoding, VersionInfo> map = new HashMap<>(record.getVersions());
+                                map.put(typeCodecPair, schemaVersion);
+                                next = new Table.ReaderValue(map);
                             }
                         }
                         Map<Table.TableKey, Table.ValueWithVersion<Table.TableValue, V>> entries = new HashMap<>();

@@ -27,11 +27,11 @@ public class Application {
     /**
      * Group to list of schema map.
      */
-    private final Map<String, List<SchemaInfo>> writingToUsing;
+    private final Map<String, List<Writer>> writers;
     /**
      * Group to list of schema map.
      */
-    private final Map<String, List<SchemaInfo>> readingFromUsing;
+    private final Map<String, List<Reader>> readers;
     /**
      * A properties map to store any meaningful key value pairs.
      */
@@ -39,13 +39,13 @@ public class Application {
     
     @Data
     public static class Writer {
-        private final SchemaInfo schemaInfo;
+        private final VersionInfo versionInfo;
         private final CodecType codecType;
     }
 
     @Data
     public static class Reader {
-        private final SchemaInfo schemaInfo;
-        private final List<CodecType> codecType;
+        private final VersionInfo versionInfo;
+        private final List<CodecType> codecs;
     }
 }

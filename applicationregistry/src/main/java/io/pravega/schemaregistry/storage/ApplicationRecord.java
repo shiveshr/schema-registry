@@ -28,14 +28,6 @@ import java.util.Map;
 
 public interface ApplicationRecord {
     @Data
-    class Application {
-        private final String appId;    
-        private final Map<String, List<VersionInfo>> writers;    
-        private final Map<String, List<VersionInfo>> readers;    
-        private final Map<String, String> properties;    
-    }
-    
-    @Data
     @Builder
     @AllArgsConstructor
     class ApplicationValue {
