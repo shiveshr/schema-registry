@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class TableStore {
+    public static final VersionedMetadata<byte[]> EMPTY = new VersionedMetadata<>(new byte[0], null);
     private static final int NUM_OF_RETRIES = 15; // approximately 1 minute worth of retries
     private final SegmentHelper segmentHelper;
     private final HostStoreImpl hostStore;
@@ -159,7 +160,7 @@ public class TableStore {
                     return x.stream().map(y -> {
                         KeyVersion version = y.getKey().getVersion();
                         if (version.equals(KeyVersion.NOT_EXISTS)) {
-                            throw StoreExceptions.create(StoreExceptions.Type.DATA_NOT_FOUND, "key not found");   
+                            return EMPTY;   
                         } else {
                             return new VersionedMetadata<>(y.getValue(),
                                     Version.LongVersion.builder().longValue(version.getSegmentVersion()).build());

@@ -10,27 +10,24 @@
 package io.pravega.schemaregistry.client;
 
 import io.pravega.schemaregistry.contract.data.Application;
-import io.pravega.schemaregistry.contract.data.CodecType;
-import io.pravega.schemaregistry.contract.data.VersionInfo;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public interface ApplicationRegistryClient {
     void addApplication(String appId, Map<String, String> properties);
 
     Application getApplication(String appId);
 
-    void addWriter(String appId, String groupId, VersionInfo schemaVersion, CodecType codecType);
+    void addWriter(String appId, String groupId, Application.Writer writer);
 
-    void addReader(String appId, String groupId, VersionInfo schemaVersion, Set<CodecType> codecs);
+    void addReader(String appId, String groupId, Application.Reader reader);
 
     void removeWriter(String appId, String groupId);
 
     void removeReader(String appId, String groupId);
 
-    Map<String, List<VersionInfo>> listWriterAppsInGroup(String groupId);
+    Map<String, List<Application.Writer>> listWriterAppsInGroup(String groupId);
 
-    Map<String, List<VersionInfo>> listReaderAppsInGroup(String groupId);
+    Map<String, List<Application.Reader>> listReaderAppsInGroup(String groupId);
 }

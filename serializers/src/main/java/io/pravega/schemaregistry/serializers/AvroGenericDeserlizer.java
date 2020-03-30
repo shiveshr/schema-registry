@@ -31,9 +31,9 @@ import java.nio.ByteBuffer;
 class AvroGenericDeserlizer extends AbstractPravegaDeserializer<GenericRecord> {
     private final LoadingCache<byte[], Schema> knownSchemas;
 
-    AvroGenericDeserlizer(String groupId, String appId, RegistryClient client, @Nullable AvroSchema<GenericRecord> schema,
+    AvroGenericDeserlizer(String groupId, RegistryClient client, @Nullable AvroSchema<GenericRecord> schema,
                           SerializerConfig.Decoder decoder, EncodingCache encodingCache) {
-        super(groupId, appId, client, schema, false, decoder, encodingCache);
+        super(groupId, client, schema, false, decoder, encodingCache);
         this.knownSchemas = CacheBuilder.newBuilder().build(new CacheLoader<byte[], Schema>() {
             @Override
             public Schema load(byte[] schemaData) throws Exception {

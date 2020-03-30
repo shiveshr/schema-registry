@@ -1,6 +1,6 @@
 /*
- * Pravega Schema Registry APIs
- * REST APIs for Pravega Schema Registry.
+ * Pravega Application Registry APIs
+ * REST APIs for Pravega Application Registry.
  *
  * OpenAPI spec version: 0.0.1
  * 
@@ -16,46 +16,47 @@ package io.pravega.schemaregistry.contract.generated.rest.model;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo;
+import io.pravega.schemaregistry.contract.generated.rest.model.Reader;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.validation.constraints.*;
 
 /**
- * SchemaInfoList
+ * ReadersInGroup
  */
 
-public class SchemaInfoList   {
-  @JsonProperty("schemas")
-  private List<SchemaInfo> schemas = null;
+public class ReadersInGroup   {
+  @JsonProperty("map")
+  private Map<String, List<Reader>> map = null;
 
-  public SchemaInfoList schemas(List<SchemaInfo> schemas) {
-    this.schemas = schemas;
+  public ReadersInGroup map(Map<String, List<Reader>> map) {
+    this.map = map;
     return this;
   }
 
-  public SchemaInfoList addSchemasItem(SchemaInfo schemasItem) {
-    if (this.schemas == null) {
-      this.schemas = new ArrayList<SchemaInfo>();
+  public ReadersInGroup putMapItem(String key, List<Reader> mapItem) {
+    if (this.map == null) {
+      this.map = new HashMap<String, List<Reader>>();
     }
-    this.schemas.add(schemasItem);
+    this.map.put(key, mapItem);
     return this;
   }
 
   /**
-   * Get schemas
-   * @return schemas
+   * Get map
+   * @return map
    **/
-  @JsonProperty("schemas")
+  @JsonProperty("map")
   @ApiModelProperty(value = "")
-  public List<SchemaInfo> getSchemas() {
-    return schemas;
+  public Map<String, List<Reader>> getMap() {
+    return map;
   }
 
-  public void setSchemas(List<SchemaInfo> schemas) {
-    this.schemas = schemas;
+  public void setMap(Map<String, List<Reader>> map) {
+    this.map = map;
   }
 
 
@@ -67,22 +68,22 @@ public class SchemaInfoList   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    SchemaInfoList schemaInfoList = (SchemaInfoList) o;
-    return Objects.equals(this.schemas, schemaInfoList.schemas);
+    ReadersInGroup readersInGroup = (ReadersInGroup) o;
+    return Objects.equals(this.map, readersInGroup.map);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schemas);
+    return Objects.hash(map);
   }
 
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class SchemaInfoList {\n");
+    sb.append("class ReadersInGroup {\n");
     
-    sb.append("    schemas: ").append(toIndentedString(schemas)).append("\n");
+    sb.append("    map: ").append(toIndentedString(map)).append("\n");
     sb.append("}");
     return sb.toString();
   }

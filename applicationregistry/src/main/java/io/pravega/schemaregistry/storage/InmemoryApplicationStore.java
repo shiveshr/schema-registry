@@ -9,9 +9,7 @@
  */
 package io.pravega.schemaregistry.storage;
 
-import com.google.common.collect.Lists;
-import io.pravega.schemaregistry.contract.data.CodecType;
-import io.pravega.schemaregistry.contract.data.VersionInfo;
+import io.pravega.schemaregistry.contract.data.Application;
 import lombok.Synchronized;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -34,29 +32,39 @@ public class InmemoryApplicationStore implements ApplicationStore {
     @Synchronized
     @Override
     public CompletableFuture<Void> addApplication(String appId, Map<String, String> properties) {
-        applications.putIfAbsent(appId, new ApplicationRecord.ApplicationValue(Collections.emptyList(), Collections.emptyList(), properties));
+        applications.putIfAbsent(appId, new ApplicationRecord.ApplicationValue(Collections.emptyMap(), Collections.emptyMap(), properties));
         return CompletableFuture.completedFuture(null);
     }
 
     @Synchronized
     @Override
-    public CompletableFuture<ApplicationRecord.Application> getApplication(String appId) {
+    public CompletableFuture<Application> getApplication(String appId) {
         ApplicationRecord.ApplicationValue app = applications.get(appId);
-        Map<String, List<VersionInfo>> writers = app.getWritingTo().stream().collect(Collectors.toMap(x -> x, grp -> {
-            Group<Integer> group = groups.get(grp);
-            return group.getWriterSchemasForApp(appId).join();
-        }));
-        Map<String, List<VersionInfo>> readers = app.getWritingTo().stream().collect(Collectors.toMap(x -> x, grp -> {
-            Group<Integer> group = groups.get(grp);
-            return group.getReaderSchemasForApp(appId).join();
-        }));
-        ApplicationRecord.Application application = new ApplicationRecord.Application(appId, writers, readers, app.getProperties());
+        Map<String, List<Map.Entry<String, String>>> writerIdByGroup = app.getWritingTo().entrySet().stream().collect(Collectors.groupingBy(Map.Entry::getValue));
+        Map<String, List<Application.Writer>> writers =
+                writerIdByGroup.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> {
+                    Group<Integer> group = groups.get(x.getKey());
+                    List<Map.Entry<String, String>> entry = writerIdByGroup.get(x.getKey());
+                    List<String> writerIds = entry.stream().map(Map.Entry::getKey).collect(Collectors.toList());
+
+                    return group.getWritersForApp(appId, writerIds).join();
+                }));
+        Map<String, List<Map.Entry<String, String>>> readerIdByGroup = app.getReadingFrom().entrySet().stream().collect(Collectors.groupingBy(Map.Entry::getValue));
+        Map<String, List<Application.Reader>> readers =
+                writerIdByGroup.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> {
+                    Group<Integer> group = groups.get(x.getKey());
+                    List<Map.Entry<String, String>> entry = writerIdByGroup.get(x.getKey());
+                    List<String> readerIds = entry.stream().map(Map.Entry::getKey).collect(Collectors.toList());
+
+                    return group.getReadersForApp(appId, readerIds).join();
+                }));
+        Application application = new Application(appId, writers, readers, app.getProperties());
         return CompletableFuture.completedFuture(application);
     }
 
     @Synchronized
     @Override
-    public CompletableFuture<AppsInGroupWithEtag> getReaderApps(String groupId) {
+    public CompletableFuture<ReadersInGroupWithEtag> getReaderApps(String groupId) {
         Group<Integer> group = groups.get(groupId);
         if (group == null) {
             group = new Group<>(new InMemoryTable());
@@ -67,7 +75,7 @@ public class InmemoryApplicationStore implements ApplicationStore {
 
     @Synchronized
     @Override
-    public CompletableFuture<AppsInGroupWithEtag> getWriterApps(String groupId) {
+    public CompletableFuture<WritersInGroupWithEtag> getWriterApps(String groupId) {
         Group<Integer> group = groups.get(groupId);
         if (group == null) {
             group = new Group<>(new InMemoryTable());
@@ -78,44 +86,53 @@ public class InmemoryApplicationStore implements ApplicationStore {
 
     @Synchronized
     @Override
-    public CompletableFuture<Void> addWriter(String appId, String groupId, VersionInfo schemaVersion, CodecType codecType, Etag etag) {
+    public CompletableFuture<Void> addWriter(String appId, String groupId, Application.Writer writer, Etag etag) {
         ApplicationRecord.ApplicationValue app = applications.get(appId);
-        List<String> writingTo = Lists.newArrayList(app.getWritingTo());
-        if (!writingTo.contains(groupId)) {
-            writingTo.add(groupId);
-        }
         
+        Map<String, String> writingTo = new HashMap<>(app.getWritingTo());
+        writingTo.put(writer.getWriterId(), groupId);
         applications.put(appId, new ApplicationRecord.ApplicationValue(writingTo, app.getReadingFrom(), app.getProperties()));
         Group<Integer> group = groups.get(groupId);
-        
-        return group.addWriter(appId, schemaVersion, codecType, etag);
+
+        return group.addWriter(appId, writer.getWriterId(), writer.getVersionInfos(), writer.getCodecType(), etag);
     }
 
     @Synchronized
     @Override
-    public CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion, CodecType codecType, Etag etag) {
+    public CompletableFuture<Void> addReader(String appId, String groupId, Application.Reader reader, Etag etag) {
         ApplicationRecord.ApplicationValue app = applications.get(appId);
-        List<String> readingFrom = Lists.newArrayList(app.getReadingFrom());
-        if (!readingFrom.contains(groupId)) {
-            readingFrom.add(groupId);
-        }
+        
+        Map<String, String> readingFrom = new HashMap<>(app.getReadingFrom());
+        readingFrom.put(reader.getReaderId(), groupId);
         applications.put(appId, new ApplicationRecord.ApplicationValue(app.getWritingTo(), readingFrom, app.getProperties()));
         Group<Integer> group = groups.get(groupId);
 
-        return group.addReader(appId, schemaVersion, codecType, etag);
+        return group.addReader(appId, reader.getReaderId(), reader.getVersionInfos(), reader.getCodecs(), etag);
     }
     
     @Synchronized
     @Override
-    public CompletableFuture<Void> removeWriter(String appId, String groupId) {
-        Group<Integer> group = groups.get(groupId);
-        return group.removeWriter(appId);
+    public CompletableFuture<Void> removeWriter(String appId, String writerId) {
+        ApplicationRecord.ApplicationValue app = applications.get(appId);
+        String groupId = app.getWritingTo().get(writerId);
+        if (groupId != null) {
+            Group<Integer> group = groups.get(groupId);
+            group.removeWriter(appId, writerId).join();
+            app.getWritingTo().remove(writerId);
+        } 
+        return CompletableFuture.completedFuture(null);
     }
 
     @Synchronized
     @Override
-    public CompletableFuture<Void> removeReader(String appId, String groupId) {
-        Group<Integer> group = groups.get(groupId);
-        return group.removeReader(appId);
+    public CompletableFuture<Void> removeReader(String appId, String readerId) {
+        ApplicationRecord.ApplicationValue app = applications.get(appId);
+        String groupId = app.getReadingFrom().get(readerId);
+        if (groupId != null) {
+            Group<Integer> group = groups.get(groupId);
+            group.removeReader(appId, readerId).join();
+            app.getReadingFrom().remove(readerId);
+        }
+        return CompletableFuture.completedFuture(null);
     }
 }

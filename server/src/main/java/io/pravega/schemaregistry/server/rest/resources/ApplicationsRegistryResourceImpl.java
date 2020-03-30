@@ -14,10 +14,10 @@ import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException
 import io.pravega.schemaregistry.contract.generated.rest.model.AddReaderRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddWriterRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.Application;
-import io.pravega.schemaregistry.contract.generated.rest.model.ApplicationsInGroup;
 import io.pravega.schemaregistry.contract.generated.rest.model.CreateApplicationRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.IncompatibleSchema;
-import io.pravega.schemaregistry.contract.generated.rest.model.VersionInfoList;
+import io.pravega.schemaregistry.contract.generated.rest.model.ReadersInGroup;
+import io.pravega.schemaregistry.contract.generated.rest.model.WritersInGroup;
 import io.pravega.schemaregistry.contract.generated.rest.server.api.NotFoundException;
 import io.pravega.schemaregistry.contract.transform.ModelHelper;
 import io.pravega.schemaregistry.server.rest.v1.ApiV1;
@@ -37,21 +37,21 @@ import java.util.stream.Collectors;
 Implementation of Ping, which serves as a check for working REST server.
  */
 @Slf4j
-public class ApplicationsRegistryImpl implements ApiV1.ApplicationsApi {
+public class ApplicationsRegistryResourceImpl implements ApiV1.ApplicationsApi {
     @Context
     HttpHeaders headers;
 
     private final ApplicationRegistryService applicationRegistryService;
     private final SchemaRegistryService schemaRegistryService;
 
-    public ApplicationsRegistryImpl(ApplicationRegistryService applicationRegistryService, SchemaRegistryService schemaRegistryService) {
+    public ApplicationsRegistryResourceImpl(ApplicationRegistryService applicationRegistryService, SchemaRegistryService schemaRegistryService) {
         this.applicationRegistryService = applicationRegistryService;
         this.schemaRegistryService = schemaRegistryService;
     }
 
     @Override
     public void addReader(String appId, AddReaderRequest addReaderRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
-        applicationRegistryService.addReader(appId, addReaderRequest.getGroupId(), ModelHelper.decode(addReaderRequest.getVersion()),
+        applicationRegistryService.addReader(appId, addReaderRequest.getGroupId(), ModelHelper.decode(addReaderRequest.getReader()),
                 schemaRegistryService::getGroupProperties, x -> schemaRegistryService.getGroupEvolutionHistory(x, null))
                                   .thenApply(v -> {
                                       return Response.status(Response.Status.OK).build();
@@ -73,7 +73,7 @@ public class ApplicationsRegistryImpl implements ApiV1.ApplicationsApi {
 
     @Override
     public void addWriter(String appId, AddWriterRequest addWriterRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
-        applicationRegistryService.addWriter(appId, addWriterRequest.getGroupId(), ModelHelper.decode(addWriterRequest.getVersion()),
+        applicationRegistryService.addWriter(appId, addWriterRequest.getGroupId(), ModelHelper.decode(addWriterRequest.getWriter()),
                 schemaRegistryService::getGroupProperties, x -> schemaRegistryService.getGroupEvolutionHistory(x, null))
                                   .thenApply(v -> {
                                       return Response.status(Response.Status.OK).build();
@@ -111,7 +111,7 @@ public class ApplicationsRegistryImpl implements ApiV1.ApplicationsApi {
 
     @Override
     public void getApplication(String appId, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
-        applicationRegistryService.getApplication(appId, schemaRegistryService::getSchema)
+        applicationRegistryService.getApplication(appId)
                                   .thenApply(app -> {
                                       Application application = ModelHelper.encode(app);
                                       return Response.status(Response.Status.OK).entity(application).build();
@@ -130,10 +130,10 @@ public class ApplicationsRegistryImpl implements ApiV1.ApplicationsApi {
     public void listReaders(String groupId, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         applicationRegistryService.listReaderAppsInGroup(groupId)
                                   .thenApply(map -> {
-                                      ApplicationsInGroup applicationsInGroup = new ApplicationsInGroup()
+                                      ReadersInGroup applicationsInGroup = new ReadersInGroup()
                                               .map(map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, 
-                                                      x -> new VersionInfoList().versions(x.getValue().stream().map(ModelHelper::encode)
-                                                                                           .collect(Collectors.toList())))));
+                                                      x -> x.getValue().stream().map(ModelHelper::encode)
+                                                                                           .collect(Collectors.toList()))));
                                       return Response.status(Response.Status.OK).entity(applicationsInGroup).build();
                                   })
                                   .exceptionally(exception -> {
@@ -150,10 +150,10 @@ public class ApplicationsRegistryImpl implements ApiV1.ApplicationsApi {
     public void listWriters(String groupId, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         applicationRegistryService.listWriterAppsInGroup(groupId)
                                   .thenApply(map -> {
-                                      ApplicationsInGroup applicationsInGroup = new ApplicationsInGroup()
+                                      WritersInGroup applicationsInGroup = new WritersInGroup()
                                               .map(map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                                                      x -> new VersionInfoList().versions(x.getValue().stream().map(ModelHelper::encode)
-                                                                                           .collect(Collectors.toList())))));
+                                                      x -> x.getValue().stream().map(ModelHelper::encode)
+                                                                                           .collect(Collectors.toList()))));
                                       return Response.status(Response.Status.OK).entity(applicationsInGroup).build();
                                   })
                                   .exceptionally(exception -> {

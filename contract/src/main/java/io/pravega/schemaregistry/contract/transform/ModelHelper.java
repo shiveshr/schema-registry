@@ -14,18 +14,19 @@ import com.google.common.collect.ImmutableMap;
 import io.pravega.schemaregistry.contract.data.SchemaEvolution;
 import io.pravega.schemaregistry.contract.generated.rest.model.Application;
 import io.pravega.schemaregistry.contract.generated.rest.model.CodecType;
+import io.pravega.schemaregistry.contract.generated.rest.model.Compatibility;
 import io.pravega.schemaregistry.contract.generated.rest.model.EncodingId;
 import io.pravega.schemaregistry.contract.generated.rest.model.EncodingInfo;
 import io.pravega.schemaregistry.contract.generated.rest.model.GroupProperties;
+import io.pravega.schemaregistry.contract.generated.rest.model.Reader;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo;
-import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfoList;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaType;
-import io.pravega.schemaregistry.contract.generated.rest.model.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaValidationRule;
+import io.pravega.schemaregistry.contract.generated.rest.model.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaVersionAndRules;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaWithVersion;
 import io.pravega.schemaregistry.contract.generated.rest.model.VersionInfo;
-import io.pravega.schemaregistry.contract.generated.rest.model.Compatibility;
+import io.pravega.schemaregistry.contract.generated.rest.model.Writer;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.List;
@@ -118,13 +119,13 @@ public class ModelHelper {
     }
     
     public static io.pravega.schemaregistry.contract.data.Application decode(Application application) {
-        Map<String, List<io.pravega.schemaregistry.contract.data.SchemaInfo>> writingTo = application
+        Map<String, List<io.pravega.schemaregistry.contract.data.Application.Writer>> writingTo = application
                 .getWritingTo().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> {
-                    return x.getValue().getSchemas().stream().map(ModelHelper::decode).collect(Collectors.toList());
+                    return x.getValue().stream().map(ModelHelper::decode).collect(Collectors.toList());
                 }));
-        Map<String, List<io.pravega.schemaregistry.contract.data.SchemaInfo>> readingFrom = application
+        Map<String, List<io.pravega.schemaregistry.contract.data.Application.Reader>> readingFrom = application
                 .getReadingFrom().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> {
-                            return x.getValue().getSchemas().stream().map(ModelHelper::decode).collect(Collectors.toList());
+                            return x.getValue().stream().map(ModelHelper::decode).collect(Collectors.toList());
                         }));
                             
         return new io.pravega.schemaregistry.contract.data.Application(
@@ -132,6 +133,18 @@ public class ModelHelper {
                 writingTo,
                 readingFrom,
                 application.getProperties());
+    }
+
+    public static io.pravega.schemaregistry.contract.data.Application.Writer decode(Writer writer) {
+        return new io.pravega.schemaregistry.contract.data.Application.Writer(writer.getName(), 
+                writer.getVersions().stream().map(ModelHelper::decode).collect(Collectors.toList()), 
+                decode(writer.getCodec()));
+    }
+
+    public static io.pravega.schemaregistry.contract.data.Application.Reader decode(Reader reader) {
+        return new io.pravega.schemaregistry.contract.data.Application.Reader(reader.getName(),
+                reader.getVersions().stream().map(ModelHelper::decode).collect(Collectors.toList()),
+                reader.getCodecs().stream().map(ModelHelper::decode).collect(Collectors.toList()));
     }
     // endregion
 
@@ -234,16 +247,28 @@ public class ModelHelper {
     }
 
     public static Application encode(io.pravega.schemaregistry.contract.data.Application application) {
-        Map<String, SchemaInfoList> writingTo = application.getWritingToUsing().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, 
-                        x -> new SchemaInfoList().schemas(x.getValue().stream().map(ModelHelper::encode).collect(Collectors.toList()))));
-        Map<String, SchemaInfoList> readingFrom = application.getReadingFromUsing().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, 
-                        x -> new SchemaInfoList().schemas(x.getValue().stream().map(ModelHelper::encode).collect(Collectors.toList()))));
+        Map<String, List<Writer>> writingTo = application.getWriters().entrySet().stream()
+                                                       .collect(Collectors.toMap(Map.Entry::getKey, 
+                        x -> x.getValue().stream().map(ModelHelper::encode).collect(Collectors.toList())));
+        Map<String, List<Reader>> readingFrom = application.getReaders().entrySet().stream()
+                                                         .collect(Collectors.toMap(Map.Entry::getKey, 
+                        x -> x.getValue().stream().map(ModelHelper::encode).collect(Collectors.toList())));
         return new Application().name(application.getName())
                                 .properties(application.getProperties())
                                 .writingTo(writingTo)
                                 .readingFrom(readingFrom);
+    }
+
+    public static Reader encode(io.pravega.schemaregistry.contract.data.Application.Reader reader) {
+        return new Reader().name(reader.getReaderId())
+                           .versions(reader.getVersionInfos().stream().map(ModelHelper::encode).collect(Collectors.toList()))
+                           .codecs(reader.getCodecs().stream().map(ModelHelper::encode).collect(Collectors.toList()));
+    }
+
+    public static Writer encode(io.pravega.schemaregistry.contract.data.Application.Writer writer) {
+        return new Writer().name(writer.getWriterId())
+                           .versions(writer.getVersionInfos().stream().map(ModelHelper::encode).collect(Collectors.toList()))
+                           .codec(encode(writer.getCodecType()));
     }
     // endregion
 

@@ -9,27 +9,30 @@
  */
 package io.pravega.schemaregistry.contract.data;
 
+import io.pravega.common.ObjectBuilder;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * A class that represents an application instance which is writing to and reading from potentially more than one 
- * data source and using one or ore schemas. 
+ * A class that represents an application which is reading from (/writing to) one or more data source(/sink)
+ * and using one or more schemas and codecs. 
  */
 @Data
 public class Application {
     /**
-     * Unique name for the specific application instance.
+     * Unique name for the specific application.
      */
     private final String name;
     /**
-     * Group to list of schema map.
+     * Group to app's writers map.
      */
     private final Map<String, List<Writer>> writers;
     /**
-     * Group to list of schema map.
+     * Group to app's readers map.
      */
     private final Map<String, List<Reader>> readers;
     /**
@@ -38,14 +41,26 @@ public class Application {
     private final Map<String, String> properties;
     
     @Data
+    @Builder
+    @AllArgsConstructor
     public static class Writer {
-        private final VersionInfo versionInfo;
+        private final String writerId;
+        private final List<VersionInfo> versionInfos;
         private final CodecType codecType;
+        
+        public static class WriterBuilder implements ObjectBuilder<Writer> {
+        }
     }
 
     @Data
+    @Builder
+    @AllArgsConstructor
     public static class Reader {
-        private final VersionInfo versionInfo;
+        private final String readerId;
+        private final List<VersionInfo> versionInfos;
         private final List<CodecType> codecs;
+
+        public static class ReaderBuilder implements ObjectBuilder<Reader> {
+        }
     }
 }

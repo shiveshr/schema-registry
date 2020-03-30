@@ -21,19 +21,19 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.SneakyThrows;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public interface Table<V> {
     Map<Class<? extends TableKey>, ? extends VersionedSerializer.WithBuilder<? extends TableValue,
             ? extends ObjectBuilder<? extends TableValue>>> SERIALIZERS_BY_KEY_TYPE =
             ImmutableMap.<Class<? extends TableKey>, VersionedSerializer.WithBuilder<? extends TableValue, ? extends ObjectBuilder<? extends TableValue>>>builder()
-                    .put(Writer.class, ReaderValue.SERIALIZER)
-                    .put(Reader.class, ReaderValue.SERIALIZER)
+                    .put(WriterKey.class, WriterValue.SERIALIZER)
+                    .put(ReaderKey.class, ReaderValue.SERIALIZER)
                     .put(TableEtag.class, TableEtag.SERIALIZER)
                     .build();
 
@@ -46,6 +46,8 @@ public interface Table<V> {
     CompletableFuture<Void> updateEntries(Map<TableKey, ValueWithVersion<TableValue, V>> entries);
 
     <T extends TableValue> CompletableFuture<T> getRecord(TableKey key, Class<T> tClass);
+    
+    <T extends TableValue> CompletableFuture<List<ValueWithVersion<T, V>>> getRecords(List<? extends TableKey> key, Class<T> tClass);
     
     CompletableFuture<Void> addRecord(TableKey key, TableValue value);
     
@@ -64,18 +66,19 @@ public interface Table<V> {
     @Data
     @Builder
     @AllArgsConstructor
-    class Writer implements TableKey {
-        public static final Writer.Serializer SERIALIZER = new Writer.Serializer();
+    class WriterKey implements TableKey {
+        public static final WriterKey.Serializer SERIALIZER = new WriterKey.Serializer();
         
         private final String appId;
+        private final String writerId;
         
-        private static class WriterBuilder implements ObjectBuilder<Writer> {
+        private static class WriterKeyBuilder implements ObjectBuilder<WriterKey> {
         }
 
-        static class Serializer extends VersionedSerializer.WithBuilder<Writer, Writer.WriterBuilder> {
+        static class Serializer extends VersionedSerializer.WithBuilder<WriterKey, WriterKey.WriterKeyBuilder> {
             @Override
-            protected Writer.WriterBuilder newBuilder() {
-                return Writer.builder();
+            protected WriterKey.WriterKeyBuilder newBuilder() {
+                return WriterKey.builder();
             }
 
             @Override
@@ -88,12 +91,14 @@ public interface Table<V> {
                 version(0).revision(0, this::write00, this::read00);
             }
 
-            private void write00(Writer e, RevisionDataOutput target) throws IOException {
+            private void write00(WriterKey e, RevisionDataOutput target) throws IOException {
                 target.writeUTF(e.appId);
+                target.writeUTF(e.writerId);
             }
 
-            private void read00(RevisionDataInput source, Writer.WriterBuilder b) throws IOException {
+            private void read00(RevisionDataInput source, WriterKey.WriterKeyBuilder b) throws IOException {
                 b.appId(source.readUTF());
+                b.writerId(source.readUTF());
             }
         }
     }
@@ -101,18 +106,19 @@ public interface Table<V> {
     @Data
     @Builder
     @AllArgsConstructor
-    class Reader implements TableKey {
-        public static final Reader.Serializer SERIALIZER = new Reader.Serializer();
+    class ReaderKey implements TableKey {
+        public static final ReaderKey.Serializer SERIALIZER = new ReaderKey.Serializer();
 
         private final String appId;
+        private final String readerId;
 
-        private static class ReaderBuilder implements ObjectBuilder<Reader> {
+        private static class ReaderKeyBuilder implements ObjectBuilder<ReaderKey> {
         }
 
-        static class Serializer extends VersionedSerializer.WithBuilder<Reader, Reader.ReaderBuilder> {
+        static class Serializer extends VersionedSerializer.WithBuilder<ReaderKey, ReaderKey.ReaderKeyBuilder> {
             @Override
-            protected Reader.ReaderBuilder newBuilder() {
-                return Reader.builder();
+            protected ReaderKey.ReaderKeyBuilder newBuilder() {
+                return ReaderKey.builder();
             }
 
             @Override
@@ -125,12 +131,14 @@ public interface Table<V> {
                 version(0).revision(0, this::write00, this::read00);
             }
 
-            private void write00(Reader e, RevisionDataOutput target) throws IOException {
+            private void write00(ReaderKey e, RevisionDataOutput target) throws IOException {
                 target.writeUTF(e.appId);
+                target.writeUTF(e.readerId);
             }
 
-            private void read00(RevisionDataInput source, Reader.ReaderBuilder b) throws IOException {
+            private void read00(RevisionDataInput source, ReaderKey.ReaderKeyBuilder b) throws IOException {
                 b.appId(source.readUTF());
+                b.readerId(source.readUTF());
             }
         }
     }
@@ -141,7 +149,8 @@ public interface Table<V> {
     class WriterValue implements TableValue {
         public static final WriterValue.Serializer SERIALIZER = new WriterValue.Serializer();
         
-        private final Map<Encoding, VersionInfo> versions;
+        private final List<VersionInfo> versions;
+        private final CodecType codec;
 
         @SneakyThrows
         @Override
@@ -169,11 +178,13 @@ public interface Table<V> {
             }
 
             private void write00(WriterValue e, RevisionDataOutput target) throws IOException {
-                target.writeMap(e.versions, DataOutput::writeUTF, VersionInfoSerializer.SERIALIZER::serialize);
+                target.writeCollection(e.versions, VersionInfoSerializer.SERIALIZER::serialize);
+                CodecTypeRecord.SERIALIZER.serialize(target, new CodecTypeRecord(e.getCodec()));
             }
 
             private void read00(RevisionDataInput source, WriterValue.WriterValueBuilder b) throws IOException {
-                b.versions(source.readMap(DataInput::readUTF, VersionInfoSerializer.SERIALIZER::deserialize));
+                b.versions(new ArrayList<>(source.readCollection(VersionInfoSerializer.SERIALIZER::deserialize)));
+                b.codec(CodecTypeRecord.SERIALIZER.deserialize(source).getCodecType());
             }
         }
     }
@@ -183,9 +194,9 @@ public interface Table<V> {
     @AllArgsConstructor
     class ReaderValue implements TableValue {
         public static final ReaderValue.Serializer SERIALIZER = new ReaderValue.Serializer();
-        
+
         private final List<VersionInfo> versions;
-        private final List<CodecType> encodings;
+        private final List<CodecType> decoders;
 
         @SneakyThrows
         @Override
@@ -213,60 +224,19 @@ public interface Table<V> {
             }
 
             private void write00(ReaderValue e, RevisionDataOutput target) throws IOException {
-                target.writeMap(e.versions, Encoding.SERIALIZER::serialize, VersionInfoSerializer.SERIALIZER::serialize);
+                target.writeCollection(e.getVersions(), VersionInfoSerializer.SERIALIZER::serialize);
+                target.writeCollection(e.getDecoders().stream().map(CodecTypeRecord::new).collect(Collectors.toList()),
+                    CodecTypeRecord.SERIALIZER::serialize);
             }
 
             private void read00(RevisionDataInput source, ReaderValue.ReaderValueBuilder b) throws IOException {
-                b.versions(source.readMap(Encoding.SERIALIZER::deserialize, VersionInfoSerializer.SERIALIZER::deserialize));
+                b.versions(new ArrayList<>(source.readCollection(VersionInfoSerializer.SERIALIZER::deserialize)));
+                b.decoders(new ArrayList<>(source.readCollection(CodecTypeRecord.SERIALIZER::deserialize)
+                                                     .stream().map(CodecTypeRecord::getCodecType).collect(Collectors.toList())));
             }
         }
     }
 
-    @Data
-    @Builder
-    @AllArgsConstructor
-    class Encoding implements TableValue {
-        public static final Encoding.Serializer SERIALIZER = new Encoding.Serializer();
-        private final VersionInfo versionInfo;
-        private final CodecType codecType;
-
-        @SneakyThrows
-        @Override
-        public byte[] toBytes() {
-            return SERIALIZER.serialize(this).getCopy();
-        }
-
-        private static class EncodingBuilder implements ObjectBuilder<Encoding> {
-        }
-
-        static class Serializer extends VersionedSerializer.WithBuilder<Encoding, Encoding.EncodingBuilder> {
-            @Override
-            protected Encoding.EncodingBuilder newBuilder() {
-                return Encoding.builder();
-            }
-
-            @Override
-            protected byte getWriteVersion() {
-                return 0;
-            }
-
-            @Override
-            protected void declareVersions() {
-                version(0).revision(0, this::write00, this::read00);
-            }
-
-            private void write00(Encoding e, RevisionDataOutput target) throws IOException {
-                VersionInfoSerializer.SERIALIZER.serialize(e.versionInfo);
-                CodecTypeRecord.SERIALIZER.serialize(target, new CodecTypeRecord(e.codecType));
-            }
-
-            private void read00(RevisionDataInput source, Encoding.EncodingBuilder b) throws IOException {
-                b.versionInfo(VersionInfoSerializer.SERIALIZER.deserialize(source))
-                .codecType(CodecTypeRecord.SERIALIZER.deserialize(source).getCodecType());
-            }
-        }
-    }
-    
     @Data
     @Builder
     @AllArgsConstructor

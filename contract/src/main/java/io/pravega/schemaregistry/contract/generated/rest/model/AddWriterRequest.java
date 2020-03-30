@@ -1,6 +1,6 @@
 /*
- * Pravega Schema Registry APIs
- * REST APIs for Pravega Schema Registry.
+ * Pravega Application Registry APIs
+ * REST APIs for Pravega Application Registry.
  *
  * OpenAPI spec version: 0.0.1
  * 
@@ -16,7 +16,7 @@ package io.pravega.schemaregistry.contract.generated.rest.model;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.pravega.schemaregistry.contract.generated.rest.model.VersionInfo;
+import io.pravega.schemaregistry.contract.generated.rest.model.Writer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import javax.validation.constraints.*;
@@ -29,8 +29,8 @@ public class AddWriterRequest   {
   @JsonProperty("groupId")
   private String groupId = null;
 
-  @JsonProperty("version")
-  private VersionInfo version = null;
+  @JsonProperty("writer")
+  private Writer writer = null;
 
   public AddWriterRequest groupId(String groupId) {
     this.groupId = groupId;
@@ -51,23 +51,23 @@ public class AddWriterRequest   {
     this.groupId = groupId;
   }
 
-  public AddWriterRequest version(VersionInfo version) {
-    this.version = version;
+  public AddWriterRequest writer(Writer writer) {
+    this.writer = writer;
     return this;
   }
 
   /**
-   * Get version
-   * @return version
+   * Get writer
+   * @return writer
    **/
-  @JsonProperty("version")
+  @JsonProperty("writer")
   @ApiModelProperty(value = "")
-  public VersionInfo getVersion() {
-    return version;
+  public Writer getWriter() {
+    return writer;
   }
 
-  public void setVersion(VersionInfo version) {
-    this.version = version;
+  public void setWriter(Writer writer) {
+    this.writer = writer;
   }
 
 
@@ -81,12 +81,12 @@ public class AddWriterRequest   {
     }
     AddWriterRequest addWriterRequest = (AddWriterRequest) o;
     return Objects.equals(this.groupId, addWriterRequest.groupId) &&
-        Objects.equals(this.version, addWriterRequest.version);
+        Objects.equals(this.writer, addWriterRequest.writer);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(groupId, version);
+    return Objects.hash(groupId, writer);
   }
 
 
@@ -96,7 +96,7 @@ public class AddWriterRequest   {
     sb.append("class AddWriterRequest {\n");
     
     sb.append("    groupId: ").append(toIndentedString(groupId)).append("\n");
-    sb.append("    version: ").append(toIndentedString(version)).append("\n");
+    sb.append("    writer: ").append(toIndentedString(writer)).append("\n");
     sb.append("}");
     return sb.toString();
   }

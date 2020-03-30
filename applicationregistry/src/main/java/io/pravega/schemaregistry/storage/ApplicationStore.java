@@ -10,10 +10,7 @@
 package io.pravega.schemaregistry.storage;
 
 import io.pravega.schemaregistry.contract.data.Application;
-import io.pravega.schemaregistry.contract.data.CodecType;
-import io.pravega.schemaregistry.contract.data.VersionInfo;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -29,11 +26,11 @@ public interface ApplicationStore {
     
     CompletableFuture<WritersInGroupWithEtag> getWriterApps(String groupId);
 
-    CompletableFuture<Void> addWriter(String appId, String groupId, VersionInfo schemaVersion, CodecType codecType, Etag etag);
+    CompletableFuture<Void> addWriter(String appId, String groupId, Application.Writer writer, Etag etag);
     
-    CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion, List<CodecType> codecType, Etag etag);
+    CompletableFuture<Void> addReader(String appId, String groupId, Application.Reader reader, Etag etag);
     
-    CompletableFuture<Void> removeWriter(String appId, String groupId);
+    CompletableFuture<Void> removeWriter(String appId, String writerId);
     
-    CompletableFuture<Void> removeReader(String appId, String groupId);
+    CompletableFuture<Void> removeReader(String appId, String readerId);
 }

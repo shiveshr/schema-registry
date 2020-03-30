@@ -1,6 +1,6 @@
 /*
- * Pravega Schema Registry APIs
- * REST APIs for Pravega Schema Registry.
+ * Pravega Application Registry APIs
+ * REST APIs for Pravega Application Registry.
  *
  * OpenAPI spec version: 0.0.1
  * 

@@ -12,11 +12,11 @@ package io.pravega.schemaregistry.service;
 import io.pravega.common.Exceptions;
 import io.pravega.common.util.Retry;
 import io.pravega.schemaregistry.contract.data.Application;
-import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
 import io.pravega.schemaregistry.contract.data.SchemaEvolution;
 import io.pravega.schemaregistry.contract.data.VersionInfo;
+import io.pravega.schemaregistry.contract.exceptions.CodecMismatchException;
 import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
 import io.pravega.schemaregistry.storage.ApplicationStore;
 import io.pravega.schemaregistry.storage.Etag;
@@ -24,6 +24,7 @@ import io.pravega.schemaregistry.storage.ReadersInGroupWithEtag;
 import io.pravega.schemaregistry.storage.StoreExceptions;
 import io.pravega.schemaregistry.storage.WritersInGroupWithEtag;
 
+import java.util.Collection;
 import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Schema registry service backend. 
+ * Schema registry service backend.
  */
 public class ApplicationRegistryService {
     private static final Retry.RetryAndThrowConditionally RETRY = Retry.withExpBackoff(1, 2, Integer.MAX_VALUE, 100)
@@ -54,49 +55,61 @@ public class ApplicationRegistryService {
         return store.getApplication(appId);
     }
 
-    public CompletableFuture<Void> addWriter(String appId, String groupId, VersionInfo schemaVersion, CodecType codecType,
+    public CompletableFuture<Void> addWriter(String appId, String groupId, Application.Writer writer,
                                              Function<String, CompletableFuture<GroupProperties>> groupProperties,
                                              Function<String, CompletableFuture<List<SchemaEvolution>>> groupHistory) {
         CompletableFuture<GroupProperties> grpProp = groupProperties.apply(groupId);
-        CompletableFuture<ReadersInGroupWithEtag> readers = store.getReaderApps(groupId);
+        CompletableFuture<ReadersInGroupWithEtag> readersWithEtag = store.getReaderApps(groupId);
         CompletableFuture<List<SchemaEvolution>> grpHistory = groupHistory.apply(groupId);
-        StringBuilder cause = new StringBuilder();
 
-        return CompletableFuture.allOf(grpProp, readers, grpHistory)
+        // for all writer schemas, readers should be able to read them. 
+        return CompletableFuture.allOf(grpProp, readersWithEtag, grpHistory)
                                 .thenCompose(v -> {
                                     GroupProperties prop = grpProp.join();
                                     List<SchemaEvolution> history = grpHistory.join();
+                                    ReadersInGroupWithEtag readers = readersWithEtag.join();
+                                    Etag etag = readersWithEtag.join().getEtag();
+                                    List<Application.Reader> readerApps = readers.getAppReaders().values().stream().flatMap(Collection::stream)
+                                            .collect(Collectors.toList());
+                                    writer.getVersionInfos().forEach(version -> checkWriterSchema(prop, readerApps, history,
+                                            version));
 
-                                    List<Application.Reader> readerApps = readers
-                                            .join().getAppIdWithSchemaVersions().entrySet().stream()
-                                            .flatMap(x -> x.getValue().stream()).collect(Collectors.toList());
-
-                                    if (prop.isValidateByObjectType()) {
-                                        readerApps = readerApps.stream().filter(x -> x.getVersionInfo().getSchemaName()
-                                                                                      .equals(schemaVersion.getSchemaName()))
-                                                               .collect(Collectors.toList());
-                                        history = history.stream().filter(x -> x.getSchema().getName().equals(schemaVersion.getSchemaName()))
-                                                         .collect(Collectors.toList());
-                                    }
-                                    Etag etag = readers.join().getEtag();
-                                    boolean encodingMatch = readerApps.stream().allMatch(x -> x.getCodecs().contains(codecType));
+                                    boolean encodingMatch = readerApps.stream().allMatch(x -> x.getCodecs().contains(writer.getCodecType()));
                                     if (!encodingMatch) {
-                                        cause.append("Not all readers have the supplied codec.");
+                                        throw new CodecMismatchException("Not all readers have the supplied codec.");
                                     }
-                                    boolean isCompatible = isCompatibleWithReaders(schemaVersion, cause, prop, history, readerApps);
-                                    
-                                    if (isCompatible && encodingMatch) {
-                                        return store.addWriter(appId, groupId, schemaVersion, codecType, etag);
-                                    } else {
-                                        throw new IncompatibleSchemaException(cause.toString());
-                                    }
+
+                                    return store.addWriter(appId, groupId, writer, etag);
                                 });
     }
 
-    private boolean isCompatibleWithReaders(VersionInfo schemaVersion, StringBuilder cause, GroupProperties prop, 
-                                            List<SchemaEvolution> history, List<Application.Reader> readerApps) {
-        boolean isCompatible;IntSummaryStatistics stats = readerApps.stream().mapToInt(x -> x.getVersionInfo().getVersion())
-                                                                    .summaryStatistics();
+    private void checkWriterSchema(GroupProperties prop, List<Application.Reader> readers, List<SchemaEvolution> schemaEvolutions,
+                                   VersionInfo version) {
+        StringBuilder cause = new StringBuilder();
+
+        List<VersionInfo> readersVersions;
+        List<SchemaEvolution> history = schemaEvolutions;
+        if (prop.isValidateByObjectType()) {
+            // filter all readerAps that are using the object type
+            readersVersions = readers.stream().filter(x -> x.getVersionInfos().stream().anyMatch(y -> y.getSchemaName().equals(version.getSchemaName())))
+                                     .flatMap(x -> x.getVersionInfos().stream())
+                                     .collect(Collectors.toList());
+            history = schemaEvolutions.stream().filter(x -> x.getSchema().getName().equals(version.getSchemaName()))
+                             .collect(Collectors.toList());
+        } else {
+            readersVersions = readers.stream().flatMap(x -> x.getVersionInfos().stream()).collect(Collectors.toList());
+        }
+        boolean isCompatible = isCompatibleWithReaders(version, cause, prop, history, readersVersions);
+
+        if (!isCompatible) {
+            throw new IncompatibleSchemaException(cause.toString());
+        }
+    }
+
+    private boolean isCompatibleWithReaders(VersionInfo schemaVersion, StringBuilder cause, GroupProperties prop,
+                                            List<SchemaEvolution> history, List<VersionInfo> readerVersions) {
+        boolean isCompatible;
+        IntSummaryStatistics stats = readerVersions.stream().mapToInt(VersionInfo::getVersion).summaryStatistics();
         int maxReaderVersion = stats.getMax();
         int minReaderVersion = stats.getMin();
 
@@ -232,71 +245,65 @@ public class ApplicationRegistryService {
         }
         return isCompatible;
     }
-
-    private int getTillVersion(VersionInfo till, List<SchemaEvolution> history, GroupProperties prop, VersionInfo schemaToCheck) {
-        if (till == null) {
-            return Integer.MIN_VALUE;
-        }
-        if (prop.isValidateByObjectType()) {
-            boolean found = false;
-            int schemaVersion = Integer.MIN_VALUE;
-            for (SchemaEvolution schema : history) {
-                if (!found) {
-                    found = schema.getVersion().equals(till);
-                }
-                if (found && schema.getVersion().getSchemaName().equals(schemaToCheck.getSchemaName())) {
-                    schemaVersion = schema.getVersion().getVersion();
-                    break;
-                }
-            }
-            return schemaVersion;
-        } else {
-            return till.getVersion();
-        }
-    }
-
-    public CompletableFuture<Void> addReader(String appId, String groupId, VersionInfo schemaVersion, List<CodecType> codecs,
+    
+    public CompletableFuture<Void> addReader(String appId, String groupId, Application.Reader reader,
                                              Function<String, CompletableFuture<GroupProperties>> groupProperties,
                                              Function<String, CompletableFuture<List<SchemaEvolution>>> groupHistory) {
         CompletableFuture<GroupProperties> grpProp = groupProperties.apply(groupId);
-        CompletableFuture<WritersInGroupWithEtag> writers = store.getWriterApps(groupId);
+        CompletableFuture<WritersInGroupWithEtag> writersWithEtag = store.getWriterApps(groupId);
         CompletableFuture<List<SchemaEvolution>> grpHistory = groupHistory.apply(groupId);
         StringBuilder cause = new StringBuilder();
-        return CompletableFuture.allOf(grpProp, writers, grpHistory)
+        return CompletableFuture.allOf(grpProp, writersWithEtag, grpHistory)
                                 .thenCompose(v -> {
                                     GroupProperties prop = grpProp.join();
                                     List<SchemaEvolution> history = grpHistory.join();
-                                    List<Application.Writer> writerApps = writers
-                                            .join().getAppIdWithSchemaVersions()
+                                    List<Application.Writer> writerApps = writersWithEtag
+                                            .join().getAppWriters()
                                             .entrySet().stream().flatMap(x -> x.getValue().stream()).collect(Collectors.toList());
 
-                                    if (prop.isValidateByObjectType()) {
-                                        writerApps = writerApps.stream().filter(x -> x.getVersionInfo().getSchemaName().equals(schemaVersion.getSchemaName()))
-                                                               .collect(Collectors.toList());
-                                        history = history.stream().filter(x -> x.getSchema().getName().equals(schemaVersion.getSchemaName()))
-                                                         .collect(Collectors.toList());
-                                    }
+                                    Etag etag = writersWithEtag.join().getEtag();
+                                    reader.getVersionInfos().forEach(version -> checkReaderSchema(prop, writerApps, history,
+                                            version));
 
-                                    Etag etag = writers.join().getEtag();
-                                    boolean encodingMatch = writerApps.stream().allMatch(x -> codecs.contains(x.getCodecType()));
+                                    boolean encodingMatch = writerApps.stream().allMatch(x -> reader.getCodecs().contains(x.getCodecType()));
                                     if (!encodingMatch) {
-                                        cause.append("Not all readers have the supplied codec.");
+                                        throw new CodecMismatchException("Not all readers have the supplied codec.");
                                     }
-                                    boolean isCompatible;
 
-                                    isCompatible = isCompatibleWithWriters(schemaVersion, cause, prop, history, writerApps);
-
-                                    if (encodingMatch && isCompatible) {
-                                        return store.addReader(appId, groupId, schemaVersion, codecs, etag);
-                                    } else {
-                                        throw new IncompatibleSchemaException(cause.toString());
-                                    }
+                                    return store.addReader(appId, groupId, reader, etag);
                                 });
     }
 
-    private boolean isCompatibleWithWriters(VersionInfo schemaVersion, StringBuilder cause, GroupProperties prop, 
-                                            List<SchemaEvolution> history, List<Application.Writer> writerApps) {
-        boolean isCompatible;IntSummaryStatistics stats = writerApps.stream().mapToInt(x -> x.getVersionInfo().getVersion()).summaryStatistics();
+    private void checkReaderSchema(GroupProperties prop, List<Application.Writer> writers, List<SchemaEvolution> schemaEvolutions,
+                                   VersionInfo version) {
+        StringBuilder cause = new StringBuilder();
+
+        List<VersionInfo> writerVersions;
+        List<SchemaEvolution> history = schemaEvolutions;
+        if (prop.isValidateByObjectType()) {
+            // filter all readerAps that are using the object type
+            writerVersions = writers.stream().filter(x -> x.getVersionInfos().stream().anyMatch(y -> y.getSchemaName().equals(version.getSchemaName())))
+                                     .flatMap(x -> x.getVersionInfos().stream())
+                                     .collect(Collectors.toList());
+            history = schemaEvolutions.stream().filter(x -> x.getSchema().getName().equals(version.getSchemaName()))
+                                      .collect(Collectors.toList());
+        } else {
+            writerVersions = writers.stream().flatMap(x -> x.getVersionInfos().stream()).collect(Collectors.toList());
+        }
+
+        boolean isCompatible;
+
+        isCompatible = isCompatibleWithWriters(version, cause, prop, history, writerVersions);
+
+        if (!isCompatible) {
+            throw new IncompatibleSchemaException(cause.toString());
+        }
+    }
+
+    private boolean isCompatibleWithWriters(VersionInfo schemaVersion, StringBuilder cause, GroupProperties prop,
+                                            List<SchemaEvolution> history, List<VersionInfo> writerVersions) {
+        boolean isCompatible;
+        IntSummaryStatistics stats = writerVersions.stream().mapToInt(VersionInfo::getVersion).summaryStatistics();
         int maxWriterVersion = stats.getMax();
         int minWriterVersion = stats.getMin();
 
@@ -437,19 +444,41 @@ public class ApplicationRegistryService {
         return isCompatible;
     }
 
-    public CompletableFuture<Void> removeWriter(String appId, String groupId) {
-        return store.removeWriter(appId, groupId);
+    private int getTillVersion(VersionInfo till, List<SchemaEvolution> history, GroupProperties prop, VersionInfo schemaToCheck) {
+        if (till == null) {
+            return Integer.MIN_VALUE;
+        }
+        if (prop.isValidateByObjectType()) {
+            boolean found = false;
+            int schemaVersion = Integer.MIN_VALUE;
+            for (SchemaEvolution schema : history) {
+                if (!found) {
+                    found = schema.getVersion().equals(till);
+                }
+                if (found && schema.getVersion().getSchemaName().equals(schemaToCheck.getSchemaName())) {
+                    schemaVersion = schema.getVersion().getVersion();
+                    break;
+                }
+            }
+            return schemaVersion;
+        } else {
+            return till.getVersion();
+        }
     }
 
-    public CompletableFuture<Void> removeReader(String appId, String groupId) {
-        return store.removeReader(appId, groupId);
+    public CompletableFuture<Void> removeWriter(String appId, String writerId) {
+        return store.removeWriter(appId, writerId);
+    }
+
+    public CompletableFuture<Void> removeReader(String appId, String readerId) {
+        return store.removeReader(appId, readerId);
     }
 
     public CompletableFuture<Map<String, List<Application.Writer>>> listWriterAppsInGroup(String groupId) {
-        return store.getWriterApps(groupId).thenApply(WritersInGroupWithEtag::getAppIdWithSchemaVersions);
+        return store.getWriterApps(groupId).thenApply(WritersInGroupWithEtag::getAppWriters);
     }
 
     public CompletableFuture<Map<String, List<Application.Reader>>> listReaderAppsInGroup(String groupId) {
-        return store.getReaderApps(groupId).thenApply(ReadersInGroupWithEtag::getAppIdWithSchemaVersions);
+        return store.getReaderApps(groupId).thenApply(ReadersInGroupWithEtag::getAppReaders);
     }
 }

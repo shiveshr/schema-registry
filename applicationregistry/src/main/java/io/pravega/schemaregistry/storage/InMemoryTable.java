@@ -15,6 +15,7 @@ import lombok.Synchronized;
 
 import javax.annotation.concurrent.GuardedBy;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -79,6 +80,12 @@ public class InMemoryTable implements Table<Integer> {
 
     @Synchronized
     @Override
+    public <T extends TableValue> CompletableFuture<List<ValueWithVersion<T, Integer>>> getRecords(List<? extends TableKey> keys, Class<T> tClass) {
+        return CompletableFuture.completedFuture(keys.stream().map(x -> getRecordWithVersion(x, tClass).join()).collect(Collectors.toList()));
+    }
+
+    @Synchronized
+    @Override
     public CompletableFuture<Void> addRecord(TableKey key, TableValue value) {
         return updateEntry(key, value, null); 
     }
@@ -97,7 +104,7 @@ public class InMemoryTable implements Table<Integer> {
             TableKey key, Class<T> tClass) {
         ValueWithVersion<TableValue, Integer> val = table.get(key);
         if (val == null) {
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(new ValueWithVersion<>(null, null));
         } else if (val.getValue().getClass().isAssignableFrom(tClass)) {
             return CompletableFuture.completedFuture(new ValueWithVersion<>((T) val.getValue(), val.getVersion()));
         } else {

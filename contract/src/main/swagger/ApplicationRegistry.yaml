@@ -1,0 +1,310 @@
+#
+# Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Description of the Pravega Application Registry APIs.
+
+swagger: "2.0"
+info:
+  description: "REST APIs for Pravega Application Registry."
+  version: "0.0.1"
+  title: Pravega Application Registry APIs
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0"
+basePath: "/v1"
+tags:
+- name: "Application"
+  description: "Application related APIs"
+schemes:
+  - http
+paths:
+  /applications:
+    post:
+      tags:
+      - "Group"
+      operationId: createApplication
+      description: Create a new Application
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: CreateApplicationRequest
+          description: The Group configuration
+          required: true
+          schema:
+            type: object
+            properties:
+              applicationName:
+                type: string
+              properties:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 0
+                  maxLength: 40
+      responses:
+        201:
+          description: Successfully added group
+        409:
+          description: Group with given name already exists
+        500:
+          description: Internal server error while creating a Group
+  /applications/{appId}:
+    parameters:
+      - in: path
+        name: appId
+        description: appId
+        required: true
+        type: string
+    get:
+      tags:
+      - "Group"
+      operationId: getApplication
+      description: Fetch the application
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Found Group properties
+          schema:
+            $ref: "#/definitions/Application"
+        404:
+          description: Group with given name not found
+        500:
+          description: Internal server error while fetching Group details
+  /applications/{appId}/reader:
+    parameters:
+      - in: path
+        name: appId
+        description: appId
+        required: true
+        type: string
+    post:
+      tags:
+      - "Application"
+      operationId: addReader
+      description: Add new reader to application
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: AddReaderRequest
+          description: schema version
+          required: true
+          schema:
+            type: object
+            properties:
+              groupId:
+                type: string
+              reader:
+                $ref: "#/definitions/Reader"
+      responses:
+        201:
+          description: Successfully added reader 
+        409:
+          description: Schema incompatible
+        500:
+          description: Internal server error while adding reader to group
+  /applications/{appId}/groups/{groupId}/reader:
+    parameters:
+      - in: path
+        name: appId
+        description: appId
+        required: true
+        type: string
+      - in: path
+        name: groupId
+        description: groupId
+        required: true
+        type: string
+    delete:
+        tags:
+        - "Application"
+        operationId: deleteReaderFromApp
+        description: Delete a reader from an app
+        responses:
+          204:
+            description: Successfully deleted reader
+          404:
+            description: App not found
+          500:
+            description: Internal server error while deleting the reader app
+  /applications/{appId}/writer:
+    parameters:
+      - in: path
+        name: appId
+        description: appId
+        required: true
+        type: string
+    post:
+      tags:
+      - "Application"
+      operationId: addWriter
+      description: Add new writer to application
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: AddWriterRequest
+          description: schema version
+          required: true
+          schema:
+            type: object
+            properties:
+              groupId:
+                type: string
+              writer:
+                  $ref: "#/definitions/Writer"
+      responses:
+        201:
+          description: Successfully added writer 
+        409:
+          description: Schema incompatible
+          schema:
+            $ref: "#/definitions/IncompatibleSchema"
+
+        500:
+          description: Internal server error while adding writer to group
+  /applications/{appId}/groups/{groupId}/writer:
+    parameters:
+      - in: path
+        name: appId
+        description: appId
+        required: true
+        type: string
+      - in: path
+        name: groupId
+        description: groupId
+        required: true
+        type: string
+    delete:
+        tags:
+        - "Application"
+        operationId: deleteWriterFromApp
+        description: Delete a writer from an app
+        responses:
+          204:
+            description: Successfully deleted writer
+          404:
+            description: App not found
+          500:
+            description: Internal server error while deleting the writer app
+  /applications/groups/{groupId}/readers:
+    parameters:
+      - in: path
+        name: groupId
+        description: groupId
+        required: true
+        type: string
+    get:
+      tags:
+      - "Application"
+      operationId: listReaders
+      description: List all writer applications in group
+      produces:
+        - application/json
+      responses:
+        200:
+          description: List of all writers in group
+          schema:
+            $ref: "#/definitions/ReadersInGroup"
+        500:
+          description: Internal server error while fetching the list of writers in Groups
+  /applications/groups/{groupId}/writers:
+    parameters:
+      - in: path
+        name: groupId
+        description: groupId
+        required: true
+        type: string
+    get:
+      tags:
+      - "Application"
+      operationId: listWriters
+      description: List all writer applications in group
+      produces:
+        - application/json
+      responses:
+        200:
+          description: List of all writers in group
+          schema:
+            $ref: "#/definitions/WritersInGroup"
+        500:
+          description: Internal server error while fetching the list of writers in Groups
+definitions:
+  ReadersInGroup:
+    type: object
+    properties:
+      map:
+        type: object
+        additionalProperties:
+          type: array
+          items:
+            $ref: '#/definitions/Reader'
+  WritersInGroup:
+    type: object
+    properties:
+      map:
+        type: object
+        additionalProperties:
+          type: array
+          items:
+            $ref: '#/definitions/Writer'
+  IncompatibleSchema:
+    type: object
+    properties:
+      errorMessage:
+        type: string        
+  Application:
+    type: object
+    properties:
+      name:
+        type: string
+      writingTo:
+        type: object
+        additionalProperties:
+          type: array
+          items:
+            $ref: '#/definitions/Writer'
+      readingFrom:
+        type: object
+        additionalProperties:
+          type: array
+          items:
+            $ref: '#/definitions/Reader'
+      properties:
+        type: object
+        additionalProperties:
+          type: string
+  Writer:
+    type: object
+    properties:
+      name:
+        type: string
+      versions:
+        type: array
+        items:
+          $ref: '#/definitions/VersionInfo'
+      codec:
+          $ref: '#/definitions/CodecType'
+  Reader:
+    type: object
+    properties:
+      name:
+        type: string
+      versions:
+        type: array
+        items:
+          $ref: '#/definitions/VersionInfo'
+      codecs:
+        type: array
+        items:
+          $ref: '#/definitions/CodecType'
+
+  

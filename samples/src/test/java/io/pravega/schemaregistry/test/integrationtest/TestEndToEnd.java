@@ -10,8 +10,10 @@
 package io.pravega.schemaregistry.test.integrationtest;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import io.pravega.common.Exceptions;
 import io.pravega.schemaregistry.client.RegistryClient;
+import io.pravega.schemaregistry.contract.data.Application;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaEvolution;
@@ -34,7 +36,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -174,20 +175,17 @@ public abstract class TestEndToEnd {
 
         client.addApplication("myapp", Collections.emptyMap());
         
-        client.addWriter("myapp", group, version1, CodecType.None);
-        client.addWriter("myapp", group, version2, CodecType.None);
+        client.addWriter("myapp", group, new Application.Writer("writer1", Collections.singletonList(version1), CodecType.None));
+        client.addWriter("myapp", group, new Application.Writer("writer2", Collections.singletonList(version2), CodecType.None));
         // we should not be allowed to add a reader older than latest writer.
-        HashSet<CodecType> set = new HashSet<>();
-        set.add(CodecType.None);
-        set.add(CodecType.Snappy);
-        set.add(CodecType.GZip);
+        List<CodecType> codecs = Lists.newArrayList(CodecType.None, CodecType.Snappy, CodecType.GZip);
         try {
-            client.addReader("myapp", group, version1, set);
+            client.addReader("myapp", group, new Application.Reader("reader1", Collections.singletonList(version1), codecs));
         } catch (Exception e) {
             Throwable unwrap = Exceptions.unwrap(e);
             assertTrue(unwrap instanceof IncompatibleSchemaException);
         }
-        client.addReader("myapp", group, version2, set);
+        client.addReader("myapp", group, new Application.Reader("reader1", Collections.singletonList(version2), codecs));
 
         SchemaInfo schemaInfo3Compatible = new SchemaInfo(myTest, SchemaType.Avro,
                 schema3Compatible.toString().getBytes(Charsets.UTF_8), ImmutableMap.of());
@@ -195,14 +193,16 @@ public abstract class TestEndToEnd {
 
         // this should fail as no reader has moved to v3 yet
         try {
-            client.addWriter("myapp", group, version3, CodecType.None);
+            client.addWriter("myapp", group, new Application.Writer("writer2", Collections.singletonList(version3), CodecType.None));
         } catch (Exception e) {
             Throwable unwrap = Exceptions.unwrap(e);
             assertTrue(unwrap instanceof IncompatibleSchemaException);
         }
         
         // this should be allowed as this is on a different object.
-        client.addWriter("myapp", group, version4, CodecType.None);
+        client.addWriter("myapp", group, new Application.Writer("writer2", Collections.singletonList(version4), CodecType.None));
+        
+        // TODO: add more tests for codecs and reader ahead of writer for forward compatibility etc
     }
 
     abstract SchemaStore getStore();

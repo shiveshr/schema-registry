@@ -10,9 +10,10 @@ import io.swagger.jaxrs.*;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddReaderRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddWriterRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.Application;
-import io.pravega.schemaregistry.contract.generated.rest.model.ApplicationsInGroup;
 import io.pravega.schemaregistry.contract.generated.rest.model.CreateApplicationRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.IncompatibleSchema;
+import io.pravega.schemaregistry.contract.generated.rest.model.ReadersInGroup;
+import io.pravega.schemaregistry.contract.generated.rest.model.WritersInGroup;
 
 import java.util.Map;
 import java.util.List;
@@ -163,9 +164,9 @@ public class ApplicationsApi  {
     @Path("/groups/{groupId}/readers")
     
     @Produces({ "application/json" })
-    @io.swagger.annotations.ApiOperation(value = "", notes = "List all writer applications in group", response = ApplicationsInGroup.class, tags={ "Application", })
+    @io.swagger.annotations.ApiOperation(value = "", notes = "List all writer applications in group", response = ReadersInGroup.class, tags={ "Application", })
     @io.swagger.annotations.ApiResponses(value = { 
-        @io.swagger.annotations.ApiResponse(code = 200, message = "List of all writers in group", response = ApplicationsInGroup.class),
+        @io.swagger.annotations.ApiResponse(code = 200, message = "List of all writers in group", response = ReadersInGroup.class),
         
         @io.swagger.annotations.ApiResponse(code = 500, message = "Internal server error while fetching the list of writers in Groups", response = Void.class) })
     public Response listReaders(@ApiParam(value = "groupId",required=true) @PathParam("groupId") String groupId
@@ -177,9 +178,9 @@ public class ApplicationsApi  {
     @Path("/groups/{groupId}/writers")
     
     @Produces({ "application/json" })
-    @io.swagger.annotations.ApiOperation(value = "", notes = "List all writer applications in group", response = ApplicationsInGroup.class, tags={ "Application", })
+    @io.swagger.annotations.ApiOperation(value = "", notes = "List all writer applications in group", response = WritersInGroup.class, tags={ "Application", })
     @io.swagger.annotations.ApiResponses(value = { 
-        @io.swagger.annotations.ApiResponse(code = 200, message = "List of all writers in group", response = ApplicationsInGroup.class),
+        @io.swagger.annotations.ApiResponse(code = 200, message = "List of all writers in group", response = WritersInGroup.class),
         
         @io.swagger.annotations.ApiResponse(code = 500, message = "Internal server error while fetching the list of writers in Groups", response = Void.class) })
     public Response listWriters(@ApiParam(value = "groupId",required=true) @PathParam("groupId") String groupId

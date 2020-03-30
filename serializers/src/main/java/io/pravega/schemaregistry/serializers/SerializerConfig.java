@@ -9,6 +9,7 @@
  */
 package io.pravega.schemaregistry.serializers;
 
+import com.google.common.collect.Lists;
 import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.client.RegistryClientConfig;
 import io.pravega.schemaregistry.codec.Codec;
@@ -22,8 +23,7 @@ import lombok.Data;
 import lombok.Getter;
 
 import java.nio.ByteBuffer;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -42,9 +42,18 @@ public class SerializerConfig {
      */
     private final String groupId;
     /**
-     * Name of the application.
+     * Application identifier. 
      */
     private final String application;
+    /**
+     * Unique Writer id. If not supplied, a unique uuid is generated.
+     */
+    private final String writerId;
+    /**
+     * Unique Reader id. If not supplied, a unique uuid is generated.
+     */
+    private final String readerId;
+    
     /**
      * Either the registry client or the {@link RegistryClientConfig} that can be used for creating a new registry client.
      * Exactly one of the two option has to be supplied. 
@@ -56,6 +65,7 @@ public class SerializerConfig {
      * in lockstep with upgrade of existing pravega client applications. 
      */
     private final boolean autoRegisterSchema;
+    
     /**
      * Flag to tell the serializer if the codec should be automatically registered before using the serializer in 
      * {@link io.pravega.client.stream.EventStreamWriter}. 
@@ -86,7 +96,8 @@ public class SerializerConfig {
         private boolean autoRegisterSchema = false;
         private boolean autoRegisterCodec = false;
         private boolean failOnCodecMismatch = false;
-        private String application = "";
+        private String writerId = "";
+        private String readerId = "";
 
         public SerializerConfigBuilder addDecoder(CodecType codecType, Function<ByteBuffer, ByteBuffer> decoder) {
             this.decoder = new Decoder(codecType, decoder);
@@ -109,34 +120,27 @@ public class SerializerConfig {
         };
         
         @Getter(AccessLevel.PACKAGE)
-        private final Set<CodecType> codecs;
-        private final BiFunction<CodecType, ByteBuffer, ByteBuffer> decoder;
+        private final List<CodecType> codecs;
+        private final BiFunction<CodecType, ByteBuffer, ByteBuffer> decoders;
 
-        private Decoder(CodecType codecType, Function<ByteBuffer, ByteBuffer> decoder) {
-            this.decoder = (x, y) -> {
+        private Decoder(CodecType codecType, Function<ByteBuffer, ByteBuffer> decoders) {
+            this.decoders = (x, y) -> {
                 if (x.equals(codecType)) {
-                    return decoder.apply(y);
+                    return decoders.apply(y);
                 } else {
                     return DEFAULT.apply(x, y);
                 }
             };
-            codecs = new HashSet<>();
-            this.codecs.add(CodecType.None);
-            this.codecs.add(CodecType.GZip);
-            this.codecs.add(CodecType.Snappy);
-            this.codecs.add(codecType);
+            this.codecs = Lists.newArrayList(CodecType.None, CodecType.GZip, CodecType.Snappy, codecType);
         }
 
         private Decoder() {
-            this.decoder = DEFAULT;
-            codecs = new HashSet<>();
-            this.codecs.add(CodecType.None);
-            this.codecs.add(CodecType.GZip);
-            this.codecs.add(CodecType.Snappy);
+            this.decoders = DEFAULT;
+            this.codecs = Lists.newArrayList(CodecType.None, CodecType.GZip, CodecType.Snappy);
         }
         
         ByteBuffer decode(CodecType codecType, ByteBuffer bytes) {
-            return decoder.apply(codecType, bytes);
+            return decoders.apply(codecType, bytes);
         }
     }
 }

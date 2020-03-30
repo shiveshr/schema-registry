@@ -19,9 +19,9 @@ import lombok.SneakyThrows;
 import java.io.OutputStream;
 
 class ProtobufSerializer<T extends Message> extends AbstractPravegaSerializer<T> {
-    ProtobufSerializer(String groupId, String appId, RegistryClient client, ProtobufSchema<T> schema,
+    ProtobufSerializer(String groupId, RegistryClient client, ProtobufSchema<T> schema,
                        Codec codec, boolean registerSchema) {
-        super(groupId, appId, client, schema, codec, registerSchema);
+        super(groupId, client, schema, codec, registerSchema);
     }
 
     @SneakyThrows

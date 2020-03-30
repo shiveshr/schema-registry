@@ -1,6 +1,6 @@
 /*
- * Pravega Schema Registry APIs
- * REST APIs for Pravega Schema Registry.
+ * Pravega Application Registry APIs
+ * REST APIs for Pravega Application Registry.
  *
  * OpenAPI spec version: 0.0.1
  * 
@@ -16,7 +16,8 @@ package io.pravega.schemaregistry.contract.generated.rest.model;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfoList;
+import io.pravega.schemaregistry.contract.generated.rest.model.Reader;
+import io.pravega.schemaregistry.contract.generated.rest.model.Writer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.HashMap;
@@ -33,10 +34,10 @@ public class Application   {
   private String name = null;
 
   @JsonProperty("writingTo")
-  private Map<String, SchemaInfoList> writingTo = null;
+  private Map<String, List<Writer>> writingTo = null;
 
   @JsonProperty("readingFrom")
-  private Map<String, SchemaInfoList> readingFrom = null;
+  private Map<String, List<Reader>> readingFrom = null;
 
   @JsonProperty("properties")
   private Map<String, String> properties = null;
@@ -60,14 +61,14 @@ public class Application   {
     this.name = name;
   }
 
-  public Application writingTo(Map<String, SchemaInfoList> writingTo) {
+  public Application writingTo(Map<String, List<Writer>> writingTo) {
     this.writingTo = writingTo;
     return this;
   }
 
-  public Application putWritingToItem(String key, SchemaInfoList writingToItem) {
+  public Application putWritingToItem(String key, List<Writer> writingToItem) {
     if (this.writingTo == null) {
-      this.writingTo = new HashMap<String, SchemaInfoList>();
+      this.writingTo = new HashMap<String, List<Writer>>();
     }
     this.writingTo.put(key, writingToItem);
     return this;
@@ -79,22 +80,22 @@ public class Application   {
    **/
   @JsonProperty("writingTo")
   @ApiModelProperty(value = "")
-  public Map<String, SchemaInfoList> getWritingTo() {
+  public Map<String, List<Writer>> getWritingTo() {
     return writingTo;
   }
 
-  public void setWritingTo(Map<String, SchemaInfoList> writingTo) {
+  public void setWritingTo(Map<String, List<Writer>> writingTo) {
     this.writingTo = writingTo;
   }
 
-  public Application readingFrom(Map<String, SchemaInfoList> readingFrom) {
+  public Application readingFrom(Map<String, List<Reader>> readingFrom) {
     this.readingFrom = readingFrom;
     return this;
   }
 
-  public Application putReadingFromItem(String key, SchemaInfoList readingFromItem) {
+  public Application putReadingFromItem(String key, List<Reader> readingFromItem) {
     if (this.readingFrom == null) {
-      this.readingFrom = new HashMap<String, SchemaInfoList>();
+      this.readingFrom = new HashMap<String, List<Reader>>();
     }
     this.readingFrom.put(key, readingFromItem);
     return this;
@@ -106,11 +107,11 @@ public class Application   {
    **/
   @JsonProperty("readingFrom")
   @ApiModelProperty(value = "")
-  public Map<String, SchemaInfoList> getReadingFrom() {
+  public Map<String, List<Reader>> getReadingFrom() {
     return readingFrom;
   }
 
-  public void setReadingFrom(Map<String, SchemaInfoList> readingFrom) {
+  public void setReadingFrom(Map<String, List<Reader>> readingFrom) {
     this.readingFrom = readingFrom;
   }
 

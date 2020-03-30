@@ -1,6 +1,6 @@
 /*
- * Pravega Schema Registry APIs
- * REST APIs for Pravega Schema Registry.
+ * Pravega Application Registry APIs
+ * REST APIs for Pravega Application Registry.
  *
  * OpenAPI spec version: 0.0.1
  * 
@@ -16,7 +16,7 @@ package io.pravega.schemaregistry.contract.generated.rest.model;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.pravega.schemaregistry.contract.generated.rest.model.VersionInfo;
+import io.pravega.schemaregistry.contract.generated.rest.model.Reader;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import javax.validation.constraints.*;
@@ -29,8 +29,8 @@ public class AddReaderRequest   {
   @JsonProperty("groupId")
   private String groupId = null;
 
-  @JsonProperty("version")
-  private VersionInfo version = null;
+  @JsonProperty("reader")
+  private Reader reader = null;
 
   public AddReaderRequest groupId(String groupId) {
     this.groupId = groupId;
@@ -51,23 +51,23 @@ public class AddReaderRequest   {
     this.groupId = groupId;
   }
 
-  public AddReaderRequest version(VersionInfo version) {
-    this.version = version;
+  public AddReaderRequest reader(Reader reader) {
+    this.reader = reader;
     return this;
   }
 
   /**
-   * Get version
-   * @return version
+   * Get reader
+   * @return reader
    **/
-  @JsonProperty("version")
+  @JsonProperty("reader")
   @ApiModelProperty(value = "")
-  public VersionInfo getVersion() {
-    return version;
+  public Reader getReader() {
+    return reader;
   }
 
-  public void setVersion(VersionInfo version) {
-    this.version = version;
+  public void setReader(Reader reader) {
+    this.reader = reader;
   }
 
 
@@ -81,12 +81,12 @@ public class AddReaderRequest   {
     }
     AddReaderRequest addReaderRequest = (AddReaderRequest) o;
     return Objects.equals(this.groupId, addReaderRequest.groupId) &&
-        Objects.equals(this.version, addReaderRequest.version);
+        Objects.equals(this.reader, addReaderRequest.reader);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(groupId, version);
+    return Objects.hash(groupId, reader);
   }
 
 
@@ -96,7 +96,7 @@ public class AddReaderRequest   {
     sb.append("class AddReaderRequest {\n");
     
     sb.append("    groupId: ").append(toIndentedString(groupId)).append("\n");
-    sb.append("    version: ").append(toIndentedString(version)).append("\n");
+    sb.append("    reader: ").append(toIndentedString(reader)).append("\n");
     sb.append("}");
     return sb.toString();
   }

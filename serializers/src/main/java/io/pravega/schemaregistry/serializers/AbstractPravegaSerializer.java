@@ -34,17 +34,15 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
     private static final byte PROTOCOL = 0x0;
 
     private final String groupId;
-    private final String appId;
     private final SchemaInfo schemaInfo;
     private final AtomicReference<EncodingId> encodingId;
+    private final AtomicReference<VersionInfo> versionRef;
     private final AtomicBoolean encodeHeader;
     private final RegistryClient client;
     @Getter
     private final Codec codec;
     private final boolean registerSchema;
-
     protected AbstractPravegaSerializer(String groupId,
-                                        String appId, 
                                         RegistryClient client,
                                         SchemaContainer<T> schema,
                                         Codec codec, 
@@ -55,11 +53,11 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
         Preconditions.checkNotNull(schema);
 
         this.groupId = groupId;
-        this.appId = appId;
         this.client = client;
         this.schemaInfo = schema.getSchemaInfo();
         this.registerSchema = registerSchema;
         this.encodingId = new AtomicReference<>();
+        this.versionRef = new AtomicReference<>();
         this.codec = codec;
         this.encodeHeader = new AtomicBoolean();
         initialize();
@@ -71,19 +69,15 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
         Map<String, String> properties = groupProperties.getProperties();
         boolean toEncodeHeader = Boolean.parseBoolean(properties.get(SerializerFactory.ENCODE));
         encodeHeader.set(toEncodeHeader);
-        VersionInfo version;
         if (registerSchema) {
             // register schema
-            version = client.addSchemaIfAbsent(groupId, schemaInfo);
+            versionRef.set(client.addSchemaIfAbsent(groupId, schemaInfo));
         } else {
             // get already registered schema version. If schema is not registered, this will throw an exception. 
-            version = client.getSchemaVersion(groupId, schemaInfo);
+            versionRef.set(client.getSchemaVersion(groupId, schemaInfo));
         }
 
-        if (!Strings.isNullOrEmpty(appId)) {
-            client.addWriter(appId, groupId, version, codec.getCodecType());
-        }
-        encodingId.set(client.getEncodingId(groupId, version, codec.getCodecType()));
+        encodingId.set(client.getEncodingId(groupId, versionRef.get(), codec.getCodecType()));
     }
 
     @SneakyThrows
@@ -123,5 +117,9 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
     @Override
     public T deserialize(ByteBuffer bytes) {
         throw new IllegalStateException();
+    }
+    
+    VersionInfo getVersion() {
+        return versionRef.get();
     }
 }

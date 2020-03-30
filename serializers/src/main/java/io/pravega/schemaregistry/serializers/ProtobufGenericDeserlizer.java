@@ -29,9 +29,9 @@ import java.nio.ByteBuffer;
 public class ProtobufGenericDeserlizer extends AbstractPravegaDeserializer<DynamicMessage> {
     private final LoadingCache<SchemaInfo, Descriptors.Descriptor> knownSchemas;
 
-    ProtobufGenericDeserlizer(String groupId, String appId, RegistryClient client, @Nullable ProtobufSchema<DynamicMessage> schema,
+    ProtobufGenericDeserlizer(String groupId, RegistryClient client, @Nullable ProtobufSchema<DynamicMessage> schema,
                               SerializerConfig.Decoder decoder, EncodingCache encodingCache) {
-        super(groupId, appId, client, schema, false, decoder, encodingCache);
+        super(groupId, client, schema, false, decoder, encodingCache);
         this.knownSchemas = CacheBuilder.newBuilder().build(new CacheLoader<SchemaInfo, Descriptors.Descriptor>() {
             @Override
             public Descriptors.Descriptor load(SchemaInfo schemaToUse) throws Exception {

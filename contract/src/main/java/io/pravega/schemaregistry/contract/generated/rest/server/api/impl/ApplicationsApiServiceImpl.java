@@ -6,9 +6,10 @@ import io.pravega.schemaregistry.contract.generated.rest.model.*;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddReaderRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddWriterRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.Application;
-import io.pravega.schemaregistry.contract.generated.rest.model.ApplicationsInGroup;
 import io.pravega.schemaregistry.contract.generated.rest.model.CreateApplicationRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.IncompatibleSchema;
+import io.pravega.schemaregistry.contract.generated.rest.model.ReadersInGroup;
+import io.pravega.schemaregistry.contract.generated.rest.model.WritersInGroup;
 
 import java.util.List;
 import io.pravega.schemaregistry.contract.generated.rest.server.api.NotFoundException;

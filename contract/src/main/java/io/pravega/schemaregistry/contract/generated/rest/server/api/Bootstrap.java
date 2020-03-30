@@ -15,7 +15,7 @@ public class Bootstrap extends HttpServlet {
   public void init(ServletConfig config) throws ServletException {
     Info info = new Info()
       .title("Swagger Server")
-      .description("REST APIs for Pravega Schema Registry.")
+      .description("REST APIs for Pravega Application Registry.")
       .termsOfService("")
       .contact(new Contact()
         .email(""))

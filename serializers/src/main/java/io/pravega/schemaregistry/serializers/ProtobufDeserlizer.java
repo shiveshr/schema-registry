@@ -21,10 +21,10 @@ import java.nio.ByteBuffer;
 
 public class ProtobufDeserlizer<T extends GeneratedMessageV3> extends AbstractPravegaDeserializer<T> {
     private final ProtobufSchema<T> protobufSchema;
-    ProtobufDeserlizer(String groupId, String appId, RegistryClient client,
+    ProtobufDeserlizer(String groupId, RegistryClient client,
                        ProtobufSchema<T> schema, SerializerConfig.Decoder decoder,
                        EncodingCache encodingCache) {
-        super(groupId, appId, client, schema, true, decoder, encodingCache);
+        super(groupId, client, schema, true, decoder, encodingCache);
         Preconditions.checkNotNull(schema);
         this.protobufSchema = schema;
     }

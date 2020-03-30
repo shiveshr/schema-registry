@@ -1,6 +1,6 @@
 /*
- * Pravega Schema Registry APIs
- * REST APIs for Pravega Schema Registry.
+ * Pravega Application Registry APIs
+ * REST APIs for Pravega Application Registry.
  *
  * OpenAPI spec version: 0.0.1
  * 
@@ -16,6 +16,7 @@ package io.pravega.schemaregistry.contract.generated.rest.model;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import io.pravega.schemaregistry.contract.generated.rest.model.CodecType;
 import io.pravega.schemaregistry.contract.generated.rest.model.VersionInfo;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -24,19 +25,44 @@ import java.util.List;
 import javax.validation.constraints.*;
 
 /**
- * VersionInfoList
+ * Writer
  */
 
-public class VersionInfoList   {
+public class Writer   {
+  @JsonProperty("name")
+  private String name = null;
+
   @JsonProperty("versions")
   private List<VersionInfo> versions = null;
 
-  public VersionInfoList versions(List<VersionInfo> versions) {
+  @JsonProperty("codec")
+  private CodecType codec = null;
+
+  public Writer name(String name) {
+    this.name = name;
+    return this;
+  }
+
+  /**
+   * Get name
+   * @return name
+   **/
+  @JsonProperty("name")
+  @ApiModelProperty(value = "")
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public Writer versions(List<VersionInfo> versions) {
     this.versions = versions;
     return this;
   }
 
-  public VersionInfoList addVersionsItem(VersionInfo versionsItem) {
+  public Writer addVersionsItem(VersionInfo versionsItem) {
     if (this.versions == null) {
       this.versions = new ArrayList<VersionInfo>();
     }
@@ -58,6 +84,25 @@ public class VersionInfoList   {
     this.versions = versions;
   }
 
+  public Writer codec(CodecType codec) {
+    this.codec = codec;
+    return this;
+  }
+
+  /**
+   * Get codec
+   * @return codec
+   **/
+  @JsonProperty("codec")
+  @ApiModelProperty(value = "")
+  public CodecType getCodec() {
+    return codec;
+  }
+
+  public void setCodec(CodecType codec) {
+    this.codec = codec;
+  }
+
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -67,22 +112,26 @@ public class VersionInfoList   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    VersionInfoList versionInfoList = (VersionInfoList) o;
-    return Objects.equals(this.versions, versionInfoList.versions);
+    Writer writer = (Writer) o;
+    return Objects.equals(this.name, writer.name) &&
+        Objects.equals(this.versions, writer.versions) &&
+        Objects.equals(this.codec, writer.codec);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(versions);
+    return Objects.hash(name, versions, codec);
   }
 
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class VersionInfoList {\n");
+    sb.append("class Writer {\n");
     
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    versions: ").append(toIndentedString(versions)).append("\n");
+    sb.append("    codec: ").append(toIndentedString(codec)).append("\n");
     sb.append("}");
     return sb.toString();
   }

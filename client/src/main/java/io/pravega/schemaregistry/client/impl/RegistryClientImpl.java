@@ -1,11 +1,11 @@
 /**
  * Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.pravega.schemaregistry.client.impl;
 
@@ -30,7 +30,6 @@ import io.pravega.schemaregistry.contract.generated.rest.model.AddReaderRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddSchemaToGroupRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddWriterRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.Application;
-import io.pravega.schemaregistry.contract.generated.rest.model.ApplicationsInGroup;
 import io.pravega.schemaregistry.contract.generated.rest.model.CanRead;
 import io.pravega.schemaregistry.contract.generated.rest.model.CanReadRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.CodecsList;
@@ -41,10 +40,12 @@ import io.pravega.schemaregistry.contract.generated.rest.model.GetSchemaVersion;
 import io.pravega.schemaregistry.contract.generated.rest.model.GroupsList;
 import io.pravega.schemaregistry.contract.generated.rest.model.IncompatibleSchema;
 import io.pravega.schemaregistry.contract.generated.rest.model.ObjectTypesList;
+import io.pravega.schemaregistry.contract.generated.rest.model.ReadersInGroup;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaList;
 import io.pravega.schemaregistry.contract.generated.rest.model.UpdateValidationRulesPolicyRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.Valid;
 import io.pravega.schemaregistry.contract.generated.rest.model.ValidateRequest;
+import io.pravega.schemaregistry.contract.generated.rest.model.WritersInGroup;
 import io.pravega.schemaregistry.contract.transform.ModelHelper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.glassfish.jersey.client.ClientConfig;
@@ -60,8 +61,10 @@ import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
+
+import static io.pravega.schemaregistry.contract.data.Application.Reader;
+import static io.pravega.schemaregistry.contract.data.Application.Writer;
 
 public class RegistryClientImpl implements RegistryClient {
     private static final HashFunction HASH = Hashing.murmur3_128();
@@ -71,7 +74,7 @@ public class RegistryClientImpl implements RegistryClient {
     public RegistryClientImpl(URI uri) {
         this.uri = uri;
     }
-    
+
     @Override
     public boolean addGroup(String group, SchemaType schemaType, SchemaValidationRules validationRules, boolean validateByObjectType, Map<String, String> properties) {
         WebTarget webTarget = client.target(uri).path("v1/groups");
@@ -117,7 +120,7 @@ public class RegistryClientImpl implements RegistryClient {
         }
 
         GroupsList entity = response.readEntity(GroupsList.class);
-        return entity.getGroups().stream().collect(Collectors.toMap(x -> x.getGroupName(), 
+        return entity.getGroups().stream().collect(Collectors.toMap(x -> x.getGroupName(),
                 x -> {
                     SchemaType schemaType = ModelHelper.decode(x.getSchemaType());
                     SchemaValidationRules rules = ModelHelper.decode(x.getSchemaValidationRules());
@@ -174,7 +177,7 @@ public class RegistryClientImpl implements RegistryClient {
             return objectTypesList.getGroups();
         } else {
             throw new RuntimeException("Internal Service error. Failed to get objectTypes.");
-        }    
+        }
     }
 
     @Override
@@ -296,7 +299,7 @@ public class RegistryClientImpl implements RegistryClient {
             return getEvolutionHistoryByObjectType(group, objectTypeName);
         }
     }
-    
+
     private List<SchemaEvolution> getEvolutionHistory(String group) {
         WebTarget webTarget = client.target(uri).path("v1/groups").path(group).path("schemas").path("versions");
         Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
@@ -356,7 +359,7 @@ public class RegistryClientImpl implements RegistryClient {
     @Override
     public boolean validateSchema(String group, SchemaInfo schema) {
         WebTarget webTarget = client.target(uri).path("v1/groups").path(group).path("schemas").path("validate");
-        
+
         Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
         ValidateRequest validateRequest = new ValidateRequest()
                 .schemaInfo(ModelHelper.encode(schema));
@@ -385,19 +388,19 @@ public class RegistryClientImpl implements RegistryClient {
             throw new RuntimeException("Internal Service error.");
         }
     }
-    
+
     @Override
     public List<CodecType> getCodecs(String group) {
         WebTarget webTarget = client.target(uri).path("v1/groups").path(group).path("codecs");
         Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
         Response response = invocationBuilder.get();
         CodecsList list = response.readEntity(CodecsList.class);
-        
+
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             return list.getCodecTypes().stream().map(ModelHelper::decode).collect(Collectors.toList());
         } else {
             throw new RuntimeException("Failed to get codecs");
-        }    
+        }
     }
 
     @Override
@@ -410,7 +413,7 @@ public class RegistryClientImpl implements RegistryClient {
             throw new RuntimeException("Failed to add codec");
         }
     }
-    
+
     @Override
     public void addApplication(String appId, Map<String, String> properties) {
         WebTarget webTarget = client.target(uri).path("v1/applications");
@@ -439,11 +442,11 @@ public class RegistryClientImpl implements RegistryClient {
     }
 
     @Override
-    public void addWriter(String appId, String groupId, VersionInfo schemaVersion, CodecType codecType) {
+    public void addWriter(String appId, String groupId, Writer writer) {
         WebTarget webTarget = client.target(uri).path("v1/applications").path(appId).path("writers");
         Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
         AddWriterRequest request = new AddWriterRequest()
-                .groupId(groupId).version(ModelHelper.encode(schemaVersion));
+                .groupId(groupId).writer(ModelHelper.encode(writer));
         Response response = invocationBuilder.post(Entity.entity(request, MediaType.APPLICATION_JSON));
 
         if (response.getStatus() == Response.Status.CONFLICT.getStatusCode()) {
@@ -455,11 +458,11 @@ public class RegistryClientImpl implements RegistryClient {
     }
 
     @Override
-    public void addReader(String appId, String groupId, VersionInfo schemaVersion, Set<CodecType> codecs) {
+    public void addReader(String appId, String groupId, Reader reader) {
         WebTarget webTarget = client.target(uri).path("v1/applications").path(appId).path("readers");
         Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
         AddReaderRequest request = new AddReaderRequest()
-                .groupId(groupId).version(ModelHelper.encode(schemaVersion));
+                .groupId(groupId).reader(ModelHelper.encode(reader));
         Response response = invocationBuilder.post(Entity.entity(request, MediaType.APPLICATION_JSON));
 
         if (response.getStatus() == Response.Status.CONFLICT.getStatusCode()) {
@@ -493,30 +496,30 @@ public class RegistryClientImpl implements RegistryClient {
     }
 
     @Override
-    public Map<String, List<VersionInfo>> listWriterAppsInGroup(String groupId) {
+    public Map<String, List<Writer>> listWriterAppsInGroup(String groupId) {
         WebTarget webTarget = client.target(uri).path("v1/applications/groups").path(groupId).path("writers");
         Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
         Response response = invocationBuilder.get();
 
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-            ApplicationsInGroup app = response.readEntity(ApplicationsInGroup.class);
-            return app.getMap().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, 
-                    x -> x.getValue().getVersions().stream().map(ModelHelper::decode).collect(Collectors.toList())));
+            WritersInGroup app = response.readEntity(WritersInGroup.class);
+            return app.getMap().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+                    x -> x.getValue().stream().map(ModelHelper::decode).collect(Collectors.toList())));
         } else {
             throw new RuntimeException("Failed to get writers in group");
         }
     }
 
     @Override
-    public Map<String, List<VersionInfo>> listReaderAppsInGroup(String groupId) {
+    public Map<String, List<Reader>> listReaderAppsInGroup(String groupId) {
         WebTarget webTarget = client.target(uri).path("v1/applications/groups").path(groupId).path("readers");
         Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
         Response response = invocationBuilder.get();
 
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-            ApplicationsInGroup app = response.readEntity(ApplicationsInGroup.class);
+            ReadersInGroup app = response.readEntity(ReadersInGroup.class);
             return app.getMap().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                    x -> x.getValue().getVersions().stream().map(ModelHelper::decode).collect(Collectors.toList())));
+                    x -> x.getValue().stream().map(ModelHelper::decode).collect(Collectors.toList())));
         } else {
             throw new RuntimeException("Failed to get writers in group");
         }

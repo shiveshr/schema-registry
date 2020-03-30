@@ -30,9 +30,6 @@ import java.util.stream.Collectors;
 public class PravegaTableIndex implements Index<Version> {
     private static final String TABLE_NAME_FORMAT = "table-%s/index/0";
     private static final IndexKeySerializer INDEX_KEY_SERIALIZER = new IndexKeySerializer();
-    // immutable keys
-    private static final List<Class<? extends IndexRecord.IndexKey>> IMMUTABLE_RECORDS = 
-            Lists.newArrayList(IndexRecord.VersionInfoKey.class, IndexRecord.GroupPropertyKey.class);
     
     private final TableStore tablesStore;
     private final String tableName;

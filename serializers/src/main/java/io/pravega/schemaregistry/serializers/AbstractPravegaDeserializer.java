@@ -9,7 +9,6 @@
  */
 package io.pravega.schemaregistry.serializers;
 
-import com.google.common.base.Strings;
 import io.pravega.client.stream.Serializer;
 import io.pravega.schemaregistry.cache.EncodingCache;
 import io.pravega.schemaregistry.client.RegistryClient;
@@ -36,27 +35,27 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
     private static final int HEADER_SIZE = 1 + Integer.BYTES;
 
     private final String groupId;
-    private final String appId;
     private final RegistryClient client;
     // This can be null. If no schema is supplied, it means the intent is to deserialize into writer schema. 
     // If headers are not encoded, then this will be the latest schema from the registry
     private final AtomicReference<SchemaInfo> schemaInfo;
+    private final AtomicReference<VersionInfo> versionRef;
     private final AtomicBoolean encodeHeader;
     private final SerializerConfig.Decoder decoder;
     private final boolean skipHeaders;
     private final EncodingCache encodingCache;
 
     protected AbstractPravegaDeserializer(String groupId,
-                                          String appId, RegistryClient client,
+                                          RegistryClient client,
                                           @Nullable SchemaContainer<T> schema,
                                           boolean skipHeaders,
                                           SerializerConfig.Decoder decoder,
                                           EncodingCache encodingCache) {
         this.groupId = groupId;
-        this.appId = appId;
         this.client = client;
         this.encodingCache = encodingCache;
         this.schemaInfo = new AtomicReference<>();
+        this.versionRef = new AtomicReference<>();
         if (schema != null) {
             schemaInfo.set(schema.getSchemaInfo());
         }
@@ -75,7 +74,6 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
         boolean toEncodeHeader = Boolean.parseBoolean(properties.get(SerializerFactory.ENCODE));
         this.encodeHeader.set(toEncodeHeader);
 
-        VersionInfo versionInfo = null;
         if (schemaInfo.get() != null) {
             log.info("Validate caller supplied schema.");
             if (!client.canRead(groupId, schemaInfo.get())) {
@@ -85,15 +83,9 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
             log.info("Retrieving latest schema from the registry for reads.");
             SchemaWithVersion latestSchema = client.getLatestSchema(groupId, null);
             schemaInfo.set(latestSchema.getSchema());
-            versionInfo = latestSchema.getVersion();
+            versionRef.set(latestSchema.getVersion());
         } else {
             log.info("Read using writer schema.");
-        }
-
-        if (!Strings.isNullOrEmpty(appId)) {
-            // if the schema is not registered, this will throw an exception.
-            versionInfo = versionInfo != null ? versionInfo : client.getSchemaVersion(groupId, schemaInfo.get());
-            client.addReader(appId, groupId, versionInfo, decoder.getCodecs());
         }
     }
 
@@ -112,6 +104,7 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
                 data.position(currentPos + HEADER_SIZE);
             } else {
                 byte protocol = data.get();
+                assert protocol == PROTOCOL;
                 EncodingId encodingId = new EncodingId(data.getInt());
                 EncodingInfo encodingInfo = encodingCache.getEncodingInfo(encodingId);
                 codecType = encodingInfo.getCodec();
@@ -134,4 +127,8 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
     }
 
     protected abstract T deserialize(ByteBuffer buffer, SchemaInfo writerSchema, SchemaInfo readerSchema);
+
+    VersionInfo getVersion() {
+        return versionRef.get();
+    }
 }

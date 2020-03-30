@@ -1,6 +1,6 @@
 /*
- * Pravega Schema Registry APIs
- * REST APIs for Pravega Schema Registry.
+ * Pravega Application Registry APIs
+ * REST APIs for Pravega Application Registry.
  *
  * OpenAPI spec version: 0.0.1
  * 
@@ -16,7 +16,7 @@ package io.pravega.schemaregistry.contract.generated.rest.model;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.pravega.schemaregistry.contract.generated.rest.model.VersionInfoList;
+import io.pravega.schemaregistry.contract.generated.rest.model.Writer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.HashMap;
@@ -25,21 +25,21 @@ import java.util.Map;
 import javax.validation.constraints.*;
 
 /**
- * ApplicationsInGroup
+ * WritersInGroup
  */
 
-public class ApplicationsInGroup   {
+public class WritersInGroup   {
   @JsonProperty("map")
-  private Map<String, VersionInfoList> map = null;
+  private Map<String, List<Writer>> map = null;
 
-  public ApplicationsInGroup map(Map<String, VersionInfoList> map) {
+  public WritersInGroup map(Map<String, List<Writer>> map) {
     this.map = map;
     return this;
   }
 
-  public ApplicationsInGroup putMapItem(String key, VersionInfoList mapItem) {
+  public WritersInGroup putMapItem(String key, List<Writer> mapItem) {
     if (this.map == null) {
-      this.map = new HashMap<String, VersionInfoList>();
+      this.map = new HashMap<String, List<Writer>>();
     }
     this.map.put(key, mapItem);
     return this;
@@ -51,11 +51,11 @@ public class ApplicationsInGroup   {
    **/
   @JsonProperty("map")
   @ApiModelProperty(value = "")
-  public Map<String, VersionInfoList> getMap() {
+  public Map<String, List<Writer>> getMap() {
     return map;
   }
 
-  public void setMap(Map<String, VersionInfoList> map) {
+  public void setMap(Map<String, List<Writer>> map) {
     this.map = map;
   }
 
@@ -68,8 +68,8 @@ public class ApplicationsInGroup   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApplicationsInGroup applicationsInGroup = (ApplicationsInGroup) o;
-    return Objects.equals(this.map, applicationsInGroup.map);
+    WritersInGroup writersInGroup = (WritersInGroup) o;
+    return Objects.equals(this.map, writersInGroup.map);
   }
 
   @Override
@@ -81,7 +81,7 @@ public class ApplicationsInGroup   {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApplicationsInGroup {\n");
+    sb.append("class WritersInGroup {\n");
     
     sb.append("    map: ").append(toIndentedString(map)).append("\n");
     sb.append("}");

@@ -17,9 +17,13 @@ import io.pravega.schemaregistry.storage.client.TableStore;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
+import static io.pravega.schemaregistry.storage.client.TableStore.EMPTY;
 
 /**
  * Pravega tables based table implementation. 
@@ -85,6 +89,30 @@ public class PravegaTable implements Table<Version> {
     }
 
     @Override
+    public <T extends TableValue> CompletableFuture<List<ValueWithVersion<T, Version>>> getRecords(List<? extends TableKey> keys, Class<T> tClass) {
+        return tablesStore.getEntries(tableName,
+                keys.stream().map(KEY_SERIALIZER::toKeyString).collect(Collectors.toList()))
+                          .thenApply(values -> {
+                              List<ValueWithVersion<T, Version>> result = new ArrayList<>(keys.size());
+                              for (int i = 0; i < keys.size(); i++) {
+                                  TableKey key = keys.get(i);
+                                  T value;
+                                  Version version;
+                                  VersionedMetadata<byte[]> versionedMetadata = values.get(i);
+                                  if (!versionedMetadata.equals(EMPTY)) {
+                                      value = Table.fromBytes(key.getClass(), versionedMetadata.getObject(), tClass);
+                                      version = versionedMetadata.getVersion();
+                                  } else {
+                                      value = null;
+                                      version = null;
+                                  }
+                                  result.add(new ValueWithVersion<>(value, version));
+                              }
+                              return result;
+                          });
+    }
+
+    @Override
     public CompletableFuture<Void> addRecord(TableKey key, TableValue value) {
         return tablesStore.addNewEntryIfAbsent(tableName, KEY_SERIALIZER.toKeyString(key), value.toBytes());
     }
@@ -100,6 +128,6 @@ public class PravegaTable implements Table<Version> {
                 x -> Table.fromBytes(key.getClass(), x, tClass))
                                                          .thenApply(entry -> new ValueWithVersion<>(entry.getObject(), entry.getVersion())),
                 e -> Exceptions.unwrap(e) instanceof StoreExceptions.DataNotFoundException,
-                null);
+                new ValueWithVersion<>(null, null));
     }
 }

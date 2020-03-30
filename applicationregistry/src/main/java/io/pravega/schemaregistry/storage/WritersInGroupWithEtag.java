@@ -10,7 +10,6 @@
 package io.pravega.schemaregistry.storage;
 
 import io.pravega.schemaregistry.contract.data.Application;
-import io.pravega.schemaregistry.contract.data.VersionInfo;
 import lombok.Data;
 
 import java.util.List;
@@ -18,7 +17,7 @@ import java.util.Map;
 
 @Data
 public class WritersInGroupWithEtag {
-    // appid to writers
-    private final Map<String, List<Application.Writer>> appIdWithSchemaVersions;
+    // appid to appWriters
+    private final Map<String, List<Application.Writer>> appWriters;
     private final Etag etag;
 }

@@ -26,8 +26,8 @@ public class TableKeySerializer extends VersionedSerializer.MultiType<Table.Tabl
     protected void declareSerializers(Builder builder) {
         // Unused values (Do not repurpose!):
         // - 0: Unsupported Serializer.
-        builder.serializer(Table.Writer.class, 1, new Table.Writer.Serializer())
-               .serializer(Table.Reader.class, 2, new Table.Reader.Serializer())
+        builder.serializer(Table.WriterKey.class, 1, new Table.WriterKey.Serializer())
+               .serializer(Table.ReaderKey.class, 2, new Table.ReaderKey.Serializer())
                .serializer(Table.TableEtag.class, 3, new Table.TableEtag.Serializer());
     }
 
