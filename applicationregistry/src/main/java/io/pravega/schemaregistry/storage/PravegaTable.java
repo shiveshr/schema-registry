@@ -91,7 +91,7 @@ public class PravegaTable implements Table<Version> {
     @Override
     public <T extends TableValue> CompletableFuture<List<ValueWithVersion<T, Version>>> getRecords(List<? extends TableKey> keys, Class<T> tClass) {
         return tablesStore.getEntries(tableName,
-                keys.stream().map(KEY_SERIALIZER::toKeyString).collect(Collectors.toList()))
+                keys.stream().map(KEY_SERIALIZER::toKeyString).collect(Collectors.toList()), false)
                           .thenApply(values -> {
                               List<ValueWithVersion<T, Version>> result = new ArrayList<>(keys.size());
                               for (int i = 0; i < keys.size(); i++) {

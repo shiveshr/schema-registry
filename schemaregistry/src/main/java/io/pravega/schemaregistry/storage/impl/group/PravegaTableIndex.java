@@ -9,7 +9,6 @@
  */
 package io.pravega.schemaregistry.storage.impl.group;
 
-import com.google.common.collect.Lists;
 import io.pravega.common.Exceptions;
 import io.pravega.common.concurrent.Futures;
 import io.pravega.controller.store.stream.Version;

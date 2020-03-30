@@ -110,13 +110,13 @@ public class TableStore {
         batch.put(key, new AbstractMap.SimpleEntry<>(value, null));
         return Futures.toVoid(updateEntries(tableName, batch)
                 .thenApply(list -> list.get(0)))
-                .exceptionally(e -> {
-                    if (Exceptions.unwrap(e) instanceof StoreExceptions.WriteConflictException) {
-                        return null;
-                    } else {
-                        throw new CompletionException(e);
-                    }
-                });
+                      .exceptionally(e -> {
+                          if (Exceptions.unwrap(e) instanceof StoreExceptions.WriteConflictException) {
+                              return null;
+                          } else {
+                              throw new CompletionException(e);
+                          }
+                      });
     }
 
     public CompletableFuture<Version> updateEntry(String tableName, String key, byte[] value, Version ver) {
@@ -128,7 +128,7 @@ public class TableStore {
     public CompletableFuture<List<Version>> updateEntries(String tableName, Map<String, Map.Entry<byte[], Version>> batch) {
         return withRetries(() -> {
             List<TableEntry<byte[], byte[]>> entries = batch.entrySet().stream().map(x -> {
-                KeyVersion version = x.getValue().getValue() == null ? KeyVersion.NOT_EXISTS : 
+                KeyVersion version = x.getValue().getValue() == null ? KeyVersion.NOT_EXISTS :
                         new KeyVersionImpl(x.getValue().getValue().asLongVersion().getLongValue());
 
                 return new TableEntryImpl<>(new TableKeyImpl<>(x.getKey().getBytes(Charsets.UTF_8), version), x.getValue().getKey());
@@ -147,8 +147,12 @@ public class TableStore {
                     return new VersionedMetadata<>(fromBytes.apply(value.getObject()), value.getVersion());
                 });
     }
-
+    
     public CompletableFuture<List<VersionedMetadata<byte[]>>> getEntries(String tableName, List<String> tableKeys) {
+        return getEntries(tableName, tableKeys, true);
+    }
+    
+    public CompletableFuture<List<VersionedMetadata<byte[]>>> getEntries(String tableName, List<String> tableKeys, boolean throwOnDNF) {
         log.info("get entries called for : {} key : {}", tableName, tableKeys);
         List<TableKey<byte[]>> keys = tableKeys.stream().map(key -> new TableKeyImpl<>(key.getBytes(Charsets.UTF_8), null)).collect(Collectors.toList());
 
@@ -160,7 +164,11 @@ public class TableStore {
                     return x.stream().map(y -> {
                         KeyVersion version = y.getKey().getVersion();
                         if (version.equals(KeyVersion.NOT_EXISTS)) {
-                            return EMPTY;   
+                            if (throwOnDNF) {
+                                throw StoreExceptions.create(StoreExceptions.Type.DATA_NOT_FOUND, "key not found");
+                            } else {
+                                return EMPTY;
+                            }
                         } else {
                             return new VersionedMetadata<>(y.getValue(),
                                     Version.LongVersion.builder().longValue(version.getSegmentVersion()).build());

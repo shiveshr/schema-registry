@@ -10,7 +10,6 @@
 package io.pravega.schemaregistry.serializers;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import io.pravega.client.stream.Serializer;
 import io.pravega.common.util.BitConverter;
 import io.pravega.schemaregistry.client.RegistryClient;

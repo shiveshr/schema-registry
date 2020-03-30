@@ -676,6 +676,11 @@ public interface IndexRecord {
     @SneakyThrows(IOException.class)
     @SuppressWarnings("unchecked")
     static IndexValue fromBytes(Class<? extends IndexKey> clasz, byte[] bytes) {
-        return SERIALIZERS_BY_KEY_TYPE.get(clasz).deserialize(bytes);
+        try {
+            return SERIALIZERS_BY_KEY_TYPE.get(clasz).deserialize(bytes);
+        } catch (Throwable t) {
+            System.err.println(t);
+            throw t;
+        }
     }
 }
