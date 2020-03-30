@@ -310,8 +310,13 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                            return Response.status(Status.OK).entity(id).build();
                        })
                        .exceptionally(exception -> {
-                           log.warn("getOrGenerateEncodingId failed with exception: ", exception);
-                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                           if (Exceptions.unwrap(exception) instanceof CodecNotFoundException) {
+                               log.info("Codec Not Found {}", codecType);
+                               return Response.status(Status.PRECONDITION_FAILED).build();
+                           } else {
+                               log.warn("getOrGenerateEncodingId failed with exception: ", exception);
+                               return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                           }
                        })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
@@ -458,13 +463,8 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                            return Response.status(Status.OK).build();
                        })
                        .exceptionally(exception -> {
-                           if (Exceptions.unwrap(exception) instanceof CodecNotFoundException) {
-                               log.info("addCodec failed Codec Not Found {}", groupName);
-                               return Response.status(Status.PRECONDITION_FAILED).build();
-                           } else {
-                               log.warn("addCodec failed with exception: ", exception);
-                               return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                           }
+                           log.warn("addCodec failed with exception: ", exception);
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
                        })
                        .thenApply(response -> {
                            asyncResponse.resume(response);
