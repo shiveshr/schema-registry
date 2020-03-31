@@ -129,6 +129,10 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
     protected abstract T deserialize(ByteBuffer buffer, SchemaInfo writerSchema, SchemaInfo readerSchema);
 
     VersionInfo getVersion() {
-        return versionRef.get();
+        if (versionRef.get() == null) {
+            return client.getSchemaVersion(groupId, schemaInfo.get());
+        } else {
+            return versionRef.get();
+        }
     }
 }
