@@ -35,6 +35,7 @@ import org.apache.avro.generic.IndexedRecord;
 import org.apache.avro.specific.SpecificRecordBase;
 
 import javax.annotation.Nullable;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -607,8 +608,8 @@ public class SerializerFactory {
         AbstractPravegaDeserializer<T> abstractPravegaDeserializer = new AbstractPravegaDeserializer<T>(groupId, registryClient, schema, false,
                 config.getDecoder(), encodingCache) {
             @Override
-            protected T deserialize(ByteBuffer buffer, SchemaInfo writerSchema, SchemaInfo readerSchema) {
-                return deserializer.deserialize(buffer, writerSchema, readerSchema);
+            protected T deserialize(InputStream inputStream, SchemaInfo writerSchema, SchemaInfo readerSchema) {
+                return deserializer.deserialize(inputStream, writerSchema, readerSchema);
             }
         };
 

@@ -9,18 +9,25 @@
  */
 package io.pravega.schemaregistry.test.integrationtest.demo.serde;
 
-import io.pravega.client.stream.impl.JavaSerializer;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.serializers.PravegaSerializer;
 import lombok.SneakyThrows;
 
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 public class MySerializer implements PravegaSerializer<MyPojo> {
-    private final JavaSerializer<MyPojo> javaSerializer = new JavaSerializer<>();
     @SneakyThrows
     @Override
     public void serialize(MyPojo var, SchemaInfo schema, OutputStream outputStream) {
-        outputStream.write(javaSerializer.serialize(var).array());
+        ObjectOutputStream oout;
+        try {
+            oout = new ObjectOutputStream(outputStream);
+            oout.writeObject(var);
+            oout.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

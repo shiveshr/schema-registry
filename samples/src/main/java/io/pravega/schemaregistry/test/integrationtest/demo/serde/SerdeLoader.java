@@ -19,7 +19,7 @@ import java.security.PrivilegedAction;
 import static java.security.AccessController.doPrivileged;
 
 public class SerdeLoader {
-    public static PravegaSerializer getSerializer(String className, URL url) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+    public static PravegaSerializer getSerializer(String className, URL url) {
         final PrivilegedAction<PravegaSerializer> action = new PrivilegedAction<PravegaSerializer>() {
             @Override
             @SneakyThrows
@@ -40,7 +40,7 @@ public class SerdeLoader {
     }
 
     @SuppressWarnings("unchecked")
-    public static PravegaDeserializer getDeserializer(String className, URL url) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+    public static PravegaDeserializer getDeserializer(String className, URL url) {
         final PrivilegedAction<PravegaDeserializer> action = new PrivilegedAction<PravegaDeserializer>() {
             @Override
             @SneakyThrows

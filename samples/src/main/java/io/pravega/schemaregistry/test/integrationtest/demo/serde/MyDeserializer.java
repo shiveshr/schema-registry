@@ -9,16 +9,22 @@
  */
 package io.pravega.schemaregistry.test.integrationtest.demo.serde;
 
-import io.pravega.client.stream.impl.JavaSerializer;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.serializers.PravegaDeserializer;
 
-import java.nio.ByteBuffer;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
 
 public class MyDeserializer implements PravegaDeserializer<MyPojo> {
-    private final JavaSerializer<MyPojo> javaSerializer = new JavaSerializer<>();
     @Override
-    public MyPojo deserialize(ByteBuffer buffer, SchemaInfo writerSchema, SchemaInfo readerSchema) {
-        return javaSerializer.deserialize(buffer);
+    public MyPojo deserialize(InputStream inputStream, SchemaInfo writerSchema, SchemaInfo readerSchema) {
+        ObjectInputStream oin;
+        try {
+            oin = new ObjectInputStream(inputStream);
+            return (MyPojo) oin.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
