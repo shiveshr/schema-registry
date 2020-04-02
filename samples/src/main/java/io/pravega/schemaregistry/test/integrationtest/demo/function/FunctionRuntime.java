@@ -7,7 +7,7 @@
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.pravega.schemaregistry.test.integrationtest.demo.serde;
+package io.pravega.schemaregistry.test.integrationtest.demo.function;
 
 import io.pravega.client.ClientConfig;
 import io.pravega.client.EventStreamClientFactory;
@@ -25,6 +25,7 @@ import io.pravega.client.stream.ReaderGroupConfig;
 import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
+import io.pravega.common.concurrent.Futures;
 import io.pravega.schemaregistry.GroupIdGenerator;
 import io.pravega.schemaregistry.client.RegistryClientFactory;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
@@ -35,56 +36,86 @@ import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.SchemaType;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.serializers.PravegaDeserializer;
+import io.pravega.schemaregistry.serializers.PravegaSerializer;
 import io.pravega.schemaregistry.serializers.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
+import io.pravega.schemaregistry.test.integrationtest.demo.serde.MyDeserializer;
+import io.pravega.schemaregistry.test.integrationtest.demo.serde.MyPojo;
+import io.pravega.schemaregistry.test.integrationtest.demo.serde.MySerializer;
 import io.pravega.schemaregistry.test.integrationtest.demo.util.LoaderUtil;
 import io.pravega.shared.NameUtils;
 import lombok.SneakyThrows;
-import org.apache.curator.shaded.com.google.common.base.Charsets;
 
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class SerDeDemo {
-    private static final String DESERIALIZER_CLASS_NAME = "DeserializerClassName";
-    private static final String SERIALIZER_CLASS_NAME = "SerializerClassName";
+public class FunctionRuntime {
     private final ClientConfig clientConfig;
     private final SchemaRegistryClient client;
     private final String scope;
-    private final String stream;
-    private final String groupId;
-    private final String filePath;
+    private final String inputStream;
+    private final String outputStream;
+    private final String inputGroupId;
+    private final String outputGroupId;
 
-    private SerDeDemo(String controllerURI, String registryUri, String scope, String stream, String filePath) {
-        clientConfig = ClientConfig.builder().controllerURI(URI.create(controllerURI)).build();
-        SchemaRegistryClientConfig config = new SchemaRegistryClientConfig(URI.create(registryUri));
+    private FunctionRuntime() {
+        clientConfig = ClientConfig.builder().controllerURI(URI.create("tcp://localhost:9090")).build();
+        SchemaRegistryClientConfig config = new SchemaRegistryClientConfig(URI.create("http://localhost:9092"));
         client = RegistryClientFactory.createRegistryClient(config);
-        this.scope = scope;
-        this.stream = stream;
-        this.groupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, stream);
-        this.filePath = filePath;
-        createScopeAndStream(scope, stream, groupId);
+        this.scope = UUID.randomUUID().toString();
+        this.inputStream = UUID.randomUUID().toString();
+        this.outputStream = UUID.randomUUID().toString();
+        this.inputGroupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, inputStream);
+        this.outputGroupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, outputStream);
+        createScopeAndStream(scope, inputStream, inputGroupId);
+        createScopeAndStream(scope, outputStream, outputGroupId);
     }
 
+    @SuppressWarnings("unchecked")
+    @SneakyThrows
     public static void main(String[] args) {
-        String filePath = args[0];
-        SerDeDemo serDeDemo = new SerDeDemo("tcp://localhost:9090", "http://localhost:9092", 
-                UUID.randomUUID().toString(), UUID.randomUUID().toString(), filePath);
-        EventStreamWriter<MyPojo> writer = serDeDemo.createWriter();
-        EventStreamReader<Object> reader = serDeDemo.createReader();
-        writer.writeEvent(new MyPojo("test"));
-        EventRead<Object> event = reader.readNextEvent(1000);
-        assert event.getEvent() instanceof MyPojo;
-        System.out.println(event.getEvent().toString());
-        System.exit(0);
+        String functionName = "io.pravega.schemaregistry.test.integrationtest.demo.function.MyFunction";
+        String inputDeserializer = "io.pravega.schemaregistry.test.integrationtest.demo.serde.MyDeserializer";
+        String outputSerializer = "io.pravega.schemaregistry.test.integrationtest.demo.function.StringSerializer";
+
+        URL funcFilepath = Paths.get("/home/shivesh/function/function.jar").toUri().toURL(); 
+        URL serDeFilepath = Paths.get("/home/shivesh/serde.jar").toUri().toURL(); 
+        // background thread to write some data into input stream
+        Function func = LoaderUtil.getInstance(functionName, funcFilepath, Function.class);
+        PravegaDeserializer deserializer = LoaderUtil.getInstance(inputDeserializer, serDeFilepath, PravegaDeserializer.class);
+        PravegaSerializer serializer = LoaderUtil.getInstance(outputSerializer, funcFilepath, PravegaSerializer.class);
+        
+        FunctionRuntime runtime = new FunctionRuntime();
+        MySerializer mySerializer = new MySerializer();
+        EventStreamWriter<MyPojo> writer = runtime.createWriter(runtime.inputGroupId, runtime.inputStream, mySerializer);
+        AtomicInteger counter = new AtomicInteger();
+        Futures.loop(() -> true, () -> {
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                
+            }
+            return writer.writeEvent(new MyPojo(Integer.toString(counter.incrementAndGet())));
+        }, Executors.newSingleThreadExecutor());
+        
+        // loop --> read from inputstream
+        EventStreamReader<Object> reader = runtime.createReader(runtime.inputGroupId, runtime.inputStream, deserializer);
+        EventStreamWriter writer2 = runtime.createWriter(runtime.outputGroupId, runtime.outputStream, serializer);
+        EventRead<Object> event;
+        do {
+            event = reader.readNextEvent(1000);
+            if (event.getEvent() != null) {
+                Object output = func.apply(event.getEvent());
+                writer2.writeEvent(output).join();
+            }
+        } while(event.getEvent() != null);
     }
-    
+
     private void createScopeAndStream(String scope, String stream, String groupId) {
         StreamManager streamManager = new StreamManagerImpl(clientConfig);
         streamManager.createScope(scope);
@@ -97,26 +128,17 @@ public class SerDeDemo {
     }
 
     @SneakyThrows
-    private EventStreamWriter<MyPojo> createWriter() {
+    private <T> EventStreamWriter<T> createWriter(String groupId, String stream, PravegaSerializer<T> mySerializer) {
         SerializerConfig config = SerializerConfig.builder()
                                                   .groupId(groupId)
                                                   .autoRegisterSchema(true)
                                                   .registryConfigOrClient(Either.right(client))
                                                   .build();
-
-        Map<String, String> map = new HashMap<>();
-        map.put(SERIALIZER_CLASS_NAME, MySerializer.class.getName());
-        map.put(DESERIALIZER_CLASS_NAME, MyDeserializer.class.getName());
         SchemaType schemaType = SchemaType.custom("serDe");
 
-        Path path = Paths.get(filePath);
+        SchemaInfo schemaInfo = new SchemaInfo("serde", schemaType, new byte[0], Collections.emptyMap());
 
-        URL url = path.toUri().toURL();
-
-        SchemaInfo schemaInfo = new SchemaInfo("serde", schemaType, url.toString().getBytes(Charsets.UTF_8), map);
-        MySerializer mySerializer = new MySerializer();
-
-        Serializer<MyPojo> serializer = SerializerFactory.customSerializer(config, () -> schemaInfo, mySerializer);
+        Serializer<T> serializer = SerializerFactory.customSerializer(config, () -> schemaInfo, mySerializer);
 
         EventStreamClientFactory clientFactory = EventStreamClientFactory.withScope(scope, clientConfig);
         return clientFactory.createEventWriter(stream, serializer, EventWriterConfig.builder().build());
@@ -124,7 +146,7 @@ public class SerDeDemo {
 
     @SuppressWarnings("unchecked")
     @SneakyThrows
-    private EventStreamReader<Object> createReader() {
+    private <T> EventStreamReader<T> createReader(String groupId, String stream, PravegaDeserializer<T> myDeserializer) {
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
                                                             .registryConfigOrClient(Either.right(client))
@@ -135,17 +157,13 @@ public class SerDeDemo {
         String rg = "rg" + stream + System.currentTimeMillis();
         readerGroupManager.createReaderGroup(rg,
                 ReaderGroupConfig.builder().stream(NameUtils.getScopedStreamName(scope, stream)).disableAutomaticCheckpoints().build());
-
-        SchemaInfo schema = client.getLatestSchema(groupId, null).getSchema();
-        String urlString = new String(schema.getSchemaData(), Charsets.UTF_8);
-        URL url = new URL(urlString);
-
-        PravegaDeserializer<Object> myDeserializer = LoaderUtil.getInstance(schema.getProperties().get(DESERIALIZER_CLASS_NAME), url, PravegaDeserializer.class);
-        Serializer<Object> deserializer = SerializerFactory.customDeserializer(serializerConfig, () -> schema, myDeserializer);
+        
+        Serializer<T> deserializer = SerializerFactory.customDeserializer(serializerConfig, null, myDeserializer);
 
         EventStreamClientFactory clientFactory = EventStreamClientFactory.withScope(scope, clientConfig);
 
         return clientFactory.createReader("r1", rg, deserializer, ReaderConfig.builder().build());
         // endregion
     }
+
 }
