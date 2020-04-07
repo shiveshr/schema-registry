@@ -7,8 +7,10 @@
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.pravega.schemaregistry.test.integrationtest.demo.function;
+package io.pravega.schemaregistry.test.integrationtest.demo.function.interfaces;
 
-public interface Function<Input, Output> {
-    Output apply(Input i);
+import java.util.Collection;
+
+public interface WindowedFunction<Input, Output> {
+    Output apply(Collection<Input> i);
 }

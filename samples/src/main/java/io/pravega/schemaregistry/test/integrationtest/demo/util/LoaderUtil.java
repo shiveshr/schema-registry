@@ -9,8 +9,6 @@
  */
 package io.pravega.schemaregistry.test.integrationtest.demo.util;
 
-import io.pravega.schemaregistry.serializers.PravegaDeserializer;
-import io.pravega.schemaregistry.serializers.PravegaSerializer;
 import lombok.SneakyThrows;
 
 import java.net.URL;
@@ -29,7 +27,7 @@ public class LoaderUtil {
                 Class<?> aClass;
                 // Load the class.
                 URLClassLoader loader = new URLClassLoader(
-                        new URL[] {url},
+                        new URL[]{url},
                         this.getClass().getClassLoader()
                 );
                 aClass = Class.forName(className, true, loader);

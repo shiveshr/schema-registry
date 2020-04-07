@@ -7,13 +7,13 @@
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.pravega.schemaregistry.test.integrationtest.demo.function;
+package io.pravega.schemaregistry.test.integrationtest.demo.function.test;
 
-import io.pravega.schemaregistry.test.integrationtest.demo.serde.MyPojo;
+import io.pravega.schemaregistry.test.integrationtest.demo.function.interfaces.Function;
 
-public class MyFunction implements Function<MyPojo, String> {
+public class ToLowerFunction implements Function<String, String> {
     @Override
-    public String apply(MyPojo i) {
-        return "func'd" + i.toString();
+    public String apply(String i) {
+        return i.toLowerCase();
     }
 }
