@@ -40,20 +40,20 @@ public class Runtime<I, O> extends AbstractExecutionThreadService {
     private final String outputStream;
     private final String inputGroupId;
     private final String outputGroupId;
-    private final Processing<I, O> processing;
+    private final StreamProcess<I, O> streamProcess;
     private EventStreamReader<I> inputReader;
     private EventStreamWriter<O> outputWriter;
 
-    public Runtime(ClientConfig clientConfig, SchemaRegistryClient client, Processing<I, O> processing) {
+    public Runtime(ClientConfig clientConfig, SchemaRegistryClient client, StreamProcess<I, O> streamProcess) {
         this.clientConfig = clientConfig;
         this.client = client;
-        this.inputStreamScope = processing.getInputStream().getScope();
-        this.inputStream = processing.getInputStream().getStream();
-        this.outputStreamScope = processing.getOutputStream().getScope();
-        this.outputStream = processing.getOutputStream().getStream();
+        this.inputStreamScope = streamProcess.getInputStream().getScope();
+        this.inputStream = streamProcess.getInputStream().getStream();
+        this.outputStreamScope = streamProcess.getOutputStream().getScope();
+        this.outputStream = streamProcess.getOutputStream().getStream();
         this.inputGroupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, inputStreamScope, inputStream);
         this.outputGroupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, outputStreamScope, outputStream);
-        this.processing = processing;
+        this.streamProcess = streamProcess;
     }
 
     @Override
@@ -68,7 +68,7 @@ public class Runtime<I, O> extends AbstractExecutionThreadService {
         while (isRunning()) {
             event = inputReader.readNextEvent(1000);
             if (event.getEvent() != null) {
-                O output = processing.process(event.getEvent());
+                O output = streamProcess.process(event.getEvent());
 
                 if (output != null) {
                     outputWriter.writeEvent(output).join();
@@ -84,7 +84,7 @@ public class Runtime<I, O> extends AbstractExecutionThreadService {
                                                   .autoRegisterSchema(true)
                                                   .registryConfigOrClient(Either.right(client))
                                                   .build();
-        SerDe<O> serDe = processing.getOutputStream().getSerDe();
+        SerDe<O> serDe = streamProcess.getOutputStream().getSerDe();
         Serializer<O> serializer = SerializerFactory.customSerializer(config, serDe.getSchema(), serDe.getSerializer());
 
         EventStreamClientFactory clientFactory = EventStreamClientFactory.withScope(outputStreamScope, clientConfig);
@@ -103,7 +103,7 @@ public class Runtime<I, O> extends AbstractExecutionThreadService {
         String rg = "rg" + inputStream + System.currentTimeMillis();
         readerGroupManager.createReaderGroup(rg,
                 ReaderGroupConfig.builder().stream(NameUtils.getScopedStreamName(inputStreamScope, inputStream)).disableAutomaticCheckpoints().build());
-        SerDe<I> serDe = processing.getInputStream().getSerDe();
+        SerDe<I> serDe = streamProcess.getInputStream().getSerDe();
         Serializer<I> deserializer = SerializerFactory.customDeserializer(serializerConfig, serDe.getSchema(), serDe.getDeserializer());
 
         EventStreamClientFactory clientFactory = EventStreamClientFactory.withScope(inputStreamScope, clientConfig);

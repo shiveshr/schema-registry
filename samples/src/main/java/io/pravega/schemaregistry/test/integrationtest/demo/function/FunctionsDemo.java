@@ -37,12 +37,12 @@ import io.pravega.schemaregistry.contract.data.SchemaType;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.serializers.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
+import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.StreamProcess;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.MyInput;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.MySerDe;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.ToLowerFunction;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.WordCount;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.WordCountSerDe;
-import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.Processing;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.Runtime;
 import io.pravega.shared.NameUtils;
 import lombok.SneakyThrows;
@@ -94,7 +94,7 @@ public class FunctionsDemo {
         // endregion
         
         // region processing
-        Processing<MyInput, Map<String, Integer>> process = new Processing.ProcessingBuilder<MyInput, Map<String, Integer>>()
+        StreamProcess<MyInput, Map<String, Integer>> process = new StreamProcess.StreamProcessBuilder<MyInput, Map<String, Integer>>()
                 .inputStream(scope, inputStream, inputSerDe, serDeFilepath)
                 .map(x -> ((MyInput) x).getText())
                 .map(toLowerFunc, funcFilepath)

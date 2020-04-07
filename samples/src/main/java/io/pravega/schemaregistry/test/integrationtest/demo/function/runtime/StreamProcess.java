@@ -23,12 +23,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Data
-public class Processing<I, O> {
+public class StreamProcess<I, O> {
     private final Source<I> inputStream;
     private final Sink<O> outputStream;
     private final List<Operation> operations;
 
-    private Processing(Source<I> inputStream, Sink<O> outputStream, List<Operation> operations) {
+    private StreamProcess(Source<I> inputStream, Sink<O> outputStream, List<Operation> operations) {
         Preconditions.checkNotNull(inputStream);
         Preconditions.checkNotNull(outputStream);
         Preconditions.checkNotNull(operations);
@@ -50,35 +50,35 @@ public class Processing<I, O> {
         return (O) next.get();
     }
     
-    public static class ProcessingBuilder<T, K> {
+    public static class StreamProcessBuilder<T, K> {
         private Source<T> inputStream;
         private Sink<K> outputStream;
 
         private final List<Operation> operations = new LinkedList<>();
 
         @SuppressWarnings("unchecked")
-        public ProcessingBuilder inputStream(String scope, String inputStream, String inputSerDe, URL inputSerDeFilepath) {
+        public StreamProcessBuilder inputStream(String scope, String inputStream, String inputSerDe, URL inputSerDeFilepath) {
             SerDe<T> serDe = LoaderUtil.getInstance(inputSerDe, inputSerDeFilepath, SerDe.class);
             this.inputStream = new Source<>(scope, inputStream, serDe);
             return this;
         }
 
         @SuppressWarnings("unchecked")
-        public ProcessingBuilder outputStream(String scope, String outputStream, String outputSerDe, URL outputSerDeFilepath) {
+        public StreamProcessBuilder outputStream(String scope, String outputStream, String outputSerDe, URL outputSerDeFilepath) {
             SerDe<K> serDe = LoaderUtil.getInstance(outputSerDe, outputSerDeFilepath, SerDe.class);
 
             this.outputStream = new Sink<>(scope, outputStream, serDe);
             return this;
         }
         
-        public <I, O> ProcessingBuilder map(java.util.function.Function<I, O> mapFunc) {
+        public <I, O> StreamProcessBuilder map(java.util.function.Function<I, O> mapFunc) {
             Function<I, O> function = mapFunc::apply;
             this.operations.add(new MapFunc<>(function));
             return this;
         }
 
         @SuppressWarnings("unchecked")
-        public <I, O> ProcessingBuilder map(String functionName, URL funcFilepath) {
+        public <I, O> StreamProcessBuilder map(String functionName, URL funcFilepath) {
             Function<I, O> func = LoaderUtil.getInstance(functionName, funcFilepath, Function.class);
 
             this.operations.add(new MapFunc<>(func));
@@ -86,15 +86,15 @@ public class Processing<I, O> {
         }
 
         @SuppressWarnings("unchecked")
-        public <I, O> ProcessingBuilder windowedMap(String functionName, URL funcFilepath, int window) {
+        public <I, O> StreamProcessBuilder windowedMap(String functionName, URL funcFilepath, int window) {
             WindowedFunction<Collection<I>, O> func = LoaderUtil.getInstance(functionName, funcFilepath, WindowedFunction.class);
 
             this.operations.add(new WindowedMapFunc<>(func, window));
             return this;
         }
 
-        public Processing<T, K> build() {
-            return new Processing<>(inputStream, outputStream, operations);
+        public StreamProcess<T, K> build() {
+            return new StreamProcess<>(inputStream, outputStream, operations);
         }
     }
 
