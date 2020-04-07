@@ -11,7 +11,7 @@ package io.pravega.schemaregistry.test.integrationtest.demo.function;
 
 import io.pravega.schemaregistry.test.integrationtest.demo.serde.MyPojo;
 
-public class MyFunctionX implements Function<MyPojo, String> {
+public class MyFunction implements Function<MyPojo, String> {
     @Override
     public String apply(MyPojo i) {
         return "func'd" + i.toString();

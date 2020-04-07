@@ -16,7 +16,7 @@ import org.apache.curator.shaded.com.google.common.base.Charsets;
 
 import java.io.OutputStream;
 
-public class StringSerializerX implements PravegaSerializer<String> {
+public class StringSerializer implements PravegaSerializer<String> {
     @SneakyThrows
     @Override
     public void serialize(String var, SchemaInfo schema, OutputStream outputStream) {

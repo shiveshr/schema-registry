@@ -39,7 +39,6 @@ import io.pravega.schemaregistry.serializers.PravegaDeserializer;
 import io.pravega.schemaregistry.serializers.PravegaSerializer;
 import io.pravega.schemaregistry.serializers.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
-import io.pravega.schemaregistry.test.integrationtest.demo.serde.MyDeserializer;
 import io.pravega.schemaregistry.test.integrationtest.demo.serde.MyPojo;
 import io.pravega.schemaregistry.test.integrationtest.demo.serde.MySerializer;
 import io.pravega.schemaregistry.test.integrationtest.demo.util.LoaderUtil;

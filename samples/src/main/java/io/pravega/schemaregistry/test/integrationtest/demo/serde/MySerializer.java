@@ -21,11 +21,11 @@ public class MySerializer implements PravegaSerializer<MyPojo> {
     @SneakyThrows
     @Override
     public void serialize(MyPojo var, SchemaInfo schema, OutputStream outputStream) {
-        ObjectOutputStream oout;
+        ObjectOutputStream out;
         try {
-            oout = new ObjectOutputStream(outputStream);
-            oout.writeObject(var);
-            oout.close();
+            out = new ObjectOutputStream(outputStream);
+            out.writeObject(var);
+            out.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
