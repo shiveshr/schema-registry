@@ -37,13 +37,15 @@ import io.pravega.schemaregistry.contract.data.SchemaType;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.serializers.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
+import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.Runtime;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.StreamProcess;
+import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.StreamProcessPipeline;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.MyInput;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.MySerDe;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.ToLowerFunction;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.WordCount;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.WordCountSerDe;
-import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.Runtime;
+import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.StreamProcessRuntime;
 import io.pravega.shared.NameUtils;
 import lombok.SneakyThrows;
 
@@ -72,8 +74,8 @@ public class FunctionsDemo {
         String inputSerDe = MySerDe.class.getName();
         String outputSerDe = WordCountSerDe.class.getName();
 
-        URL funcFilepath = Paths.get("/home/shivesh/function/function.jar").toUri().toURL();
-        URL serDeFilepath = Paths.get("/home/shivesh/function/serDe.jar").toUri().toURL();
+        URL funcFilepath = Paths.get("function/function.jar").toUri().toURL();
+        URL serDeFilepath = Paths.get("function/serDe.jar").toUri().toURL();
         // background thread to write some data into input stream
 
         // region create stream and write data into it
@@ -102,8 +104,8 @@ public class FunctionsDemo {
                 .windowedMap(wordCountFunc, funcFilepath, 2)
                 .outputStream(scope, outputStream, outputSerDe, serDeFilepath)
                 .build();
-        
-        Runtime runtime = new Runtime(clientConfig, srClient, process);
+        StreamProcessPipeline<MyInput, Map<String, Integer>> processPipeline = StreamProcessPipeline.of(process);
+        Runtime runtime = new Runtime(clientConfig, srClient, processPipeline);
         runtime.startAsync();
         runtime.awaitRunning();
         // endregion

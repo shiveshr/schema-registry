@@ -39,11 +39,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Random;
 
 public class TaxiTrafficGenerator {
     public static void main(String[] args) throws IOException {
-        Random random = new Random();
         String scope = "dataPlaneScope";
         String stream = "testStream";
         String groupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, stream);
@@ -73,10 +71,10 @@ public class TaxiTrafficGenerator {
                                           .setTotalAmount(6.5)
                                           .setImprovementSurcharge(6.5)
                                           .setTollsAmount(6.5)
-                                          .setPickupDatetime(new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").format(new Date()))
-                                          .setDropoffDatetime(new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").format(new Date()))
+                                          .setPickupDatetime(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()))
+                                          .setDropoffDatetime(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()))
                                           .setTripType("1")
-                                          .setPassengerCount(random.nextInt(5))
+                                          .setPassengerCount(3)
                                           .setRateCodeId("1")
                                           .addPickupLocation(lat)
                                           .addPickupLocation(log)
@@ -105,8 +103,12 @@ public class TaxiTrafficGenerator {
                 deserializer,
                 ReaderConfig.builder().build());
 
-        for (int i = 0; i < 3; i++) {
-            System.out.println(reader.readNextEvent(1000).getEvent());
+        while (true) {
+            String event = reader.readNextEvent(1000).getEvent();
+            if (event == null) {
+                break;
+            }
+            System.out.println(event);
         }
         System.exit(0);
     }
