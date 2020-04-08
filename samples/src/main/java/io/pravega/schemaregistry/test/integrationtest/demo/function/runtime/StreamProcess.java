@@ -15,6 +15,7 @@ import io.pravega.schemaregistry.test.integrationtest.demo.function.interfaces.S
 import io.pravega.schemaregistry.test.integrationtest.demo.function.interfaces.WindowedFunction;
 import io.pravega.schemaregistry.test.integrationtest.demo.util.LoaderUtil;
 import lombok.Data;
+import lombok.Synchronized;
 
 import java.net.URL;
 import java.util.Collection;
@@ -137,11 +138,12 @@ public class StreamProcess<I, O> {
         private final List<T> collection = new LinkedList<>();
         private final int window;
         
+        @Synchronized
         @Override
         public K process(T input) {
             if (collection.size() < window) {
                 collection.add(input);
-            } 
+            }
             
             if (collection.size() == window) {
                 K out = mapFunc.apply(collection);
