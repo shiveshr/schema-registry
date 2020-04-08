@@ -76,15 +76,16 @@ A stream processing pipeline is described in following way:
                 .map(x -> ((String) x).split("\\W+"))
                 .windowedMap(wordCountFunc, funcFilepath, 2)
                 .outputStream(scope, outputStream, outputSerDe, serDeFilepath)
-                .build();
+                .build();               
 ```        
 Here `toLowerFunc` and `wordCountFunc` are two user defined functions that "would be" loaded at runtime from a central functions
 repository.
 
+A pipeline of multiple such processes can be created where output of one streamprocess being written into a pravega stream becomes input for another StreamProcess in the pipeline. 
 Once pipeline is described, it will be presented to a runtime to plan and execute it.   
 ```
-        Runtime runtime = new Runtime(clientConfig, srClient, process);
-        runtime.start();
+        Pipeline<MyInput, Map<String, Integer>> processPipeline = Pipeline.of(process);
+        Runtime runtime = new Runtime(clientConfig, srClient, processPipeline);
 ```
 
 This demonstrates three important points -
