@@ -25,8 +25,7 @@ Functions are the middle(transform/process) block in `consume-transform-produce`
 
 Conceptualizing such a processing framework will constitute of three important pillars. 
 1. A central repository of function artifacts (jars).
-2. An express for a processing pipeline on pravega streams which apply one of more functions on the data in the stream 
-and optionally publish the output into another stream. 
+2. A formal expression for describing a processing pipeline on pravega streams. Each individual stream-processing applies one of more functions on the data in the stream and outputs it and optionally publish the output into another stream. Which can be chained to a new stream processing. 
 3. A function `Runtime` - that is responsible for executing the processing pipeline. Runtime could be created in multiple
 flavours - a) run within user process b) deploys containers using some container cluster manager like k8s, docker swarm etc. 
 
