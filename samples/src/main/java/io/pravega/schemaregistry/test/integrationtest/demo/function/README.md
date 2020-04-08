@@ -25,8 +25,7 @@ Functions are the middle(transform/process) block in `consume-transform-produce`
 
 Conceptualizing such a processing framework will constitute of three important pillars. 
 1. A central repository of function artifacts (jars).
-2. An express for a processing pipeline on pravega streams which apply one of more functions on the data in the stream 
-and optionally publish the output into another stream. 
+2. A formal expression for describing a processing pipeline on pravega streams. Each individual stream-processing applies one of more functions on the data in the stream and outputs it and optionally publish the output into another stream. Which can be chained to a new stream processing. 
 3. A function `Runtime` - that is responsible for executing the processing pipeline. Runtime could be created in multiple
 flavours - a) run within user process b) deploys containers using some container cluster manager like k8s, docker swarm etc. 
 
@@ -76,15 +75,16 @@ A stream processing pipeline is described in following way:
                 .map(x -> ((String) x).split("\\W+"))
                 .windowedMap(wordCountFunc, funcFilepath, 2)
                 .outputStream(scope, outputStream, outputSerDe, serDeFilepath)
-                .build();
+                .build();               
 ```        
 Here `toLowerFunc` and `wordCountFunc` are two user defined functions that "would be" loaded at runtime from a central functions
 repository.
 
+A pipeline of multiple such processes can be created where output of one streamprocess being written into a pravega stream becomes input for another StreamProcess in the pipeline. 
 Once pipeline is described, it will be presented to a runtime to plan and execute it.   
 ```
-        Runtime runtime = new Runtime(clientConfig, srClient, process);
-        runtime.start();
+        Pipeline<MyInput, Map<String, Integer>> processPipeline = Pipeline.of(process);
+        Runtime runtime = new Runtime(clientConfig, srClient, processPipeline);
 ```
 
 This demonstrates three important points -
