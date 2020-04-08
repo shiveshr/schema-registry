@@ -10,10 +10,10 @@
 package io.pravega.schemaregistry.test.integrationtest.demo.function.runtime;
 
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
+import com.google.common.util.concurrent.AbstractIdleService;
 import io.pravega.client.ClientConfig;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
-import io.pravega.client.admin.StreamManager;
 import io.pravega.client.admin.impl.ReaderGroupManagerImpl;
 import io.pravega.client.netty.impl.ConnectionFactoryImpl;
 import io.pravega.client.stream.EventRead;
@@ -32,7 +32,10 @@ import io.pravega.schemaregistry.test.integrationtest.demo.function.interfaces.S
 import io.pravega.shared.NameUtils;
 import lombok.SneakyThrows;
 
-class StreamProcessRuntime<I, O> extends AbstractExecutionThreadService {
+import java.util.ArrayList;
+import java.util.List;
+
+class StreamProcessRuntime<I, O> extends AbstractIdleService {
     private final ClientConfig clientConfig;
     private final SchemaRegistryClient client;
     private final String inputScope;
@@ -42,8 +45,7 @@ class StreamProcessRuntime<I, O> extends AbstractExecutionThreadService {
     private final String inputGroupId;
     private final String outputGroupId;
     private final StreamProcess<I, O> streamProcess;
-    private EventStreamReader<I> inputReader;
-    private EventStreamWriter<O> outputWriter;
+    private final List<Cell> cells;
     
     StreamProcessRuntime(ClientConfig clientConfig, SchemaRegistryClient client, StreamProcess<I, O> streamProcess) {
         this.clientConfig = clientConfig;
@@ -55,26 +57,54 @@ class StreamProcessRuntime<I, O> extends AbstractExecutionThreadService {
         this.inputGroupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, inputScope, inputStream);
         this.outputGroupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, outputStreamScope, outputStream);
         this.streamProcess = streamProcess;
+        this.cells = new ArrayList<>(streamProcess.getParallelism());
     }
 
     @Override
     protected final void startUp() {
-        StreamManager streamManager = StreamManager.create(clientConfig);
-        streamManager.getStreamInfo(inputScope, inputStream);
-        inputReader = createReader();
-        outputWriter = createWriter();
+        String readerGroupName = "rg" + inputStream + System.currentTimeMillis();
+        createReaderGroup(readerGroupName);
+        for (int i = 0; i < streamProcess.getParallelism(); i++) {
+            Cell cell = new Cell(createReader(readerGroupName, Integer.toString(i)), createWriter());
+            cells.add(cell);
+            cell.startAsync();
+            cell.awaitRunning();
+        }
     }
 
     @Override
-    protected void run() {
-        EventRead<I> event;
-        while (isRunning()) {
-            event = inputReader.readNextEvent(1000);
-            if (event.getEvent() != null) {
-                O output = streamProcess.process(event.getEvent());
+    protected void shutDown() {
+        cells.forEach(cell -> {
+            cell.stopAsync();
+            cell.awaitTerminated();
+        });
+    }
 
-                if (output != null) {
-                    outputWriter.writeEvent(output).join();
+    private class Cell extends AbstractExecutionThreadService {
+        private final EventStreamReader<I> inputReader;
+        private final EventStreamWriter<O> outputWriter;
+
+        private Cell(EventStreamReader<I> inputReader, EventStreamWriter<O> outputWriter) {
+            this.inputReader = inputReader;
+            this.outputWriter = outputWriter;
+        }
+
+        @Override
+        protected void run() {
+            EventRead<I> event;
+            while (isRunning()) {
+                event = inputReader.readNextEvent(1000);
+                if (event.getEvent() != null) {
+                    O output = streamProcess.process(event.getEvent());
+
+                    if (output != null) {
+                        if (streamProcess.getRoutingKeyFunction() == null) {
+                            outputWriter.writeEvent(output).join();    
+                        } else {
+                            String routingKey = streamProcess.getRoutingKeyFunction().apply(output);
+                            outputWriter.writeEvent(routingKey, output).join();
+                        }
+                    }
                 }
             }
         }
@@ -94,23 +124,26 @@ class StreamProcessRuntime<I, O> extends AbstractExecutionThreadService {
         return clientFactory.createEventWriter(outputStream, serializer, EventWriterConfig.builder().build());
     }
 
+    private void createReaderGroup(String readerGroupName) {
+        try (ReaderGroupManager readerGroupManager = new ReaderGroupManagerImpl(inputScope, clientConfig, new ConnectionFactoryImpl(clientConfig))) {
+            readerGroupManager.createReaderGroup(readerGroupName,
+                    ReaderGroupConfig.builder().stream(NameUtils.getScopedStreamName(inputScope, inputStream)).disableAutomaticCheckpoints().build());
+        }
+    }
+    
     @SuppressWarnings("unchecked")
     @SneakyThrows
-    private EventStreamReader<I> createReader() {
+    private EventStreamReader<I> createReader(String readerGroupName, String readerName) {
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(inputGroupId)
                                                             .registryConfigOrClient(Either.right(client))
                                                             .build();
 
-        ReaderGroupManager readerGroupManager = new ReaderGroupManagerImpl(inputScope, clientConfig, new ConnectionFactoryImpl(clientConfig));
-        String rg = "rg" + inputStream + System.currentTimeMillis();
-        readerGroupManager.createReaderGroup(rg,
-                ReaderGroupConfig.builder().stream(NameUtils.getScopedStreamName(inputScope, inputStream)).disableAutomaticCheckpoints().build());
         SerDe<I> serDe = streamProcess.getInputStream().getSerDe();
         Serializer<I> deserializer = SerializerFactory.customDeserializer(serializerConfig, serDe.getSchema(), serDe.getDeserializer());
 
         EventStreamClientFactory clientFactory = EventStreamClientFactory.withScope(inputScope, clientConfig);
 
-        return clientFactory.createReader("r1", rg, deserializer, ReaderConfig.builder().build());
+        return clientFactory.createReader(readerName, readerGroupName, deserializer, ReaderConfig.builder().build());
     }
 }

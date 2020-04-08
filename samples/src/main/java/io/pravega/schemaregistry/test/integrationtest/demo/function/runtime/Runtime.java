@@ -19,10 +19,10 @@ import java.util.stream.Collectors;
 public class Runtime<I, O> extends AbstractIdleService {
     private final ClientConfig clientConfig;
     private final SchemaRegistryClient client;
-    private final StreamProcessPipeline<I, O> processPipeline;
+    private final Pipeline<I, O> processPipeline;
     private List<StreamProcessRuntime> executionFlow;
 
-    public Runtime(ClientConfig clientConfig, SchemaRegistryClient client, StreamProcessPipeline<I, O> pipeline) {
+    public Runtime(ClientConfig clientConfig, SchemaRegistryClient client, Pipeline<I, O> pipeline) {
         this.clientConfig = clientConfig;
         this.client = client;
         this.processPipeline = pipeline;

@@ -37,15 +37,14 @@ import io.pravega.schemaregistry.contract.data.SchemaType;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.serializers.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
+import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.Pipeline;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.Runtime;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.StreamProcess;
-import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.StreamProcessPipeline;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.MyInput;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.MySerDe;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.ToLowerFunction;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.WordCount;
 import io.pravega.schemaregistry.test.integrationtest.demo.function.test.WordCountSerDe;
-import io.pravega.schemaregistry.test.integrationtest.demo.function.runtime.StreamProcessRuntime;
 import io.pravega.shared.NameUtils;
 import lombok.SneakyThrows;
 
@@ -78,7 +77,7 @@ public class FunctionsDemo {
         URL serDeFilepath = Paths.get("function/serDe.jar").toUri().toURL();
         // background thread to write some data into input stream
 
-        // region create stream and write data into it
+        // region create streams 
         String scope = UUID.randomUUID().toString();
         String inputStream = UUID.randomUUID().toString();
         String outputStream = UUID.randomUUID().toString();
@@ -88,43 +87,63 @@ public class FunctionsDemo {
         ClientConfig clientConfig = ClientConfig.builder().controllerURI(URI.create("tcp://localhost:9090")).build();
         SchemaRegistryClient srClient = RegistryClientFactory.createRegistryClient(new SchemaRegistryClientConfig(URI.create("http://localhost:9092")));
 
-        createScopeAndStream(clientConfig, srClient, scope, inputStream, inputGroupId, SchemaType.custom("myPojo"));
-        createScopeAndStream(clientConfig, srClient, scope, outputStream, outputGroupId, SchemaType.custom("string"));
-
-        generateTestDataIntoInputStream(inputGroupId, scope, inputStream, clientConfig, srClient, 20,
-                Lists.newArrayList(SAMPLE1, SAMPLE2, SAMPLE3, SAMPLE4));
+        createScopeAndStream(clientConfig, srClient, scope, inputStream, 10, SchemaType.custom("myPojo"));
+        createScopeAndStream(clientConfig, srClient, scope, outputStream, 1, SchemaType.custom("string"));
         // endregion
-        
-        // region processing
+
+        generateTestDataIntoInputStream(scope, inputStream, clientConfig, srClient, 1000,
+                Lists.newArrayList(SAMPLE1, SAMPLE2, SAMPLE3, SAMPLE4));
+
+        // region pipeline
         StreamProcess<MyInput, Map<String, Integer>> process = new StreamProcess.StreamProcessBuilder<MyInput, Map<String, Integer>>()
-                .inputStream(scope, inputStream, inputSerDe, serDeFilepath)
+                .inputStream(scope, inputStream, inputSerDe, serDeFilepath, 2)
                 .map(x -> ((MyInput) x).getText())
                 .map(toLowerFunc, funcFilepath)
                 .map(x -> ((String) x).split("\\W+"))
-                .windowedMap(wordCountFunc, funcFilepath, 2)
+                .windowedMap(wordCountFunc, funcFilepath, 100)
                 .outputStream(scope, outputStream, outputSerDe, serDeFilepath)
                 .build();
-        StreamProcessPipeline<MyInput, Map<String, Integer>> processPipeline = StreamProcessPipeline.of(process);
+        Pipeline<MyInput, Map<String, Integer>> processPipeline = Pipeline.of(process);
         Runtime runtime = new Runtime(clientConfig, srClient, processPipeline);
         runtime.startAsync();
         runtime.awaitRunning();
         // endregion
-        
+
+        String readerGroup = "rg" + outputStream + System.currentTimeMillis();
+        createReaderGroup(scope, outputStream, readerGroup, clientConfig);
+        EventStreamReader<Map<String, Integer>> reader = createReader(scope, outputStream, readerGroup, clientConfig, srClient);
+        printOutput(reader);
+        generateTestDataIntoInputStream(scope, inputStream, clientConfig, srClient, 100, Lists.newArrayList("one"));
+        printOutput(reader);
+
+        runtime.stopAsync();
+        runtime.awaitTerminated();
+        System.exit(0);
+    }
+
+    private static void createReaderGroup(String scope, String stream, String readerGroup, ClientConfig clientConfig) {
+        try (ReaderGroupManager readerGroupManager = new ReaderGroupManagerImpl(scope, clientConfig, new ConnectionFactoryImpl(clientConfig))) {
+            readerGroupManager.createReaderGroup(readerGroup,
+                    ReaderGroupConfig.builder().stream(NameUtils.getScopedStreamName(scope, stream)).disableAutomaticCheckpoints().build());
+        }
+    }
+
+    private static EventStreamReader<Map<String, Integer>> createReader(String scope, String outputStream, String readerGroup, ClientConfig clientConfig, SchemaRegistryClient srClient) {
+        String groupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, outputStream);
         // region read events
         WordCountSerDe wordCountSerDe = new WordCountSerDe();
         SerializerConfig config = SerializerConfig.builder()
-                                                  .groupId(outputGroupId)
+                                                  .groupId(groupId)
                                                   .registryConfigOrClient(Either.right(srClient))
                                                   .build();
         Serializer<Map<String, Integer>> deserializer = SerializerFactory.customDeserializer(config, null, wordCountSerDe.getDeserializer());
 
         EventStreamClientFactory clientFactory = EventStreamClientFactory.withScope(scope, clientConfig);
-        ReaderGroupManager readerGroupManager = new ReaderGroupManagerImpl(scope, clientConfig, new ConnectionFactoryImpl(clientConfig));
-        String rg = "rg" + outputStream + System.currentTimeMillis();
-        readerGroupManager.createReaderGroup(rg,
-                ReaderGroupConfig.builder().stream(NameUtils.getScopedStreamName(scope, outputStream)).disableAutomaticCheckpoints().build());
 
-        EventStreamReader<Map<String, Integer>> reader = clientFactory.createReader("r1", rg, deserializer, ReaderConfig.builder().build());
+        return clientFactory.createReader("r1", readerGroup, deserializer, ReaderConfig.builder().build());
+    }
+
+    private static void printOutput(EventStreamReader<Map<String, Integer>> reader) {
         List<Map<String, Integer>> result = new LinkedList<>();
         EventRead<Map<String, Integer>> event = reader.readNextEvent(1000);
         int counter = 1;
@@ -133,35 +152,23 @@ public class FunctionsDemo {
             result.add(event.getEvent());
             event = reader.readNextEvent(1000);
         }
-        assert result.size() == 10;
-        generateTestDataIntoInputStream(inputGroupId, scope, inputStream, clientConfig, srClient, 5, Lists.newArrayList("one"));
-        event = reader.readNextEvent(1000);
-        while (event.getEvent() != null) {
-            System.out.println("\n\n " + counter++ + " Window output \n\n" + event.getEvent());
-            result.add(event.getEvent());
-            event = reader.readNextEvent(1000);
-        }
-        assert result.size() == 12;
-        
-        runtime.stopAsync();
-        runtime.awaitTerminated();
-        System.exit(0);
         // endregion
     }
 
-    private static void createScopeAndStream(ClientConfig clientConfig, SchemaRegistryClient srClient, String scope, String stream, String groupId, SchemaType schemaType) {
+    private static void createScopeAndStream(ClientConfig clientConfig, SchemaRegistryClient srClient, String scope, String stream, int numOfSegments, SchemaType schemaType) {
         try (StreamManager streamManager = new StreamManagerImpl(clientConfig)) {
             streamManager.createScope(scope);
-            streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
+            streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(numOfSegments)).build());
+            String groupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, stream);
             srClient.addGroup(groupId, schemaType,
                     SchemaValidationRules.of(Compatibility.denyAll()),
                     false, Collections.singletonMap(SerializerFactory.ENCODE, Boolean.toString(false)));
         }
     }
 
-    private static void generateTestDataIntoInputStream(String groupId, String scope, String stream,
+    private static void generateTestDataIntoInputStream(String scope, String stream,
                                                         ClientConfig clientConfig, SchemaRegistryClient client, int numberOfEvents, List<String> text) {
+        String groupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, stream);
         MySerDe mySerDe = new MySerDe();
         SerializerConfig config = SerializerConfig.builder()
                                                   .groupId(groupId)

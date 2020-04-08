@@ -27,14 +27,18 @@ public class StreamProcess<I, O> {
     private final Source<I> inputStream;
     private final Sink<O> outputStream;
     private final List<Operation> operations;
-
-    private StreamProcess(Source<I> inputStream, Sink<O> outputStream, List<Operation> operations) {
+    private final int parallelism;
+    private final Function<O, String> routingKeyFunction;
+    private StreamProcess(Source<I> inputStream, Sink<O> outputStream, List<Operation> operations, int parallelism, 
+                          Function<O, String> routingKeyFunction) {
+        this.routingKeyFunction = routingKeyFunction;
         Preconditions.checkNotNull(inputStream);
         Preconditions.checkNotNull(outputStream);
         Preconditions.checkNotNull(operations);
         this.inputStream = inputStream;
         this.outputStream = outputStream;
         this.operations = operations;
+        this.parallelism = parallelism;
     }
 
     @SuppressWarnings("unchecked")
@@ -53,21 +57,36 @@ public class StreamProcess<I, O> {
     public static class StreamProcessBuilder<T, K> {
         private Source<T> inputStream;
         private Sink<K> outputStream;
+        private int parallelism = 1;
+        private Function<K, String> routingKeyFunction = Object::toString;
 
         private final List<Operation> operations = new LinkedList<>();
 
         @SuppressWarnings("unchecked")
         public StreamProcessBuilder inputStream(String scope, String inputStream, String inputSerDe, URL inputSerDeFilepath) {
+            return inputStream(scope, inputStream, inputSerDe, inputSerDeFilepath, this.parallelism);
+        }
+        
+        @SuppressWarnings("unchecked")
+        public StreamProcessBuilder inputStream(String scope, String inputStream, String inputSerDe, URL inputSerDeFilepath, int parallelism) {
             SerDe<T> serDe = LoaderUtil.getInstance(inputSerDe, inputSerDeFilepath, SerDe.class);
             this.inputStream = new Source<>(scope, inputStream, serDe);
+            this.parallelism = parallelism;
             return this;
         }
 
         @SuppressWarnings("unchecked")
         public StreamProcessBuilder outputStream(String scope, String outputStream, String outputSerDe, URL outputSerDeFilepath) {
+            return outputStream(scope, outputStream, outputSerDe, outputSerDeFilepath, this.routingKeyFunction);
+        }
+
+        @SuppressWarnings("unchecked")
+        public StreamProcessBuilder outputStream(String scope, String outputStream, String outputSerDe, URL outputSerDeFilepath, 
+                                                 Function<K, String> routingKeyFunction) {
             SerDe<K> serDe = LoaderUtil.getInstance(outputSerDe, outputSerDeFilepath, SerDe.class);
 
             this.outputStream = new Sink<>(scope, outputStream, serDe);
+            this.routingKeyFunction = routingKeyFunction;
             return this;
         }
         
@@ -92,9 +111,9 @@ public class StreamProcess<I, O> {
             this.operations.add(new WindowedMapFunc<>(func, window));
             return this;
         }
-
+        
         public StreamProcess<T, K> build() {
-            return new StreamProcess<>(inputStream, outputStream, operations);
+            return new StreamProcess<>(inputStream, outputStream, operations, parallelism, routingKeyFunction);
         }
     }
 
