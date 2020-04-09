@@ -27,8 +27,14 @@ public class Pipeline<I, O> {
     @Synchronized
     public <K> Pipeline<I, K> addProcessing(StreamProcess<O, K> process) {
         ArrayList<StreamProcess> newPipeline = Lists.newArrayList(this.pipeline);
-        newPipeline.add(process);
-        return new Pipeline<I, K>(newPipeline);
+        StreamProcess previous = this.pipeline.get(pipeline.size() - 1);
+        if (previous.getOutputStream().getScope().equals(process.getInputStream().getScope()) &&
+            previous.getOutputStream().getStream().equals(process.getInputStream().getStream())) {
+            newPipeline.add(process);
+            return new Pipeline<I, K>(newPipeline);
+        } else {
+            throw new RuntimeException("Stream mismatch");
+        }
     } 
     
     public static <T, K> Pipeline<T, K> of(StreamProcess<T, K> process) {
