@@ -79,10 +79,8 @@ public class FunctionsDemo {
 
         // region create streams 
         String scope = UUID.randomUUID().toString();
-        String inputStream = UUID.randomUUID().toString();
-        String outputStream = UUID.randomUUID().toString();
-        String inputGroupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, inputStream);
-        String outputGroupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, outputStream);
+        String inputStream = "input" + UUID.randomUUID().toString();
+        String outputStream = "output" + UUID.randomUUID().toString();
 
         ClientConfig clientConfig = ClientConfig.builder().controllerURI(URI.create("tcp://localhost:9090")).build();
         SchemaRegistryClient srClient = RegistryClientFactory.createRegistryClient(new SchemaRegistryClientConfig(URI.create("http://localhost:9092")));
@@ -91,18 +89,18 @@ public class FunctionsDemo {
         createScopeAndStream(clientConfig, srClient, scope, outputStream, 1, SchemaType.custom("string"));
         // endregion
 
-        generateTestDataIntoInputStream(scope, inputStream, clientConfig, srClient, 1000,
+        generateTestDataIntoInputStream(scope, inputStream, clientConfig, srClient, 100,
                 Lists.newArrayList(SAMPLE1, SAMPLE2, SAMPLE3, SAMPLE4));
 
         // region pipeline
-        StreamProcess<MyInput, Map<String, Integer>> process = new StreamProcess.StreamProcessBuilder<MyInput, Map<String, Integer>>()
-                .inputStream(scope, inputStream, inputSerDe, serDeFilepath, 2)
-                .map(x -> ((MyInput) x).getText())
-                .map(toLowerFunc, funcFilepath)
-                .map(x -> ((String) x).split("\\W+"))
-                .windowedMap(wordCountFunc, funcFilepath, 100)
-                .outputStream(scope, outputStream, outputSerDe, serDeFilepath)
-                .build();
+        StreamProcess<MyInput, Map<String, Integer>> process = StreamProcess
+                .readFrom(scope, inputStream, inputSerDe, serDeFilepath, MyInput.class, 2)
+                .map(MyInput::getText)
+                .map(toLowerFunc, funcFilepath, String.class)
+                .map(x -> x.split("\\W+"))
+                .windowedMap(wordCountFunc, funcFilepath, 10, Map.class)
+                .writeTo(scope, outputStream, outputSerDe, serDeFilepath);
+        
         Pipeline<MyInput, Map<String, Integer>> processPipeline = Pipeline.of(process);
         Runtime runtime = new Runtime(clientConfig, srClient, processPipeline);
         runtime.startAsync();
@@ -113,7 +111,7 @@ public class FunctionsDemo {
         createReaderGroup(scope, outputStream, readerGroup, clientConfig);
         EventStreamReader<Map<String, Integer>> reader = createReader(scope, outputStream, readerGroup, clientConfig, srClient);
         printOutput(reader);
-        generateTestDataIntoInputStream(scope, inputStream, clientConfig, srClient, 100, Lists.newArrayList("one"));
+        generateTestDataIntoInputStream(scope, inputStream, clientConfig, srClient, 20, Lists.newArrayList("one"));
         printOutput(reader);
 
         runtime.stopAsync();

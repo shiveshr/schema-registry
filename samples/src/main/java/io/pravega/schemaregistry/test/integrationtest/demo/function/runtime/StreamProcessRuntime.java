@@ -80,7 +80,7 @@ class StreamProcessRuntime<I, O> extends AbstractIdleService {
         });
     }
 
-    private class Cell extends AbstractExecutionThreadService {
+    private class Cell extends AbstractExecutionThreadService implements StreamProcess.Context {
         private final EventStreamReader<I> inputReader;
         private final EventStreamWriter<O> outputWriter;
 
@@ -95,7 +95,7 @@ class StreamProcessRuntime<I, O> extends AbstractIdleService {
             while (isRunning()) {
                 event = inputReader.readNextEvent(1000);
                 if (event.getEvent() != null) {
-                    O output = streamProcess.process(event.getEvent());
+                    O output = streamProcess.process(event.getEvent(), this);
 
                     if (output != null) {
                         if (streamProcess.getRoutingKeyFunction() == null) {
