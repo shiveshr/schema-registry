@@ -34,6 +34,7 @@ import lombok.SneakyThrows;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 class StreamProcessRuntime<I, O> extends AbstractIdleService {
     private final ClientConfig clientConfig;
@@ -64,12 +65,12 @@ class StreamProcessRuntime<I, O> extends AbstractIdleService {
     protected final void startUp() {
         String readerGroupName = "rg" + inputStream + System.currentTimeMillis();
         createReaderGroup(readerGroupName);
-        for (int i = 0; i < streamProcess.getParallelism(); i++) {
-            Cell cell = new Cell(createReader(readerGroupName, Integer.toString(i)), createWriter());
+        IntStream.of(streamProcess.getParallelism()).parallel().forEach(x -> {
+            Cell cell = new Cell(createReader(readerGroupName, Integer.toString(x)), createWriter());
             cells.add(cell);
             cell.startAsync();
             cell.awaitRunning();
-        }
+        });
     }
 
     @Override
