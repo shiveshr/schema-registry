@@ -68,14 +68,13 @@ Demo:
 For this sample, start with `FunctionsDemo.java` which demonstrates a `windowed` word count example.
 A stream processing pipeline is described in following way:
 ```
-        StreamProcess<MyInput, Map<String, Integer>> process = new StreamProcess.StreamProcessBuilder<MyInput, Map<String, Integer>>()
-                .inputStream(scope, inputStream, inputSerDe, serDeFilepath)
-                .map(x -> ((MyInput) x).getText())
-                .map(toLowerFunc, funcFilepath)
-                .map(x -> ((String) x).split("\\W+"))
-                .windowedMap(wordCountFunc, funcFilepath, 2)
-                .outputStream(scope, outputStream, outputSerDe, serDeFilepath)
-                .build();               
+        StreamProcess<MyInput, Map<String, Integer>> streamProcess = StreamProcess
+                .readFrom(scope, inputStream, inputSerDe, serDeFilepath, MyInput.class, 2)
+                .map(MyInput::getText)
+                .map(toLowerFunc, funcFilepath, String.class)
+                .map(x -> x.split("\\W+"))
+                .windowedMap(wordCountFunc, funcFilepath, 10, Map.class)
+                .writeTo(scope, outputStream, outputSerDe, serDeFilepath);
 ```        
 Here `toLowerFunc` and `wordCountFunc` are two user defined functions that "would be" loaded at runtime from a central functions
 repository.
@@ -83,7 +82,11 @@ repository.
 A pipeline of multiple such processes can be created where output of one streamprocess being written into a pravega stream becomes input for another StreamProcess in the pipeline. 
 Once pipeline is described, it will be presented to a runtime to plan and execute it.   
 ```
-        Pipeline<MyInput, Map<String, Integer>> processPipeline = Pipeline.of(process);
+        Pipeline<MyInput, Map<String, Integer>> processPipeline = Pipeline.of(streamProcess);
+        
+        // add more processes to the pipeline
+        processPipeine.addProcess(streamProcess2);
+         
         Runtime runtime = new Runtime(clientConfig, srClient, processPipeline);
 ```
 
