@@ -29,6 +29,7 @@ Conceptualizing such a processing framework will constitute of three important p
 3. A function `Runtime` - that is responsible for executing the processing pipeline. Runtime could be created in multiple
 flavours - a) run within user process b) deploys containers using some container cluster manager like k8s, docker swarm etc. 
 
+#### Functions repository:
 1. Function [interface] (https://github.com/shiveshr/schema-registry/tree/functions/samples/src/main/java/io/pravega/schemaregistry/test/integrationtest/demo/function/interfaces) 
 A function is a simple interface just like a java function. 
 ```
@@ -49,7 +50,8 @@ One can create the function once, and publish it in a central functions resposit
 can be referenced in any data pipeline. 
 These functions can be thought of as pure functions and multiple functions can be composed as f(g(x)) etc.
 
-2. [Stream processing] (https://github.com/shiveshr/schema-registry/blob/functions/samples/src/main/java/io/pravega/schemaregistry/test/integrationtest/demo/function/runtime/StreamProcess.java)
+#### Stream processing
+2. [Stream processing](https://github.com/shiveshr/schema-registry/blob/functions/samples/src/main/java/io/pravega/schemaregistry/test/integrationtest/demo/function/runtime/StreamProcess.java)
 A mechanism to describe data processing pipeline. Where you start with one stream to read from and end with one stream to write the computation result into.
 There are bunch of intermediate transforms or filters that are basically `Functions` that are chained one after the other in order. 
 The computations can be described locally as transformations (java functions) or by referencing an external user defined function. 
