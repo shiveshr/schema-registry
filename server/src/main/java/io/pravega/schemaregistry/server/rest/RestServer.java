@@ -1,11 +1,11 @@
 /**
  * Copyright (c) 2017 Dell Inc., or its subsidiaries. All Rights Reserved.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.pravega.schemaregistry.server.rest;
 
@@ -18,12 +18,16 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.core.UriBuilder;
 
+import io.pravega.common.auth.JKSHelper;
+import io.pravega.schemaregistry.server.rest.authentication.AuthFilter;
 import io.pravega.schemaregistry.server.rest.resources.PingImpl;
 import io.pravega.schemaregistry.server.rest.resources.SchemaRegistryResourceImpl;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
 import lombok.extern.slf4j.Slf4j;
 import org.glassfish.grizzly.GrizzlyFuture;
 import org.glassfish.grizzly.http.server.HttpServer;
+import org.glassfish.grizzly.ssl.SSLContextConfigurator;
+import org.glassfish.grizzly.ssl.SSLEngineConfigurator;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
@@ -55,6 +59,7 @@ public class RestServer extends AbstractIdleService {
 
         // Register the custom JSON parser.
         this.resourceConfig.register(new CustomObjectMapperProvider());
+        this.resourceConfig.register(AuthFilter.class);
     }
 
     /**
@@ -65,7 +70,16 @@ public class RestServer extends AbstractIdleService {
         long traceId = LoggerHelpers.traceEnterWithContext(log, this.objectId, "startUp");
         try {
             log.info("Starting REST server listening on port: {}", this.restServerConfig.getPort());
-            httpServer = GrizzlyHttpServerFactory.createHttpServer(baseUri, resourceConfig, true);
+            if (restServerConfig.isTlsEnabled()) {
+                SSLContextConfigurator contextConfigurator = new SSLContextConfigurator();
+                contextConfigurator.setKeyStoreFile(restServerConfig.getKeyFilePath());
+                contextConfigurator.setKeyStorePass(JKSHelper.loadPasswordFrom(restServerConfig.getKeyFilePasswordPath()));
+                httpServer = GrizzlyHttpServerFactory.createHttpServer(baseUri, resourceConfig, true,
+                        new SSLEngineConfigurator(contextConfigurator, false, false, false));
+            } else {
+                httpServer = GrizzlyHttpServerFactory.createHttpServer(baseUri, resourceConfig, true);
+            }
+
         } finally {
             LoggerHelpers.traceLeave(log, this.objectId, "startUp", traceId);
         }

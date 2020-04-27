@@ -9,6 +9,7 @@
  */
 package io.pravega.schemaregistry.server.rest;
 
+import com.google.common.base.Strings;
 import io.pravega.common.Exceptions;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,19 +18,33 @@ import lombok.Getter;
  * REST server config.
  */
 @Getter
+@Builder
 public class ServiceConfig {
     private final String host;
     private final int port;
+    private final boolean tlsEnabled;
+    private final String keyFilePath;
+    private final String keyFilePasswordPath;
 
-    @Builder
-    ServiceConfig(final String host, final int port) {
+    private ServiceConfig(String host, int port, boolean tlsEnabled, String keyFilePath, String keyFilePasswordPath) {
         Exceptions.checkNotNullOrEmpty(host, "host");
         Exceptions.checkArgument(port > 0, "port", "Should be positive integer");
-
+        Exceptions.checkArgument(!tlsEnabled || (!Strings.isNullOrEmpty(keyFilePath) 
+                && !Strings.isNullOrEmpty(keyFilePasswordPath)), "keyFilePath", 
+                "If tls is enabled then key file path and key file password path should be non empty");
         this.host = host;
         this.port = port;
+        this.tlsEnabled = tlsEnabled;
+        this.keyFilePath = keyFilePath;
+        this.keyFilePasswordPath = keyFilePasswordPath;
     }
 
+    public static final class ServiceConfigBuilder {
+        private boolean tlsEnabled = false;
+        private String keyFilePath = "";
+        private String keyFilePasswordPath = "";
+    }
+    
     @Override
     public String toString() {
         // Note: We don't use Lombok @ToString to automatically generate an implementation of this method,
