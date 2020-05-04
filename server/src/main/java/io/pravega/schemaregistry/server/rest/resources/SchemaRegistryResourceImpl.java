@@ -9,7 +9,10 @@
  */
 package io.pravega.schemaregistry.server.rest.resources;
 
+import io.pravega.auth.AuthException;
 import io.pravega.common.Exceptions;
+import io.pravega.common.LoggerHelpers;
+import io.pravega.controller.server.AuthResourceRepresentation;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
 import io.pravega.schemaregistry.contract.data.SchemaType;
@@ -41,6 +44,8 @@ import io.pravega.schemaregistry.contract.generated.rest.model.ValidateRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.VersionInfo;
 import io.pravega.schemaregistry.contract.generated.rest.server.api.NotFoundException;
 import io.pravega.schemaregistry.contract.transform.ModelHelper;
+import io.pravega.schemaregistry.server.rest.auth.AuthHandlerManager;
+import io.pravega.schemaregistry.server.rest.auth.RESTAuthHelper;
 import io.pravega.schemaregistry.server.rest.v1.ApiV1;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
 import lombok.extern.slf4j.Slf4j;
@@ -54,8 +59,10 @@ import javax.ws.rs.core.SecurityContext;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.pravega.auth.AuthHandler.Permissions.READ_UPDATE;
 import static javax.ws.rs.core.Response.Status;
 
 /**
@@ -63,14 +70,18 @@ import static javax.ws.rs.core.Response.Status;
  */
 @Slf4j
 public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
-
+    private static final String ROOT = "/";
+    private static final String GROUP_FORMAT = ROOT + "%s";
     @Context
     HttpHeaders headers;
 
+    private final RESTAuthHelper restAuthHelper;
+
     private SchemaRegistryService registryService;
 
-    public SchemaRegistryResourceImpl(SchemaRegistryService registryService) {
+    public SchemaRegistryResourceImpl(SchemaRegistryService registryService, AuthHandlerManager pravegaAuthManager) {
         this.registryService = registryService;
+        this.restAuthHelper = new RESTAuthHelper(pravegaAuthManager);
     }
 
     @Override
@@ -98,6 +109,14 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     @Override
     public void createGroup(CreateGroupRequest createGroupRequest, SecurityContext securityContext,
                             AsyncResponse asyncResponse) throws NotFoundException, UnsupportedEncodingException {
+        try {
+            restAuthHelper.authenticateAuthorize(getAuthorizationHeader(), ROOT, READ_UPDATE);
+        } catch (AuthException e) {
+            log.warn("Create scope for {} failed due to authentication failure {}.", createGroupRequest.getGroupName(), e);
+            asyncResponse.resume(Response.status(Status.fromStatusCode(e.getResponseCode())).build());
+            return;
+        }
+
         SchemaType schemaType = ModelHelper.decode(createGroupRequest.getSchemaType());
         SchemaValidationRules validationRules = ModelHelper.decode(createGroupRequest.getValidationRules());
         GroupProperties properties = new GroupProperties(
@@ -469,5 +488,15 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                            return response;
                        });
 
+    }
+
+    /**
+     * This is a shortcut for {@code headers.getRequestHeader().get(HttpHeaders.AUTHORIZATION)}.
+     *
+     * @return a list of read-only values of the HTTP Authorization header
+     * @throws IllegalStateException if called outside the scope of the HTTP request
+     */
+    private List<String> getAuthorizationHeader() {
+        return headers.getRequestHeader(HttpHeaders.AUTHORIZATION);
     }
 }

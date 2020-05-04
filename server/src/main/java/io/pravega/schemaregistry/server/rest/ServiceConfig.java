@@ -10,6 +10,7 @@
 package io.pravega.schemaregistry.server.rest;
 
 import com.google.common.base.Strings;
+import io.pravega.auth.ServerConfig;
 import io.pravega.common.Exceptions;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,14 +20,15 @@ import lombok.Getter;
  */
 @Getter
 @Builder
-public class ServiceConfig {
+public class ServiceConfig implements ServerConfig {
     private final String host;
     private final int port;
     private final boolean tlsEnabled;
     private final String keyFilePath;
     private final String keyFilePasswordPath;
+    private final boolean authEnabled;
 
-    private ServiceConfig(String host, int port, boolean tlsEnabled, String keyFilePath, String keyFilePasswordPath) {
+    private ServiceConfig(String host, int port, boolean tlsEnabled, String keyFilePath, String keyFilePasswordPath, boolean authEnabled) {
         Exceptions.checkNotNullOrEmpty(host, "host");
         Exceptions.checkArgument(port > 0, "port", "Should be positive integer");
         Exceptions.checkArgument(!tlsEnabled || (!Strings.isNullOrEmpty(keyFilePath) 
@@ -37,6 +39,7 @@ public class ServiceConfig {
         this.tlsEnabled = tlsEnabled;
         this.keyFilePath = keyFilePath;
         this.keyFilePasswordPath = keyFilePasswordPath;
+        this.authEnabled = authEnabled;
     }
 
     public static final class ServiceConfigBuilder {

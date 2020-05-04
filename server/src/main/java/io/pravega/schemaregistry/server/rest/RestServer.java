@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 import javax.ws.rs.core.UriBuilder;
 
 import io.pravega.common.auth.JKSHelper;
-import io.pravega.schemaregistry.server.rest.authentication.AuthFilter;
 import io.pravega.schemaregistry.server.rest.resources.PingImpl;
 import io.pravega.schemaregistry.server.rest.resources.SchemaRegistryResourceImpl;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
@@ -59,7 +58,6 @@ public class RestServer extends AbstractIdleService {
 
         // Register the custom JSON parser.
         this.resourceConfig.register(new CustomObjectMapperProvider());
-        this.resourceConfig.register(AuthFilter.class);
     }
 
     /**
