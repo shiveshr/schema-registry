@@ -110,8 +110,6 @@ paths:
       responses:
         204:
           description: Successfully deleted the Group
-        404:
-          description: Group not found
         500:
           description: Internal server error while deleting the Group
   /groups/{groupName}/rules:
@@ -164,47 +162,6 @@ paths:
           description: Group with given name not found
         409:
           description: Write conflict 
-        500:
-          description: Internal server error while fetching Group details
-  /groups/{groupName}/schemas/schema/{fingerprint}:
-    parameters:
-      - in: path
-        name: groupName
-        description: Group name
-        required: true
-        type: string
-      - in: path
-        name: fingerprint
-        description: schema fingerprint
-        required: true
-        type: integer
-        format: int64
-    post:
-      tags:
-      - "Schema"
-      operationId: getSchemaVersion
-      description: Get the version for the schema if it is registered.
-      consumes:
-        - application/json
-      parameters:
-        - in: body
-          name: GetSchemaVersion
-          description: Get schema corresponding to the version
-          required: true
-          schema:
-            type: object
-            properties:
-              schemaInfo:
-                  $ref: "#/definitions/SchemaInfo"
-      produces:
-        - application/json
-      responses:
-        200:
-          description: Schema version
-          schema:
-            $ref: "#/definitions/VersionInfo"
-        404:
-          description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
   /groups/{groupName}/schemas:
@@ -337,6 +294,41 @@ paths:
           description: Versioned history of schemas registered under the group
           schema:
             $ref: "#/definitions/SchemaList"
+        404:
+          description: Group with given name not found
+        500:
+          description: Internal server error while fetching Group details
+  /groups/{groupName}/schemas/versions/schema:
+    parameters:
+      - in: path
+        name: groupName
+        description: Group name
+        required: true
+        type: string
+    post:
+      tags:
+      - "Schema"
+      operationId: getSchemaVersion
+      description: Get the version for the schema if it is registered.
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: GetSchemaVersion
+          description: Get schema corresponding to the version
+          required: true
+          schema:
+            type: object
+            properties:
+              schemaInfo:
+                  $ref: "#/definitions/SchemaInfo"
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Schema version
+          schema:
+            $ref: "#/definitions/VersionInfo"
         404:
           description: Group with given name not found
         500:

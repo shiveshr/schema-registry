@@ -55,8 +55,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -128,7 +126,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         SchemaValidationRules validationRules = ModelHelper.decode(createGroupRequest.getValidationRules());
         GroupProperties properties = new GroupProperties(
                 schemaType, validationRules, createGroupRequest.isValidateByObjectType(), createGroupRequest.getProperties());
-        String groupName = URLDecoder.decode(createGroupRequest.getGroupName(), StandardCharsets.UTF_8.toString());
+        String groupName = createGroupRequest.getGroupName();
         registryService.createGroup(groupName, properties)
                        .thenApply(createStatus -> {
                            if (!createStatus) {
@@ -193,7 +191,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                                return Response.status(Status.NOT_FOUND).build();
                            } else if (Exceptions.unwrap(exception) instanceof PreconditionFailedException) {
                                log.warn("updateSchemaValidationRules write conflict {}", groupName);
-                               return Response.status(Status.PRECONDITION_REQUIRED).build();
+                               return Response.status(Status.CONFLICT).build();
                            } else {
                                log.warn("updateSchemaValidationRules failed with exception: ", exception);
                                return Response.status(Status.INTERNAL_SERVER_ERROR).build();
@@ -234,7 +232,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         registryService.deleteGroup(groupName)
                        .thenApply(status -> {
                            log.info("Group {} deleted", groupName);
-                           return Response.status(Status.OK).build();
+                           return Response.status(Status.NO_CONTENT).build();
                        })
                        .exceptionally(exception -> {
                            log.warn("deleteGroup failed with exception: ", exception);
@@ -436,7 +434,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     }
 
     @Override
-    public void getSchemaVersion(String groupName, Long fingerprint, GetSchemaVersion getSchemaVersion, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void getSchemaVersion(String groupName, GetSchemaVersion getSchemaVersion, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get schema version called for group {}", groupName);
         io.pravega.schemaregistry.contract.data.SchemaInfo schemaInfo = ModelHelper.decode(getSchemaVersion.getSchemaInfo());
 
