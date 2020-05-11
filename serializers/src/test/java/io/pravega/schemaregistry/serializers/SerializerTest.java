@@ -346,7 +346,7 @@ public class SerializerTest {
         AssertExtensions.assertThrows(IllegalArgumentException.class, () -> SerializerFactory.protobufGenericDeserializer(config, null));
 
         SchemaInfo latestSchema = client.getLatestSchema("groupId", null).getSchema();
-        ProtobufSchema<DynamicMessage> schemaDynamic = ProtobufSchema.of(latestSchema.getObjectType(), descriptorSet);
+        ProtobufSchema<DynamicMessage> schemaDynamic = ProtobufSchema.of(latestSchema.getName(), descriptorSet);
         Serializer<DynamicMessage> genericDeserializer = SerializerFactory.protobufGenericDeserializer(config, schemaDynamic);
         
         DynamicMessage generic = genericDeserializer.deserialize(serialized);
