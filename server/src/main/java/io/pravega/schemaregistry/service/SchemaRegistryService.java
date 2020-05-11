@@ -525,7 +525,7 @@ public class SchemaRegistryService {
 
         if (fetchAll) {
             if (groupProperties.isValidateByObjectType()) {
-                schemasFuture = store.listSchemasByObjectType(group, schema.getName(), null)
+                schemasFuture = store.listSchemasByObjectType(group, schema.getObjectType(), null)
                                      .thenApply(ListWithToken::getList);
             } else {
                 schemasFuture = store.listSchemas(group, null)
@@ -550,7 +550,7 @@ public class SchemaRegistryService {
                                               }).max(Comparator.comparingInt(VersionInfo::getVersion)).orElse(null);
             if (till != null) {
                 if (groupProperties.isValidateByObjectType()) {
-                    schemasFuture = store.listSchemasByObjectType(group, schema.getName(), till, null)
+                    schemasFuture = store.listSchemasByObjectType(group, schema.getObjectType(), till, null)
                                          .thenApply(ListWithToken::getList);
                 } else {
                     schemasFuture = store.listSchemas(group, till, null)
@@ -558,7 +558,7 @@ public class SchemaRegistryService {
                 }
             } else {
                 if (groupProperties.isValidateByObjectType()) {
-                    schemasFuture = store.getLatestSchema(group, schema.getName())
+                    schemasFuture = store.getLatestSchema(group, schema.getObjectType())
                                          .thenApply(x -> x == null ? Collections.emptyList() : Collections.singletonList(x));
                 } else {
                     schemasFuture = store.getLatestSchema(group)

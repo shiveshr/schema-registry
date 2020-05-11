@@ -141,7 +141,7 @@ public class Group<V> {
         return getSchemas(fromPos)
                 .thenApply(schemas -> {
                     List<SchemaWithVersion> list = schemas
-                            .getList().stream().filter(x -> x.getSchema().getName().equals(objectTypeName)).collect(Collectors.toList());
+                            .getList().stream().filter(x -> x.getSchema().getObjectType().equals(objectTypeName)).collect(Collectors.toList());
                     return new ListWithToken<>(list, null);
                 });
     }
@@ -277,7 +277,7 @@ public class Group<V> {
 
     public CompletableFuture<ListWithToken<SchemaEvolution>> getHistory(String objectTypeName) {
         return getHistory().thenApply(list ->
-                new ListWithToken<>(list.getList().stream().filter(x -> x.getSchema().getName().equals(objectTypeName))
+                new ListWithToken<>(list.getList().stream().filter(x -> x.getSchema().getObjectType().equals(objectTypeName))
                                         .collect(Collectors.toList()), null));
     }
 
@@ -288,7 +288,7 @@ public class Group<V> {
         keys.add(schemaInfoKey);
 
         if (prop.isValidateByObjectType()) {
-            keys.add(new TableRecords.LatestSchemaVersionForObjectTypeKey(schemaInfo.getName()));
+            keys.add(new TableRecords.LatestSchemaVersionForObjectTypeKey(schemaInfo.getObjectType()));
             keys.add(OBJECTS_TYPE_KEY);
         }
 
@@ -306,7 +306,7 @@ public class Group<V> {
             } else {
                 nextVersion = nextOrdinal;
             }
-            VersionInfo next = new VersionInfo(schemaInfo.getName(), nextVersion, nextOrdinal);
+            VersionInfo next = new VersionInfo(schemaInfo.getObjectType(), nextVersion, nextOrdinal);
 
             List<Map.Entry<TableRecords.TableKey, GroupTable.Value<TableRecords.TableValue, V>>> entries = new LinkedList<>();
             // 0. etag
@@ -335,7 +335,7 @@ public class Group<V> {
                 // 3.1 latest for object type
                 V objectLatestVersionVersion = values.get(2).getVersion();
                 entries.add(new AbstractMap.SimpleEntry<>(new TableRecords.LatestSchemaVersionForObjectTypeKey(
-                        schemaInfo.getName()),
+                        schemaInfo.getObjectType()),
                         new GroupTable.Value<>(new TableRecords.LatestSchemaVersionValue(next), objectLatestVersionVersion)));
             }
 
@@ -346,8 +346,8 @@ public class Group<V> {
 
                 List<String> list = objectTypes == null ? new ArrayList<>() :
                         Lists.newArrayList(objectTypes.getObjectTypes());
-                if (!list.contains(schemaInfo.getName())) {
-                    list.add(schemaInfo.getName());
+                if (!list.contains(schemaInfo.getObjectType())) {
+                    list.add(schemaInfo.getObjectType());
                 }
                 entries.add(new AbstractMap.SimpleEntry<>(OBJECTS_TYPE_KEY,
                         new GroupTable.Value<>(
@@ -442,7 +442,7 @@ public class Group<V> {
             VersionInfo version = iterator.next();
             return getSchema(version.getOrdinal())
                     .thenAccept(schema -> {
-                        if (Arrays.equals(schema.getSchemaData(), toFind.getSchemaData()) && schema.getName().equals(toFind.getName())) {
+                        if (Arrays.equals(schema.getSchemaData(), toFind.getSchemaData()) && schema.getObjectType().equals(toFind.getObjectType())) {
                             found.set(version);
                         }
                     });
