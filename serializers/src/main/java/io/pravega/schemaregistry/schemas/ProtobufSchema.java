@@ -114,7 +114,7 @@ public class ProtobufSchema<T extends Message> implements SchemaContainer<T> {
     public static ProtobufSchema<DynamicMessage> from(SchemaInfo schemaInfo) {
         DescriptorProtos.FileDescriptorSet fileDescriptorSet = DescriptorProtos.FileDescriptorSet.parseFrom(schemaInfo.getSchemaData());
 
-        return new ProtobufSchema<>(schemaInfo.getName(), null, fileDescriptorSet);
+        return new ProtobufSchema<>(schemaInfo.getObjectType(), null, fileDescriptorSet);
     }
 }
 

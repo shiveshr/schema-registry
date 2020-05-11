@@ -170,7 +170,7 @@ public class SerializerFactory {
         EncodingCache encodingCache = EncodingCache.getEncodingCacheForGroup(groupId, registryClient);
 
         Map<String, AbstractPravegaDeserializer<T>> deserializerMap = schemas
-                .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getName(),
+                .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getObjectType(),
                         x -> new AvroDeserlizer<>(groupId, registryClient, x, config.getDecoder(), encodingCache)));
         return new MultiplexedDeserializer<>(groupId, registryClient, deserializerMap, config.getDecoder(), 
                 encodingCache);
@@ -200,7 +200,7 @@ public class SerializerFactory {
         EncodingCache encodingCache = EncodingCache.getEncodingCacheForGroup(groupId, registryClient);
 
         Map<String, AbstractPravegaDeserializer<T>> deserializerMap = schemas
-                .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getName(),
+                .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getObjectType(),
                         x -> new AvroDeserlizer<>(groupId, registryClient, x, config.getDecoder(), encodingCache)));
         AbstractPravegaDeserializer<GenericRecord> genericDeserializer = new AvroGenericDeserlizer(groupId, registryClient,
                 null, config.getDecoder(), encodingCache);
@@ -327,7 +327,7 @@ public class SerializerFactory {
         EncodingCache encodingCache = EncodingCache.getEncodingCacheForGroup(groupId, registryClient);
 
         Map<String, AbstractPravegaDeserializer<T>> deserializerMap = schemas
-                .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getName(),
+                .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getObjectType(),
                         x -> new ProtobufDeserlizer<>(groupId, registryClient, x, config.getDecoder(), encodingCache)));
         return new MultiplexedDeserializer<>(groupId, registryClient, deserializerMap, config.getDecoder(), encodingCache);
     }
@@ -352,7 +352,7 @@ public class SerializerFactory {
         EncodingCache encodingCache = EncodingCache.getEncodingCacheForGroup(groupId, registryClient);
 
         Map<String, AbstractPravegaDeserializer<T>> deserializerMap = schemas
-                .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getName(),
+                .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getObjectType(),
                         x -> new ProtobufDeserlizer<>(groupId, registryClient, x, config.getDecoder(), encodingCache)));
         ProtobufGenericDeserlizer genericDeserializer = new ProtobufGenericDeserlizer(groupId, registryClient, null, 
                 config.getDecoder(), encodingCache);
@@ -474,7 +474,7 @@ public class SerializerFactory {
         EncodingCache encodingCache = EncodingCache.getEncodingCacheForGroup(groupId, registryClient);
 
         Map<String, AbstractPravegaDeserializer<T>> deserializerMap = schemas
-                .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getName(),
+                .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getObjectType(),
                         x -> new JsonDeserlizer<>(groupId, registryClient, x, config.getDecoder(), 
                                 encodingCache)));
         return new MultiplexedDeserializer<>(groupId, registryClient,
@@ -501,7 +501,7 @@ public class SerializerFactory {
         EncodingCache encodingCache = EncodingCache.getEncodingCacheForGroup(groupId, registryClient);
 
         Map<String, AbstractPravegaDeserializer<T>> deserializerMap = schemas
-                .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getName(),
+                .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getObjectType(),
                         x -> new JsonDeserlizer<>(groupId, registryClient, x, config.getDecoder(), encodingCache)));
         JsonGenericDeserlizer genericDeserializer = new JsonGenericDeserlizer(groupId, registryClient, config.getDecoder(),
                 encodingCache);
