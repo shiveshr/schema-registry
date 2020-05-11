@@ -365,9 +365,9 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     }
 
     @Override
-    public void getOrGenerateEncodingId(String groupName, GetEncodingIdRequest getEncodingIdRequest,
+    public void getEncodingId(String groupName, GetEncodingIdRequest getEncodingIdRequest,
                                         SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
-        log.info("getOrGenerateEncodingId called for group {} with version {} and codec {}", groupName, 
+        log.info("getEncodingId called for group {} with version {} and codec {}", groupName, 
                 getEncodingIdRequest.getVersionInfo(), getEncodingIdRequest.getCodecType());
         io.pravega.schemaregistry.contract.data.VersionInfo version = ModelHelper.decode(getEncodingIdRequest.getVersionInfo());
         CodecType codecType = ModelHelper.decode(getEncodingIdRequest.getCodecType());
@@ -383,10 +383,10 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                                log.warn("Group {} not found", groupName);
                                return Response.status(Status.NOT_FOUND).build();
                            } else if (Exceptions.unwrap(exception) instanceof CodecNotFoundException) {
-                               log.info("getOrGenerateEncodingId failed Codec Not Found {}", groupName);
+                               log.info("getEncodingId failed Codec Not Found {}", groupName);
                                return Response.status(Status.PRECONDITION_FAILED).build();
                            } else {
-                               log.warn("getOrGenerateEncodingId failed with exception: ", exception);
+                               log.warn("getEncodingId failed with exception: ", exception);
                                return Response.status(Status.INTERNAL_SERVER_ERROR).build();
                            }
                        })
@@ -471,7 +471,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     }
 
     @Override
-    public void getLatestSchemaForName(String groupName, String objectTypeName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void getLatestSchemaForSchemaName(String groupName, String objectTypeName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getLatestSchemaForObjectType called for group {} object type {}", groupName, objectTypeName);
         registryService.getLatestSchema(groupName, objectTypeName)
                        .thenApply(schemaWithVersion -> {
