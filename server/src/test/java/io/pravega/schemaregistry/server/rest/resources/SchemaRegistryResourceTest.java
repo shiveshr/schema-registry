@@ -45,8 +45,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 public class SchemaRegistryResourceTest extends JerseyTest {
-    public static final String GROUPS = "v1/groups";
-    SchemaRegistryService service;
+    private static final String GROUPS = "v1/groups";
+    private SchemaRegistryService service;
 
     @Override
     protected Application configure() {
@@ -54,8 +54,7 @@ public class SchemaRegistryResourceTest extends JerseyTest {
         final Set<Object> resourceObjs = new HashSet<>();
         resourceObjs.add(new SchemaRegistryResourceImpl(service));
 
-        final RegistryApplication application = new RegistryApplication(resourceObjs);
-        return application;
+        return new RegistryApplication(resourceObjs);
     }
 
     @Test
@@ -111,10 +110,20 @@ public class SchemaRegistryResourceTest extends JerseyTest {
                 .schemaData(new byte[0])
                 .properties(Collections.emptyMap())
         );
-        Future<Response> future = target(GROUPS + "/" + "mygroup" + "/schemas/canRead").request().async()
+        Future<Response> future = target(GROUPS).path("mygroup").path("schemas/canRead").request().async()
                                                                                        .post(Entity.entity(canReadRequest, MediaType.APPLICATION_JSON));
         Response response = future.get();
         assertTrue(response.readEntity(CanRead.class).isCompatible());
+
+        canReadRequest = new CanReadRequest().schemaInfo(new SchemaInfo()
+                .schemaName("name")
+                .schemaData(new byte[0])
+                .properties(Collections.emptyMap())
+        );
+        future = target(GROUPS).path("mygroup").path("schemas/canRead").request().async()
+                                                .post(Entity.entity(canReadRequest, MediaType.APPLICATION_JSON));
+        response = future.get();
+        assertEquals(400, response.getStatus());
     }
 
     @Test
