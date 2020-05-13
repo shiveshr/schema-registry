@@ -29,7 +29,7 @@ import io.pravega.schemaregistry.contract.generated.rest.model.EncodingId;
 import io.pravega.schemaregistry.contract.generated.rest.model.EncodingInfo;
 import io.pravega.schemaregistry.contract.generated.rest.model.GetEncodingIdRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.GetSchemaVersion;
-import io.pravega.schemaregistry.contract.generated.rest.model.GroupsList;
+import io.pravega.schemaregistry.contract.generated.rest.model.ListGroupsResponse;
 import io.pravega.schemaregistry.contract.generated.rest.model.ObjectsList;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaList;
@@ -79,13 +79,13 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
         log.info("List Groups called");
         withCompletion("listGroups", () -> registryService.listGroups(ContinuationToken.fromString(continuationToken), limit)
                                                           .thenApply(result -> {
-                                                              GroupsList groupsList = new GroupsList();
+                                                              ListGroupsResponse groupsList = new ListGroupsResponse();
                                                               result.getMap().forEach((x, y) -> {
                                                                   if (y == null) {
                                                                       // partially created group.
-                                                                      groupsList.addGroupsItem(new io.pravega.schemaregistry.contract.generated.rest.model.GroupProperties().groupName(x));
+                                                                      groupsList.putGroupsItem(x, null);
                                                                   } else {
-                                                                      groupsList.addGroupsItem(ModelHelper.encode(x, y));
+                                                                      groupsList.putGroupsItem(x, ModelHelper.encode(y));
                                                                   }
                                                               });
                                                               groupsList.continuationToken(result.getToken() == null ? null : result.getToken().toString());

@@ -152,7 +152,6 @@ public class ModelHelper {
 
     public static io.pravega.schemaregistry.contract.data.GroupProperties decode(GroupProperties groupProperties) {
         Preconditions.checkArgument(groupProperties != null);
-        Preconditions.checkArgument(groupProperties.getGroupName() != null);
         Preconditions.checkArgument(groupProperties.isVersionBySchemaName() != null);
 
         return io.pravega.schemaregistry.contract.data.GroupProperties.builder().schemaType(decode(groupProperties.getSchemaType()))
@@ -214,11 +213,7 @@ public class ModelHelper {
                 .versionBySchemaName(groupProperties.isVersionBySchemaName())
                 .schemaValidationRules(encode(groupProperties.getSchemaValidationRules()));
     }
-
-    public static GroupProperties encode(String groupName, io.pravega.schemaregistry.contract.data.GroupProperties groupProperties) {
-        return encode(groupProperties).groupName(groupName);
-    }
-
+    
     public static VersionInfo encode(io.pravega.schemaregistry.contract.data.VersionInfo versionInfo) {
         return new VersionInfo().schemaName(versionInfo.getSchemaName()).version(versionInfo.getVersion()).ordinal(versionInfo.getOrdinal());
     }

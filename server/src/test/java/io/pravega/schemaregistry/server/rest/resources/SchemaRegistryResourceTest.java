@@ -16,7 +16,7 @@ import io.pravega.schemaregistry.contract.data.SchemaType;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.generated.rest.model.CanRead;
 import io.pravega.schemaregistry.contract.generated.rest.model.CanReadRequest;
-import io.pravega.schemaregistry.contract.generated.rest.model.GroupsList;
+import io.pravega.schemaregistry.contract.generated.rest.model.ListGroupsResponse;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo;
 import io.pravega.schemaregistry.contract.transform.ModelHelper;
 import io.pravega.schemaregistry.server.rest.RegistryApplication;
@@ -72,7 +72,7 @@ public class SchemaRegistryResourceTest extends JerseyTest {
         Future<Response> future = target(GROUPS).queryParam("limit", 100).request().async().get();
         Response response = future.get();
         assertEquals(response.getStatus(), 200);
-        GroupsList list = response.readEntity(GroupsList.class);
+        ListGroupsResponse list = response.readEntity(ListGroupsResponse.class);
         assertEquals(list.getGroups().size(), 2);
 
         // region create group
