@@ -10,6 +10,7 @@
 package io.pravega.schemaregistry.contract.transform;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import io.pravega.schemaregistry.contract.data.SchemaEvolution;
 import io.pravega.schemaregistry.contract.generated.rest.model.CodecType;
@@ -46,6 +47,7 @@ public class ModelHelper {
     public static io.pravega.schemaregistry.contract.data.SchemaType decode(SchemaType schemaType) {
         switch (schemaType.getSchemaType()) {
             case CUSTOM:
+                Preconditions.checkArgument(schemaType.getCustomTypeName() != null);
                 return io.pravega.schemaregistry.contract.data.SchemaType.custom(schemaType.getCustomTypeName());
             default:
                 return searchEnum(io.pravega.schemaregistry.contract.data.SchemaType.class, schemaType.getSchemaType().name());
@@ -81,6 +83,7 @@ public class ModelHelper {
     public static io.pravega.schemaregistry.contract.data.CodecType decode(CodecType codecType) {
         switch (codecType.getCodecType()) {
             case CUSTOM:
+                Preconditions.checkArgument(codecType.getCustomTypeName() != null);
                 return io.pravega.schemaregistry.contract.data.CodecType.custom(codecType.getCustomTypeName(), codecType.getProperties());
             default:
                 return searchEnum(
@@ -187,6 +190,7 @@ public class ModelHelper {
 
     public static SchemaType encode(io.pravega.schemaregistry.contract.data.SchemaType schemaType) {
         if (schemaType.equals(io.pravega.schemaregistry.contract.data.SchemaType.Custom)) {
+            Preconditions.checkArgument(schemaType.getCustomTypeName() != null);
             SchemaType schemaTypeModel = new SchemaType().schemaType(SchemaType.SchemaTypeEnum.CUSTOM);
             return schemaTypeModel.customTypeName(schemaType.getCustomTypeName());
         } else {
@@ -201,6 +205,7 @@ public class ModelHelper {
 
     public static CodecType encode(io.pravega.schemaregistry.contract.data.CodecType codec) {
         if (codec.equals(io.pravega.schemaregistry.contract.data.CodecType.Custom)) {
+            Preconditions.checkArgument(codec.getCustomTypeName() != null);
             return new CodecType().codecType(CodecType.CodecTypeEnum.CUSTOM)
                                   .customTypeName(codec.getCustomTypeName())
                                   .properties(codec.getProperties());

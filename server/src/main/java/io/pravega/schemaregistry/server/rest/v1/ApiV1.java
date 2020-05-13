@@ -39,6 +39,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
@@ -279,7 +280,9 @@ public final class ApiV1 {
         @io.swagger.annotations.ApiResponses(value = {
                 @io.swagger.annotations.ApiResponse(code = 200, message = "List of all groups", response = GroupsList.class),
                 @io.swagger.annotations.ApiResponse(code = 500, message = "Internal server error while fetching the list of Groups", response = Void.class)})
-        void listGroups(@Context SecurityContext securityContext, @Suspended AsyncResponse asyncResponse)
+        void listGroups(@ApiParam(value = "Continuation token") @QueryParam("continuationToken") String continuationToken,
+                        @ApiParam(value = "The numbers of items to return") @QueryParam("limit") Integer limit,
+                        @Context SecurityContext securityContext, @Suspended AsyncResponse asyncResponse)
                 throws NotFoundException;
 
         @PUT
