@@ -61,7 +61,7 @@ public final class ApiV1 {
     @Path("/ping")
     public interface Ping {
         @GET
-        void ping();
+        Response ping();
     }
 
     /**

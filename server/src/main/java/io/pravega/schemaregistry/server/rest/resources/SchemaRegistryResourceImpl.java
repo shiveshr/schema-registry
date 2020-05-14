@@ -168,7 +168,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     @Override
     public void getGroupHistory(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get group history called for group {}", groupName);
-        withCompletion("getGroupHistory", () -> registryService.getGroupEvolutionHistory(groupName, null)
+        withCompletion("getGroupHistory", () -> registryService.getGroupHistory(groupName, null)
                                                                .thenApply(history -> {
                                                                    GroupHistory list = new GroupHistory()
                                                                            .history(history.stream().map(ModelHelper::encode)
@@ -263,7 +263,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     @Override
     public void getGroupSchemas(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get group schemas called for group {}", groupName);
-        withCompletion("getGroupSchemas", () -> registryService.getGroupEvolutionHistory(groupName, null)
+        withCompletion("getGroupSchemas", () -> registryService.getGroupHistory(groupName, null)
                                                                .thenApply(history -> {
                                                                    SchemaVersionsList list = new SchemaVersionsList()
                                                                            .schemas(history.stream().map(x -> new SchemaWithVersion()
@@ -485,7 +485,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     @Override
     public void getSchemasForSchemaName(String groupName, String objectTypeName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getObjectTypeSchemas called for group {} objectType {}", groupName, objectTypeName);
-        withCompletion("getObjectSchemas", () -> registryService.getGroupEvolutionHistory(groupName, objectTypeName)
+        withCompletion("getObjectSchemas", () -> registryService.getGroupHistory(groupName, objectTypeName)
                                                                 .thenApply(history -> {
                                                                     SchemaVersionsList list = new SchemaVersionsList()
                                                                             .schemas(history.stream().map(x -> new SchemaWithVersion()

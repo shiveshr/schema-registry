@@ -14,8 +14,8 @@ import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
+import io.pravega.schemaregistry.contract.data.GroupHistoryRecord;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
-import io.pravega.schemaregistry.contract.data.SchemaEvolution;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.data.SchemaWithVersion;
@@ -148,12 +148,12 @@ public class SchemaStoreImpl<T> implements SchemaStore {
     }
 
     @Override
-    public CompletableFuture<List<SchemaEvolution>> getGroupHistory(String group) {
+    public CompletableFuture<List<GroupHistoryRecord>> getGroupHistory(String group) {
         return getGroup(group).thenCompose(Group::getHistory);
     }
 
     @Override
-    public CompletableFuture<List<SchemaEvolution>> getGroupHistoryForSchemaName(String group, String objectTypeName) {
+    public CompletableFuture<List<GroupHistoryRecord>> getGroupHistoryForSchemaName(String group, String objectTypeName) {
         return getGroup(group).thenCompose(grp -> grp.getHistory(objectTypeName));
     }
 

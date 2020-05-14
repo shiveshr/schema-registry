@@ -369,9 +369,9 @@ public class SchemaRegistryService {
      * @param schemaName Object type.
      * @return CompletableFuture that holds Ordered list of schemas with versions and validation rules for all schemas in the group.
      */
-    public CompletableFuture<List<GroupHistoryRecord>> getGroupEvolutionHistory(String group, @Nullable String schemaName) {
+    public CompletableFuture<List<GroupHistoryRecord>> getGroupHistory(String group, @Nullable String schemaName) {
         Preconditions.checkArgument(group != null);
-        log.info("Group {}, getGroupEvolutionHistory for {}.", group, schemaName);
+        log.info("Group {}, getGroupHistory for {}.", group, schemaName);
 
         if (schemaName != null) {
             return store.getGroupHistoryForSchemaName(group, schemaName)
