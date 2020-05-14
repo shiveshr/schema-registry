@@ -153,7 +153,7 @@ public class SchemaStoreImpl<T> implements SchemaStore {
     }
 
     @Override
-    public CompletableFuture<List<SchemaEvolution>> getGroupHistoryForObjectType(String group, String objectTypeName) {
+    public CompletableFuture<List<SchemaEvolution>> getGroupHistoryForSchemaName(String group, String objectTypeName) {
         return getGroup(group).thenCompose(grp -> grp.getHistory(objectTypeName));
     }
 

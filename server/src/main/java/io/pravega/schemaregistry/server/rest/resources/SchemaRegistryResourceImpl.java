@@ -29,10 +29,11 @@ import io.pravega.schemaregistry.contract.generated.rest.model.EncodingId;
 import io.pravega.schemaregistry.contract.generated.rest.model.EncodingInfo;
 import io.pravega.schemaregistry.contract.generated.rest.model.GetEncodingIdRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.GetSchemaVersion;
+import io.pravega.schemaregistry.contract.generated.rest.model.GroupHistory;
 import io.pravega.schemaregistry.contract.generated.rest.model.ListGroupsResponse;
-import io.pravega.schemaregistry.contract.generated.rest.model.ObjectsList;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo;
-import io.pravega.schemaregistry.contract.generated.rest.model.SchemaList;
+import io.pravega.schemaregistry.contract.generated.rest.model.SchemaNamesList;
+import io.pravega.schemaregistry.contract.generated.rest.model.SchemaVersionsList;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaWithVersion;
 import io.pravega.schemaregistry.contract.generated.rest.model.UpdateValidationRulesPolicyRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.Valid;
@@ -51,7 +52,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import java.io.UnsupportedEncodingException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -115,7 +115,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
 
     @Override
     public void createGroup(CreateGroupRequest createGroupRequest, SecurityContext securityContext,
-                            AsyncResponse asyncResponse) throws NotFoundException, UnsupportedEncodingException {
+                            AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Create Group called with params {}", createGroupRequest);
         withCompletion("createGroup", () -> {
             SchemaType schemaType = ModelHelper.decode(createGroupRequest.getSchemaType());
@@ -163,6 +163,33 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                     asyncResponse.resume(response);
                     return response;
                 });
+    }
+
+    @Override
+    public void getGroupHistory(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+        log.info("Get group history called for group {}", groupName);
+        withCompletion("getGroupHistory", () -> registryService.getGroupEvolutionHistory(groupName, null)
+                                                               .thenApply(history -> {
+                                                                   GroupHistory list = new GroupHistory()
+                                                                           .history(history.stream().map(ModelHelper::encode)
+                                                                                           .collect(Collectors.toList()));
+                                                                   log.info("getGroupHistory: {} schemas found for group {}", list.getHistory().size(), groupName);
+                                                                   return Response.status(Status.OK).entity(list).build();
+                                                               })
+                                                               .exceptionally(exception -> {
+                                                                   if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                                                       log.warn("Group {} not found", groupName);
+                                                                       return Response.status(Status.NOT_FOUND).build();
+                                                                   }
+
+                                                                   log.warn("getGroupHistory failed with exception: ", exception);
+                                                                   return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                                               }))
+                .thenApply(response -> {
+                    asyncResponse.resume(response);
+                    return response;
+                });
+
     }
 
     @Override
@@ -234,13 +261,15 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     }
 
     @Override
-    public void getGroupSchemas(String groupName, SecurityContext securityContext,
-                                AsyncResponse asyncResponse) throws NotFoundException {
+    public void getGroupSchemas(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get group schemas called for group {}", groupName);
         withCompletion("getGroupSchemas", () -> registryService.getGroupEvolutionHistory(groupName, null)
-                                                               .thenApply(schemasEvolutionList -> {
-                                                                   SchemaList list = new SchemaList()
-                                                                           .schemas(schemasEvolutionList.stream().map(ModelHelper::encode).collect(Collectors.toList()));
+                                                               .thenApply(history -> {
+                                                                   SchemaVersionsList list = new SchemaVersionsList()
+                                                                           .schemas(history.stream().map(x -> new SchemaWithVersion()
+                                                                                   .schemaInfo(ModelHelper.encode(x.getSchema()))
+                                                                                   .version(ModelHelper.encode(x.getVersion())))
+                                                                                           .collect(Collectors.toList()));
                                                                    log.info("GetGroupSchemas: {} schemas found for group {}", list.getSchemas().size(), groupName);
                                                                    return Response.status(Status.OK).entity(list).build();
                                                                })
@@ -454,12 +483,15 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     }
 
     @Override
-    public void getObjectSchemas(String groupName, String objectTypeName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void getSchemasForSchemaName(String groupName, String objectTypeName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getObjectTypeSchemas called for group {} objectType {}", groupName, objectTypeName);
         withCompletion("getObjectSchemas", () -> registryService.getGroupEvolutionHistory(groupName, objectTypeName)
-                                                                .thenApply(schemaEpochs -> {
-                                                                    SchemaList list = new SchemaList()
-                                                                            .schemas(schemaEpochs.stream().map(ModelHelper::encode).collect(Collectors.toList()));
+                                                                .thenApply(history -> {
+                                                                    SchemaVersionsList list = new SchemaVersionsList()
+                                                                            .schemas(history.stream().map(x -> new SchemaWithVersion()
+                                                                                    .schemaInfo(ModelHelper.encode(x.getSchema()))
+                                                                                    .version(ModelHelper.encode(x.getVersion())))
+                                                                                            .collect(Collectors.toList()));
                                                                     log.info("Found {} object type schemas for group {} and object type {}", list.getSchemas().size(), groupName, objectTypeName);
                                                                     return Response.status(Status.OK).entity(list).build();
                                                                 })
@@ -478,11 +510,11 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     }
 
     @Override
-    public void getObjects(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
-        log.info("getObjectTypes called for group {} ", groupName);
-        withCompletion("getObjects", () -> registryService.getObjectTypes(groupName)
+    public void getSchemaNames(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+        log.info("getSchemaNames called for group {} ", groupName);
+        withCompletion("getObjects", () -> registryService.getSchemaNames(groupName)
                                                           .thenApply(objectTypes -> {
-                                                              ObjectsList objectTypesList = new ObjectsList().objects(objectTypes);
+                                                              SchemaNamesList objectTypesList = new SchemaNamesList().objects(objectTypes);
                                                               log.info("Found object types {} for group {} ", objectTypesList, groupName);
                                                               return Response.status(Status.OK).entity(objectTypesList).build();
                                                           })
@@ -491,7 +523,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                                                                   log.warn("Group {} not found", groupName);
                                                                   return Response.status(Status.NOT_FOUND).build();
                                                               }
-                                                              log.warn("getObjectTypes failed with exception: ", exception);
+                                                              log.warn("getSchemaNames failed with exception: ", exception);
                                                               return Response.status(Status.INTERNAL_SERVER_ERROR).build();
                                                           }))
                 .thenApply(response -> {

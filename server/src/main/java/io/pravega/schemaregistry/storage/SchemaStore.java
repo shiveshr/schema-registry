@@ -14,8 +14,8 @@ import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
+import io.pravega.schemaregistry.contract.data.GroupHistoryRecord;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
-import io.pravega.schemaregistry.contract.data.SchemaEvolution;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.data.SchemaWithVersion;
@@ -71,7 +71,7 @@ public interface SchemaStore {
 
     CompletableFuture<Void> addCodec(String group, CodecType codecType);
 
-    CompletableFuture<List<SchemaEvolution>> getGroupHistory(String group);
+    CompletableFuture<List<GroupHistoryRecord>> getGroupHistory(String group);
     
-    CompletableFuture<List<SchemaEvolution>> getGroupHistoryForObjectType(String group, String objectTypeName);
+    CompletableFuture<List<GroupHistoryRecord>> getGroupHistoryForSchemaName(String group, String objectTypeName);
 }

@@ -62,7 +62,7 @@ public class PassthruRegistryClient implements SchemaRegistryClient {
     
     @Override
     public List<String> getObjects(String group) {
-        return service.getObjectTypes(group).join();
+        return service.getSchemaNames(group).join();
     }
 
     @Override

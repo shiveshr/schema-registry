@@ -18,8 +18,8 @@ import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
+import io.pravega.schemaregistry.contract.data.GroupHistoryRecord;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
-import io.pravega.schemaregistry.contract.data.SchemaEvolution;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.SchemaType;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRule;
@@ -185,16 +185,16 @@ public class SchemaRegistryService {
      * @param group Name of group.
      * @return CompletableFuture which holds list of object types upon completion.
      */
-    public CompletableFuture<List<String>> getObjectTypes(String group) {
+    public CompletableFuture<List<String>> getSchemaNames(String group) {
         Preconditions.checkArgument(group != null);
-        log.info("getObjectTypes called for group {}. New validation rules {}", group);
+        log.info("getSchemaNames called for group {}. New validation rules {}", group);
 
         return store.listObjectTypes(group)
                     .whenComplete((r, e) -> {
                         if (e == null) {
-                            log.info("Group {} getObjectTypes {}.", group, r);
+                            log.info("Group {} getSchemaNames {}.", group, r);
                         } else {
-                            log.warn("getObjectTypes for group {} request failed with error", e, group);
+                            log.warn("getSchemaNames for group {} request failed with error", e, group);
                         }
                     });
     }
@@ -366,20 +366,20 @@ public class SchemaRegistryService {
      * The order in the list matches the order in which schemas were evolved within the group.
      *
      * @param group          Name of group.
-     * @param objectTypeName Object type.
+     * @param schemaName Object type.
      * @return CompletableFuture that holds Ordered list of schemas with versions and validation rules for all schemas in the group.
      */
-    public CompletableFuture<List<SchemaEvolution>> getGroupEvolutionHistory(String group, @Nullable String objectTypeName) {
+    public CompletableFuture<List<GroupHistoryRecord>> getGroupEvolutionHistory(String group, @Nullable String schemaName) {
         Preconditions.checkArgument(group != null);
-        log.info("Group {}, getGroupEvolutionHistory for {}.", group, objectTypeName);
+        log.info("Group {}, getGroupEvolutionHistory for {}.", group, schemaName);
 
-        if (objectTypeName != null) {
-            return store.getGroupHistoryForObjectType(group, objectTypeName)
+        if (schemaName != null) {
+            return store.getGroupHistoryForSchemaName(group, schemaName)
                         .whenComplete((r, e) -> {
                             if (e == null) {
-                                log.info("Group {}, object type = {}, history size = {}.", group, objectTypeName, r.size());
+                                log.info("Group {}, object type = {}, history size = {}.", group, schemaName, r.size());
                             } else {
-                                log.warn("Group {}, object type = {}, getLatestSchema failed with error", e, group, objectTypeName);
+                                log.warn("Group {}, object type = {}, getLatestSchema failed with error", e, group, schemaName);
                             }
                         });
         } else {
