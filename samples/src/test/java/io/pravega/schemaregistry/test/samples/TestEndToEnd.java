@@ -141,10 +141,10 @@ public abstract class TestEndToEnd {
                 schemaTest2.toString().getBytes(Charsets.UTF_8), ImmutableMap.of());
         client.addSchema(group, schemaInfo4);
 
-        List<String> objectTypes = client.getSchemaNames(group);
-        assertEquals(objectTypes.size(), 2);
-        assertTrue(objectTypes.contains(myTest));
-        assertTrue(objectTypes.contains(myTest2));
+        List<String> schemaNames = client.getSchemaNames(group);
+        assertEquals(schemaNames.size(), 2);
+        assertTrue(schemaNames.contains(myTest));
+        assertTrue(schemaNames.contains(myTest2));
         List<GroupHistoryRecord> groupEvolutionHistory = client.getGroupHistory(group);
         assertEquals(groupEvolutionHistory.size(), 3);
         List<SchemaWithVersion> myTestHistory = client.getSchemaVersions(group, myTest);

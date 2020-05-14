@@ -71,7 +71,7 @@ public class SchemaStoreImpl<T> implements SchemaStore {
     }
 
     @Override
-    public CompletableFuture<List<String>> listObjectTypes(String group) {
+    public CompletableFuture<List<String>> listSchemaNames(String group) {
         return getGroup(group).thenCompose(Group::getObjectTypes);
     }
 
@@ -87,13 +87,13 @@ public class SchemaStoreImpl<T> implements SchemaStore {
     }
 
     @Override
-    public CompletableFuture<List<SchemaWithVersion>> listSchemasByObjectType(String group, String objectTypeName) {
-        return getGroup(group).thenCompose(grp -> grp.getSchemas(objectTypeName));
+    public CompletableFuture<List<SchemaWithVersion>> listSchemasByObjectType(String group, String schemaName) {
+        return getGroup(group).thenCompose(grp -> grp.getSchemas(schemaName));
     }
 
     @Override
-    public CompletableFuture<List<SchemaWithVersion>> listSchemasByObjectType(String group, String objectTypeName, VersionInfo from) {
-        return getGroup(group).thenCompose(grp -> grp.getSchemas(objectTypeName, from.getOrdinal()));
+    public CompletableFuture<List<SchemaWithVersion>> listSchemasByObjectType(String group, String schemaName, VersionInfo from) {
+        return getGroup(group).thenCompose(grp -> grp.getSchemas(schemaName, from.getOrdinal()));
     }
 
     @Override
@@ -107,8 +107,8 @@ public class SchemaStoreImpl<T> implements SchemaStore {
     }
 
     @Override
-    public CompletableFuture<SchemaWithVersion> getLatestSchema(String group, String objectTypeName) {
-        return getGroup(group).thenCompose(grp -> grp.getLatestSchema(objectTypeName));
+    public CompletableFuture<SchemaWithVersion> getLatestSchema(String group, String schemaName) {
+        return getGroup(group).thenCompose(grp -> grp.getLatestSchema(schemaName));
     }
     
     @Override
@@ -153,8 +153,8 @@ public class SchemaStoreImpl<T> implements SchemaStore {
     }
 
     @Override
-    public CompletableFuture<List<GroupHistoryRecord>> getGroupHistoryForSchemaName(String group, String objectTypeName) {
-        return getGroup(group).thenCompose(grp -> grp.getHistory(objectTypeName));
+    public CompletableFuture<List<GroupHistoryRecord>> getGroupHistoryForSchemaName(String group, String schemaName) {
+        return getGroup(group).thenCompose(grp -> grp.getHistory(schemaName));
     }
 
     // endregion

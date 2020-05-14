@@ -483,16 +483,16 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     }
 
     @Override
-    public void getSchemasForSchemaName(String groupName, String objectTypeName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
-        log.info("getObjectTypeSchemas called for group {} objectType {}", groupName, objectTypeName);
-        withCompletion("getObjectSchemas", () -> registryService.getGroupHistory(groupName, objectTypeName)
+    public void getSchemasForSchemaName(String groupName, String schemaName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+        log.info("getSchemaNameSchemas called for group {} schemaName {}", groupName, schemaName);
+        withCompletion("getObjectSchemas", () -> registryService.getGroupHistory(groupName, schemaName)
                                                                 .thenApply(history -> {
                                                                     SchemaVersionsList list = new SchemaVersionsList()
                                                                             .schemas(history.stream().map(x -> new SchemaWithVersion()
                                                                                     .schemaInfo(ModelHelper.encode(x.getSchema()))
                                                                                     .version(ModelHelper.encode(x.getVersion())))
                                                                                             .collect(Collectors.toList()));
-                                                                    log.info("Found {} object type schemas for group {} and object type {}", list.getSchemas().size(), groupName, objectTypeName);
+                                                                    log.info("Found {} object type schemas for group {} and object type {}", list.getSchemas().size(), groupName, schemaName);
                                                                     return Response.status(Status.OK).entity(list).build();
                                                                 })
                                                                 .exceptionally(exception -> {
@@ -500,7 +500,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                                                                         log.warn("Group {} not found", groupName);
                                                                         return Response.status(Status.NOT_FOUND).build();
                                                                     }
-                                                                    log.warn("getObjectTypeSchemas failed with exception: ", exception);
+                                                                    log.warn("getSchemaNameSchemas failed with exception: ", exception);
                                                                     return Response.status(Status.INTERNAL_SERVER_ERROR).build();
                                                                 }))
                 .thenApply(response -> {
@@ -513,10 +513,10 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     public void getSchemaNames(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getSchemaNames called for group {} ", groupName);
         withCompletion("getObjects", () -> registryService.getSchemaNames(groupName)
-                                                          .thenApply(objectTypes -> {
-                                                              SchemaNamesList objectTypesList = new SchemaNamesList().objects(objectTypes);
-                                                              log.info("Found object types {} for group {} ", objectTypesList, groupName);
-                                                              return Response.status(Status.OK).entity(objectTypesList).build();
+                                                          .thenApply(schemaNames -> {
+                                                              SchemaNamesList schemaNamesList = new SchemaNamesList().objects(schemaNames);
+                                                              log.info("Found object types {} for group {} ", schemaNamesList, groupName);
+                                                              return Response.status(Status.OK).entity(schemaNamesList).build();
                                                           })
                                                           .exceptionally(exception -> {
                                                               if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
@@ -534,12 +534,12 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
     }
 
     @Override
-    public void getLatestSchemaForSchemaName(String groupName, String objectTypeName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
-        log.info("getLatestSchemaForObjectType called for group {} object type {}", groupName, objectTypeName);
-        withCompletion("getLatestSchemaForSchemaName", () -> registryService.getLatestSchema(groupName, objectTypeName)
+    public void getLatestSchemaForSchemaName(String groupName, String schemaNameName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+        log.info("getLatestSchemaForSchemaName called for group {} object type {}", groupName, schemaNameName);
+        withCompletion("getLatestSchemaForSchemaName", () -> registryService.getLatestSchema(groupName, schemaNameName)
                                                                             .thenApply(schemaWithVersion -> {
                                                                                 SchemaWithVersion schema = ModelHelper.encode(schemaWithVersion);
-                                                                                log.info("Latest schema for group {} object type {} has version {} ", groupName, objectTypeName, schema.getVersion());
+                                                                                log.info("Latest schema for group {} object type {} has version {} ", groupName, schemaNameName, schema.getVersion());
                                                                                 return Response.status(Status.OK).entity(schema).build();
                                                                             })
                                                                             .exceptionally(exception -> {
@@ -547,7 +547,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApi {
                                                                                     log.warn("Group {} not found", groupName);
                                                                                     return Response.status(Status.NOT_FOUND).build();
                                                                                 }
-                                                                                log.warn("getLatestSchemaForObjectType failed with exception: ", exception);
+                                                                                log.warn("getLatestSchemaForSchemaName failed with exception: ", exception);
                                                                                 return Response.status(Status.INTERNAL_SERVER_ERROR).build();
                                                                             }))
                 .thenApply(response -> {

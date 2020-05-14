@@ -41,21 +41,21 @@ public interface SchemaStore {
     
     CompletableFuture<Void> updateValidationRules(String group, Etag etag, SchemaValidationRules policy);
 
-    CompletableFuture<List<String>> listObjectTypes(String group);
+    CompletableFuture<List<String>> listSchemaNames(String group);
     
     CompletableFuture<List<SchemaWithVersion>> listSchemas(String group);
 
     CompletableFuture<List<SchemaWithVersion>> listSchemas(String group, VersionInfo from);
 
-    CompletableFuture<List<SchemaWithVersion>> listSchemasByObjectType(String group, String objectTypeName);
+    CompletableFuture<List<SchemaWithVersion>> listSchemasByObjectType(String group, String schemaName);
 
-    CompletableFuture<List<SchemaWithVersion>> listSchemasByObjectType(String group, String objectTypeName, VersionInfo from);
+    CompletableFuture<List<SchemaWithVersion>> listSchemasByObjectType(String group, String schemaName, VersionInfo from);
     
     CompletableFuture<SchemaInfo> getSchema(String group, int versionOrdinal);
 
     CompletableFuture<SchemaWithVersion> getLatestSchema(String group);
     
-    CompletableFuture<SchemaWithVersion> getLatestSchema(String group, String objectTypeName);
+    CompletableFuture<SchemaWithVersion> getLatestSchema(String group, String schemaName);
     
     CompletableFuture<VersionInfo> addSchemaToGroup(String group, SchemaInfo schemaInfo, GroupProperties prop, Etag etag);
 
@@ -73,5 +73,5 @@ public interface SchemaStore {
 
     CompletableFuture<List<GroupHistoryRecord>> getGroupHistory(String group);
     
-    CompletableFuture<List<GroupHistoryRecord>> getGroupHistoryForSchemaName(String group, String objectTypeName);
+    CompletableFuture<List<GroupHistoryRecord>> getGroupHistoryForSchemaName(String group, String schemaName);
 }

@@ -126,13 +126,13 @@ public class Group<V> {
                                                         .collect(Collectors.toList()));
     }
 
-    public CompletableFuture<List<SchemaWithVersion>> getSchemas(String objectTypeName) {
-        return getSchemas(objectTypeName, 0);
+    public CompletableFuture<List<SchemaWithVersion>> getSchemas(String schemaName) {
+        return getSchemas(schemaName, 0);
     }
 
-    public CompletableFuture<List<SchemaWithVersion>> getSchemas(String objectTypeName, int fromPos) {
+    public CompletableFuture<List<SchemaWithVersion>> getSchemas(String schemaName, int fromPos) {
         return getSchemas(fromPos)
-                .thenApply(schemas -> schemas.stream().filter(x -> x.getSchema().getName().equals(objectTypeName))
+                .thenApply(schemas -> schemas.stream().filter(x -> x.getSchema().getName().equals(schemaName))
                                              .collect(Collectors.toList()));
     }
 
@@ -191,8 +191,8 @@ public class Group<V> {
                          });
     }
 
-    public CompletableFuture<SchemaWithVersion> getLatestSchema(String objectTypeName) {
-        TableRecords.LatestSchemaVersionForObjectTypeKey key = new TableRecords.LatestSchemaVersionForObjectTypeKey(objectTypeName);
+    public CompletableFuture<SchemaWithVersion> getLatestSchema(String schemaName) {
+        TableRecords.LatestSchemaVersionForObjectTypeKey key = new TableRecords.LatestSchemaVersionForObjectTypeKey(schemaName);
         return groupTable.getEntry(key, TableRecords.LatestSchemaVersionValue.class)
                          .thenApply(rec -> {
                              if (rec == null) {
