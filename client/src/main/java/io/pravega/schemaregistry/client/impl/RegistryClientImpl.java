@@ -212,7 +212,7 @@ public class RegistryClientImpl implements RegistryClient {
     @SneakyThrows
     @Override
     public EncodingInfo getGroupEncodingInfo(String groupId, EncodingId encodingId) {
-        Response response = proxy.getEncodingInfo(groupId, encodingId.getId());
+        Response response = proxy.getGroupEncodingInfo(groupId, encodingId.getId());
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             return ModelHelper.decode(response.readEntity(io.pravega.schemaregistry.contract.generated.rest.model.EncodingInfo.class));
         } else if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {

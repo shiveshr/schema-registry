@@ -43,7 +43,7 @@ public abstract class GroupsApiService {
     public abstract Response deleteGroup(String groupName,SecurityContext securityContext) throws NotFoundException;
     public abstract Response getCodecsList(String groupName,SecurityContext securityContext) throws NotFoundException;
     public abstract Response getEncodingId(String groupName,GetEncodingIdRequest getEncodingIdRequest,SecurityContext securityContext) throws NotFoundException;
-    public abstract Response getEncodingInfo(String groupName,Integer encodingId,SecurityContext securityContext) throws NotFoundException;
+    public abstract Response getGroupEncodingInfo(String groupName,Integer encodingId,SecurityContext securityContext) throws NotFoundException;
     public abstract Response getGroupHistory(String groupName,SecurityContext securityContext) throws NotFoundException;
     public abstract Response getGroupProperties(String groupName,SecurityContext securityContext) throws NotFoundException;
     public abstract Response getGroupSchemas(String groupName,SecurityContext securityContext) throws NotFoundException;

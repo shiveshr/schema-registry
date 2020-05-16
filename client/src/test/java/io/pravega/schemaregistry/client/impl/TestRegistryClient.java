@@ -293,7 +293,7 @@ public class TestRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         RegistryClientImpl client = new RegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).getEncodingInfo(anyString(), anyInt());
+        doReturn(response).when(proxy).getGroupEncodingInfo(anyString(), anyInt());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         VersionInfo versionInfo = new VersionInfo("schema2", 5, 5);
