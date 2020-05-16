@@ -48,7 +48,7 @@ public abstract class GroupsApiService {
     public abstract Response getGroupProperties(String groupName,SecurityContext securityContext) throws NotFoundException;
     public abstract Response getGroupSchemas(String groupName,SecurityContext securityContext) throws NotFoundException;
     public abstract Response getLatestGroupSchema(String groupName,SecurityContext securityContext) throws NotFoundException;
-    public abstract Response getLatestSchemaForSchemaName(String groupName,String schemaName,SecurityContext securityContext) throws NotFoundException;
+    public abstract Response getGroupLatestSchemaVersionForSchemaName(String groupName,String schemaName,SecurityContext securityContext) throws NotFoundException;
     public abstract Response getSchemaFromVersion(String groupName,Integer version,SecurityContext securityContext) throws NotFoundException;
     public abstract Response getSchemaNames(String groupName,SecurityContext securityContext) throws NotFoundException;
     public abstract Response getSchemaValidationRules(String groupName,SecurityContext securityContext) throws NotFoundException;

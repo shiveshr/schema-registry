@@ -634,13 +634,13 @@ public class SerializerFactory {
     
     private static void registerCodec(RegistryClient client, SerializerConfig config) {
         if (config.isAutoRegisterCodec()) {
-            client.addCodecTypeToGroup(config.getGroupId(), config.getCodec().getCodecType());
+            client.addCodecType(config.getGroupId(), config.getCodec().getCodecType());
         }
     }
 
     private static void failOnCodecMismatch(RegistryClient client, SerializerConfig config) {
         if (config.isFailOnCodecMismatch()) {
-            List<CodecType> codecsInGroup = client.getGroupCodecTypes(config.getGroupId());
+            List<CodecType> codecsInGroup = client.getCodecTypes(config.getGroupId());
             if (!config.getDecoder().getCodecs().containsAll(codecsInGroup)) {
                 log.warn("Not all Codecs are supported by reader. Required codecs = {}", codecsInGroup);
                 throw new RuntimeException(String.format("Need all codecs in %s", codecsInGroup.toString()));

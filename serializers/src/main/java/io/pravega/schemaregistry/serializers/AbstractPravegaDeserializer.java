@@ -71,7 +71,7 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
 
         if (schemaInfo != null) {
             log.info("Validate caller supplied schema.");
-            if (!client.canReadGroupSchemasUsing(groupId, schemaInfo)) {
+            if (!client.canReadUsing(groupId, schemaInfo)) {
                 throw new IllegalArgumentException("Cannot read using schema" + schemaInfo.getName());
             }
         } else {

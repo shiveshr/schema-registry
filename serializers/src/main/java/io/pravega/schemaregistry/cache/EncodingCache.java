@@ -35,7 +35,7 @@ public class EncodingCache {
         encodingCache = CacheBuilder.newBuilder().build(new CacheLoader<EncodingId, EncodingInfo>() {
             @Override
             public EncodingInfo load(EncodingId key) {
-                return registryClient.getGroupEncodingInfo(groupId, key);
+                return registryClient.getEncodingInfo(groupId, key);
             }
         });
     }
