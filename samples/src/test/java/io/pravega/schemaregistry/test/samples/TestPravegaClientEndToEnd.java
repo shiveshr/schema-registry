@@ -30,7 +30,7 @@ import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.common.Exceptions;
 import io.pravega.schemaregistry.GroupIdGenerator;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.codec.Codec;
 import io.pravega.schemaregistry.codec.CodecFactory;
@@ -124,7 +124,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
     private final SchemaStore schemaStore;
     private final ScheduledExecutorService executor;
     private final SchemaRegistryService service;
-    private final SchemaRegistryClient client;
+    private final RegistryClient client;
     private final PravegaStandaloneUtils pravegaStandaloneUtils;
     private Random random;
 
@@ -317,7 +317,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         String bigString = generateBigString(100);
         writer3.writeEvent(new Test1(bigString, 1)).join();
 
-        List<CodecType> list = client.getCodecs(groupId);
+        List<CodecType> list = client.getCodecTypes(groupId);
         assertEquals(2, list.size());
         assertTrue(list.stream().anyMatch(x -> x.equals(CodecType.None)));
         assertTrue(list.stream().anyMatch(x -> x.equals(CodecType.GZip)));
@@ -337,7 +337,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         String bigString2 = generateBigString(200);
         writer4.writeEvent(new Test1(bigString2, 1)).join();
 
-        list = client.getCodecs(groupId);
+        list = client.getCodecTypes(groupId);
         assertEquals(3, list.size());
         assertTrue(list.stream().anyMatch(x -> x.equals(CodecType.None)));
         assertTrue(list.stream().anyMatch(x -> x.equals(CodecType.GZip)));
@@ -397,7 +397,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         writer2.writeEvent(new Test1(bigString3, 1)).join();
         // endregion 
 
-        list = client.getCodecs(groupId);
+        list = client.getCodecTypes(groupId);
         assertEquals(4, list.size());
         assertTrue(list.stream().anyMatch(x -> x.equals(CodecType.None)));
         assertTrue(list.stream().anyMatch(x -> x.equals(CodecType.GZip)));
@@ -742,7 +742,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
                 ReaderGroupConfig.builder().stream(NameUtils.getScopedStreamName(scope, stream)).disableAutomaticCheckpoints().build());
 
         ProtobufSchema<DynamicMessage> readerSchema = encodeHeaders ? null : 
-                ProtobufSchema.from(client.getLatestSchema(groupId, null).getSchema());
+                ProtobufSchema.from(client.getLatestSchemaVersion(groupId, null).getSchema());
         Serializer<DynamicMessage> genericDeserializer = SerializerFactory.protobufGenericDeserializer(serializerConfig, readerSchema);
 
         EventStreamReader<DynamicMessage> reader2 = clientFactory.createReader("r1", rg2, genericDeserializer, ReaderConfig.builder().build());

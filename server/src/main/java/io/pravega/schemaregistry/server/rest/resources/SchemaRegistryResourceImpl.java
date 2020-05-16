@@ -292,7 +292,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     public void getLatestGroupSchema(String groupName, SecurityContext securityContext,
                                      AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get latest group schema called for group {}", groupName);
-        withCompletion("getLatestGroupSchema", () -> registryService.getLatestSchema(groupName, null)
+        withCompletion("getLatestGroupSchema", () -> registryService.getGroupLatestSchemaVersion(groupName, null)
                                                                     .thenApply(schemaWithVersion -> {
                                                                         SchemaWithVersion schema = ModelHelper.encode(schemaWithVersion);
                                                                         log.info("Latest schema for group {} has version {}", groupName, schemaWithVersion.getVersion());
@@ -534,9 +534,9 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getLatestSchemaForSchemaName(String groupName, String schemaNameName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
-        log.info("getLatestSchemaForSchemaName called for group {} object type {}", groupName, schemaNameName);
-        withCompletion("getLatestSchemaForSchemaName", () -> registryService.getLatestSchema(groupName, schemaNameName)
+    public void getGroupLatestSchemaVersionForSchemaName(String groupName, String schemaNameName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+        log.info("getGroupLatestSchemaVersionForSchemaName called for group {} object type {}", groupName, schemaNameName);
+        withCompletion("getGroupLatestSchemaVersionForSchemaName", () -> registryService.getGroupLatestSchemaVersion(groupName, schemaNameName)
                                                                             .thenApply(schemaWithVersion -> {
                                                                                 SchemaWithVersion schema = ModelHelper.encode(schemaWithVersion);
                                                                                 log.info("Latest schema for group {} object type {} has version {} ", groupName, schemaNameName, schema.getVersion());
@@ -547,7 +547,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
                                                                                     log.warn("Group {} not found", groupName);
                                                                                     return Response.status(Status.NOT_FOUND).build();
                                                                                 }
-                                                                                log.warn("getLatestSchemaForSchemaName failed with exception: ", exception);
+                                                                                log.warn("getGroupLatestSchemaVersionForSchemaName failed with exception: ", exception);
                                                                                 return Response.status(Status.INTERNAL_SERVER_ERROR).build();
                                                                             }))
                 .thenApply(response -> {

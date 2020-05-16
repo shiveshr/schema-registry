@@ -186,7 +186,7 @@ public class ApiV1 {
                 @io.swagger.annotations.ApiResponse(code = 200, message = "Found latest schema in name", response = SchemaWithVersion.class),
                 @io.swagger.annotations.ApiResponse(code = 404, message = "Group with given name not found", response = Void.class),
                 @io.swagger.annotations.ApiResponse(code = 500, message = "Internal server error while fetching Group details", response = Void.class)})
-        public Response getLatestSchemaForSchemaName(@ApiParam(value = "Group name", required = true) @PathParam("groupName") String groupName,
+        public Response getGroupLatestSchemaVersionForSchemaName(@ApiParam(value = "Group name", required = true) @PathParam("groupName") String groupName,
                                                      @ApiParam(value = "Schema name", required = true) @PathParam("schemaName") String schemaName);
 
         @GET
@@ -422,7 +422,7 @@ public class ApiV1 {
                 @io.swagger.annotations.ApiResponse(code = 200, message = "Found latest schema in name", response = SchemaWithVersion.class),
                 @io.swagger.annotations.ApiResponse(code = 404, message = "Group with given name not found", response = Void.class),
                 @io.swagger.annotations.ApiResponse(code = 500, message = "Internal server error while fetching Group details", response = Void.class)})
-        public void getLatestSchemaForSchemaName(@ApiParam(value = "Group name", required = true) @PathParam("groupName") String groupName,
+        public void getGroupLatestSchemaVersionForSchemaName(@ApiParam(value = "Group name", required = true) @PathParam("groupName") String groupName,
                                                  @ApiParam(value = "Object type", required = true) @PathParam("schemaName") String schemaName, @Context SecurityContext securityContext, @Suspended AsyncResponse asyncResponse) throws NotFoundException;
 
         @GET

@@ -33,7 +33,7 @@ public class CacheTest {
         EncodingId encodingId = new EncodingId(0);
         EncodingInfo encodingInfo = new EncodingInfo(new VersionInfo("name", 0, 0),
                 new SchemaInfo("name", SchemaType.Avro, new byte[0], Collections.emptyMap()), CodecFactory.snappy().getCodecType());
-        doAnswer(x -> encodingInfo).when(client).getGroupEncodingInfo(eq(groupId), eq(encodingId));
+        doAnswer(x -> encodingInfo).when(client).getEncodingInfo(eq(groupId), eq(encodingId));
         EncodingCache cache = EncodingCache.getEncodingCacheForGroup(groupId, client);
         assertEquals(encodingInfo, cache.getGroupEncodingInfo(encodingId));
     }
