@@ -235,7 +235,7 @@ public class SchemaRegistryService {
                                                              if (!valid) {
                                                                  throw new IncompatibleSchemaException(String.format("%s is incomatible", schema.getName()));
                                                              }
-                                                             return store.addSchemaToGroup(group, schema, prop, etag);
+                                                             return store.addSchema(group, schema, prop, etag);
                                                          });
                                              });
                                  })), executor)

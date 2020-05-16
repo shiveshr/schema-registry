@@ -273,7 +273,7 @@ public class Group<V> {
                     .collect(Collectors.toList()));
     }
 
-    public CompletableFuture<VersionInfo> addSchemaToGroup(SchemaInfo schemaInfo, GroupProperties prop, Etag etag) {
+    public CompletableFuture<VersionInfo> addSchema(SchemaInfo schemaInfo, GroupProperties prop, Etag etag) {
         List<TableRecords.TableKey> keys = new ArrayList<>();
         keys.add(LATEST_SCHEMA_VERSION_KEY);
         TableRecords.SchemaInfoKey schemaInfoKey = new TableRecords.SchemaInfoKey(getFingerprint(schemaInfo));

@@ -112,8 +112,8 @@ public class SchemaStoreImpl<T> implements SchemaStore {
     }
     
     @Override
-    public CompletableFuture<VersionInfo> addSchemaToGroup(String group, SchemaInfo schemaInfo, GroupProperties prop, Etag etag) {
-        return getGroup(group).thenCompose(grp -> grp.addSchemaToGroup(schemaInfo, prop, etag));
+    public CompletableFuture<VersionInfo> addSchema(String group, SchemaInfo schemaInfo, GroupProperties prop, Etag etag) {
+        return getGroup(group).thenCompose(grp -> grp.addSchema(schemaInfo, prop, etag));
     }
 
     @Override
