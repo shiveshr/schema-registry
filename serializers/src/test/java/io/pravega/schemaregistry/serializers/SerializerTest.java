@@ -327,7 +327,7 @@ public class SerializerTest {
                                      .properties(Collections.singletonMap(SerializerFactory.ENCODE, Boolean.toString(false))).build())
                 .when(client).getGroupProperties(anyString());
         doAnswer(x -> versionInfo1).when(client).getGroupVersionForSchema(anyString(), eq(schema1.getSchemaInfo()));
-        doAnswer(x -> new SchemaWithVersion(schema1.getSchemaInfo(), versionInfo1)).when(client).getGroupLatestSchema(anyString(), any());
+        doAnswer(x -> new SchemaWithVersion(schema1.getSchemaInfo(), versionInfo1)).when(client).getGroupLatestSchemaVersion(anyString(), any());
         doAnswer(x -> true).when(client).canReadGroupSchemasUsing(anyString(), any());
 
         Serializer<ProtobufTest.Message2> serializer = SerializerFactory.protobufSerializer(config, schema1);
@@ -345,7 +345,7 @@ public class SerializerTest {
         serialized = serializer.serialize(message);
         AssertExtensions.assertThrows(IllegalArgumentException.class, () -> SerializerFactory.protobufGenericDeserializer(config, null));
 
-        SchemaInfo latestSchema = client.getGroupLatestSchema("groupId", null).getSchema();
+        SchemaInfo latestSchema = client.getGroupLatestSchemaVersion("groupId", null).getSchema();
         ProtobufSchema<DynamicMessage> schemaDynamic = ProtobufSchema.of(latestSchema.getName(), descriptorSet);
         Serializer<DynamicMessage> genericDeserializer = SerializerFactory.protobufGenericDeserializer(config, schemaDynamic);
         
@@ -364,7 +364,7 @@ public class SerializerTest {
                 .properties(Collections.singletonMap(SerializerFactory.ENCODE, Boolean.toString(false))).build())
                 .when(client).getGroupProperties(anyString());
         doAnswer(x -> versionInfo1).when(client).getGroupVersionForSchema(anyString(), eq(schema1.getSchemaInfo()));
-        doAnswer(x -> new SchemaWithVersion(schema1.getSchemaInfo(), versionInfo1)).when(client).getGroupLatestSchema(anyString(), any());
+        doAnswer(x -> new SchemaWithVersion(schema1.getSchemaInfo(), versionInfo1)).when(client).getGroupLatestSchemaVersion(anyString(), any());
         doAnswer(x -> true).when(client).canReadGroupSchemasUsing(anyString(), any());
 
         Serializer<DerivedUser1> serializer = SerializerFactory.jsonSerializer(config, schema1);
