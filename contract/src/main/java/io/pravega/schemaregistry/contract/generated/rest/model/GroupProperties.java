@@ -26,18 +26,16 @@ import java.util.Map;
 import javax.validation.constraints.*;
 
 /**
- * GroupProperties
+ * Metadata for a group.
  */
+@ApiModel(description = "Metadata for a group.")
 
 public class GroupProperties   {
-  @JsonProperty("groupName")
-  private String groupName = null;
+  @JsonProperty("schemaType")
+  private SchemaType schemaType = null;
 
   @JsonProperty("schemaValidationRules")
   private SchemaValidationRules schemaValidationRules = null;
-
-  @JsonProperty("schemaType")
-  private SchemaType schemaType = null;
 
   @JsonProperty("versionBySchemaName")
   private Boolean versionBySchemaName = null;
@@ -45,55 +43,18 @@ public class GroupProperties   {
   @JsonProperty("properties")
   private Map<String, String> properties = null;
 
-  public GroupProperties groupName(String groupName) {
-    this.groupName = groupName;
-    return this;
-  }
-
-  /**
-   * Get groupName
-   * @return groupName
-   **/
-  @JsonProperty("groupName")
-  @ApiModelProperty(value = "")
-  public String getGroupName() {
-    return groupName;
-  }
-
-  public void setGroupName(String groupName) {
-    this.groupName = groupName;
-  }
-
-  public GroupProperties schemaValidationRules(SchemaValidationRules schemaValidationRules) {
-    this.schemaValidationRules = schemaValidationRules;
-    return this;
-  }
-
-  /**
-   * Get schemaValidationRules
-   * @return schemaValidationRules
-   **/
-  @JsonProperty("schemaValidationRules")
-  @ApiModelProperty(value = "")
-  public SchemaValidationRules getSchemaValidationRules() {
-    return schemaValidationRules;
-  }
-
-  public void setSchemaValidationRules(SchemaValidationRules schemaValidationRules) {
-    this.schemaValidationRules = schemaValidationRules;
-  }
-
   public GroupProperties schemaType(SchemaType schemaType) {
     this.schemaType = schemaType;
     return this;
   }
 
   /**
-   * Get schemaType
+   * Schema type for the group.
    * @return schemaType
    **/
   @JsonProperty("schemaType")
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(required = true, value = "Schema type for the group.")
+  @NotNull
   public SchemaType getSchemaType() {
     return schemaType;
   }
@@ -102,17 +63,38 @@ public class GroupProperties   {
     this.schemaType = schemaType;
   }
 
+  public GroupProperties schemaValidationRules(SchemaValidationRules schemaValidationRules) {
+    this.schemaValidationRules = schemaValidationRules;
+    return this;
+  }
+
+  /**
+   * Validation rules to apply while registering new schema.
+   * @return schemaValidationRules
+   **/
+  @JsonProperty("schemaValidationRules")
+  @ApiModelProperty(required = true, value = "Validation rules to apply while registering new schema.")
+  @NotNull
+  public SchemaValidationRules getSchemaValidationRules() {
+    return schemaValidationRules;
+  }
+
+  public void setSchemaValidationRules(SchemaValidationRules schemaValidationRules) {
+    this.schemaValidationRules = schemaValidationRules;
+  }
+
   public GroupProperties versionBySchemaName(Boolean versionBySchemaName) {
     this.versionBySchemaName = versionBySchemaName;
     return this;
   }
 
   /**
-   * Get versionBySchemaName
+   * Flag to indicate whether to version schemas within the group by schema name. If set to true, addSchema will only validate against schemas that have the same schema name.
    * @return versionBySchemaName
    **/
   @JsonProperty("versionBySchemaName")
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(required = true, value = "Flag to indicate whether to version schemas within the group by schema name. If set to true, addSchema will only validate against schemas that have the same schema name.")
+  @NotNull
   public Boolean isVersionBySchemaName() {
     return versionBySchemaName;
   }
@@ -135,11 +117,11 @@ public class GroupProperties   {
   }
 
   /**
-   * Get properties
+   * User defined Key value strings.
    * @return properties
    **/
   @JsonProperty("properties")
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "User defined Key value strings.")
   public Map<String, String> getProperties() {
     return properties;
   }
@@ -158,16 +140,15 @@ public class GroupProperties   {
       return false;
     }
     GroupProperties groupProperties = (GroupProperties) o;
-    return Objects.equals(this.groupName, groupProperties.groupName) &&
+    return Objects.equals(this.schemaType, groupProperties.schemaType) &&
         Objects.equals(this.schemaValidationRules, groupProperties.schemaValidationRules) &&
-        Objects.equals(this.schemaType, groupProperties.schemaType) &&
         Objects.equals(this.versionBySchemaName, groupProperties.versionBySchemaName) &&
         Objects.equals(this.properties, groupProperties.properties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(groupName, schemaValidationRules, schemaType, versionBySchemaName, properties);
+    return Objects.hash(schemaType, schemaValidationRules, versionBySchemaName, properties);
   }
 
 
@@ -176,9 +157,8 @@ public class GroupProperties   {
     StringBuilder sb = new StringBuilder();
     sb.append("class GroupProperties {\n");
     
-    sb.append("    groupName: ").append(toIndentedString(groupName)).append("\n");
-    sb.append("    schemaValidationRules: ").append(toIndentedString(schemaValidationRules)).append("\n");
     sb.append("    schemaType: ").append(toIndentedString(schemaType)).append("\n");
+    sb.append("    schemaValidationRules: ").append(toIndentedString(schemaValidationRules)).append("\n");
     sb.append("    versionBySchemaName: ").append(toIndentedString(versionBySchemaName)).append("\n");
     sb.append("    properties: ").append(toIndentedString(properties)).append("\n");
     sb.append("}");

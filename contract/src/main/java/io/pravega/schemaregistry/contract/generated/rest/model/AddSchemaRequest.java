@@ -16,46 +16,37 @@ package io.pravega.schemaregistry.contract.generated.rest.model;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.pravega.schemaregistry.contract.generated.rest.model.GroupProperties;
+import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import javax.validation.constraints.*;
 
 /**
- * GroupsList
+ * AddSchemaRequest
  */
 
-public class GroupsList   {
-  @JsonProperty("groups")
-  private List<GroupProperties> groups = null;
+public class AddSchemaRequest   {
+  @JsonProperty("schemaInfo")
+  private SchemaInfo schemaInfo = null;
 
-  public GroupsList groups(List<GroupProperties> groups) {
-    this.groups = groups;
-    return this;
-  }
-
-  public GroupsList addGroupsItem(GroupProperties groupsItem) {
-    if (this.groups == null) {
-      this.groups = new ArrayList<GroupProperties>();
-    }
-    this.groups.add(groupsItem);
+  public AddSchemaRequest schemaInfo(SchemaInfo schemaInfo) {
+    this.schemaInfo = schemaInfo;
     return this;
   }
 
   /**
-   * Get groups
-   * @return groups
+   * Get schemaInfo
+   * @return schemaInfo
    **/
-  @JsonProperty("groups")
-  @ApiModelProperty(value = "")
-  public List<GroupProperties> getGroups() {
-    return groups;
+  @JsonProperty("schemaInfo")
+  @ApiModelProperty(required = true, value = "")
+  @NotNull
+  public SchemaInfo getSchemaInfo() {
+    return schemaInfo;
   }
 
-  public void setGroups(List<GroupProperties> groups) {
-    this.groups = groups;
+  public void setSchemaInfo(SchemaInfo schemaInfo) {
+    this.schemaInfo = schemaInfo;
   }
 
 
@@ -67,22 +58,22 @@ public class GroupsList   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    GroupsList groupsList = (GroupsList) o;
-    return Objects.equals(this.groups, groupsList.groups);
+    AddSchemaRequest addSchemaRequest = (AddSchemaRequest) o;
+    return Objects.equals(this.schemaInfo, addSchemaRequest.schemaInfo);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(groups);
+    return Objects.hash(schemaInfo);
   }
 
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class GroupsList {\n");
+    sb.append("class AddSchemaRequest {\n");
     
-    sb.append("    groups: ").append(toIndentedString(groups)).append("\n");
+    sb.append("    schemaInfo: ").append(toIndentedString(schemaInfo)).append("\n");
     sb.append("}");
     return sb.toString();
   }

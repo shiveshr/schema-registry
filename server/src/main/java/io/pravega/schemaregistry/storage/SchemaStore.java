@@ -14,8 +14,8 @@ import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
+import io.pravega.schemaregistry.contract.data.GroupHistoryRecord;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
-import io.pravega.schemaregistry.contract.data.SchemaEvolution;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.data.SchemaWithVersion;
@@ -29,7 +29,7 @@ import java.util.concurrent.CompletableFuture;
  * Schema Store interface for storing and retrieving and querying schemas. 
  */
 public interface SchemaStore {
-    CompletableFuture<ListWithToken<String>> listGroups(@Nullable ContinuationToken token);
+    CompletableFuture<ListWithToken<String>> listGroups(@Nullable ContinuationToken token, int limit);
 
     CompletableFuture<Boolean> createGroup(String group, GroupProperties groupProperties);
 
@@ -41,25 +41,23 @@ public interface SchemaStore {
     
     CompletableFuture<Void> updateValidationRules(String group, Etag etag, SchemaValidationRules policy);
 
-    CompletableFuture<ListWithToken<String>> listObjectTypes(String group, ContinuationToken token);
+    CompletableFuture<List<String>> listSchemaNames(String group);
     
-    CompletableFuture<ListWithToken<SchemaWithVersion>> listSchemas(String group, ContinuationToken token);
+    CompletableFuture<List<SchemaWithVersion>> listSchemas(String group);
 
-    CompletableFuture<ListWithToken<SchemaWithVersion>> listSchemas(String group, VersionInfo from, ContinuationToken token);
+    CompletableFuture<List<SchemaWithVersion>> listSchemas(String group, VersionInfo from);
 
-    CompletableFuture<ListWithToken<SchemaWithVersion>> listSchemasByObjectType(String group, String objectTypeName,
-                                                                                ContinuationToken token);
+    CompletableFuture<List<SchemaWithVersion>> listSchemasByName(String group, String schemaName);
 
-    CompletableFuture<ListWithToken<SchemaWithVersion>> listSchemasByObjectType(String group, String objectTypeName,
-                                                                                VersionInfo from, ContinuationToken token);
+    CompletableFuture<List<SchemaWithVersion>> listSchemasByName(String group, String schemaName, VersionInfo from);
     
     CompletableFuture<SchemaInfo> getSchema(String group, int versionOrdinal);
 
-    CompletableFuture<SchemaWithVersion> getLatestSchema(String group);
+    CompletableFuture<SchemaWithVersion> getGroupLatestSchemaVersion(String group);
     
-    CompletableFuture<SchemaWithVersion> getLatestSchema(String group, String objectTypeName);
+    CompletableFuture<SchemaWithVersion> getGroupLatestSchemaVersion(String group, String schemaName);
     
-    CompletableFuture<VersionInfo> addSchemaToGroup(String group, SchemaInfo schemaInfo, GroupProperties prop, Etag etag);
+    CompletableFuture<VersionInfo> addSchema(String group, SchemaInfo schemaInfo, GroupProperties prop, Etag etag);
 
     CompletableFuture<VersionInfo> getSchemaVersion(String group, SchemaInfo schemaInfo);
 
@@ -73,7 +71,7 @@ public interface SchemaStore {
 
     CompletableFuture<Void> addCodec(String group, CodecType codecType);
 
-    CompletableFuture<ListWithToken<SchemaEvolution>> getGroupHistory(String group);
+    CompletableFuture<List<GroupHistoryRecord>> getGroupHistory(String group);
     
-    CompletableFuture<ListWithToken<SchemaEvolution>> getGroupHistoryForObjectType(String group, String objectTypeName);
+    CompletableFuture<List<GroupHistoryRecord>> getGroupHistoryForSchemaName(String group, String schemaName);
 }

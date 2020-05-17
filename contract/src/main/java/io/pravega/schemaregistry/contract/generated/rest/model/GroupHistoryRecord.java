@@ -24,10 +24,11 @@ import io.swagger.annotations.ApiModelProperty;
 import javax.validation.constraints.*;
 
 /**
- * SchemaVersionAndRules
+ * Group History Record that describes each schema evolution - schema information, version generated for the schema, time and rules used for schema validation.
  */
+@ApiModel(description = "Group History Record that describes each schema evolution - schema information, version generated for the schema, time and rules used for schema validation.")
 
-public class SchemaVersionAndRules   {
+public class GroupHistoryRecord   {
   @JsonProperty("schemaInfo")
   private SchemaInfo schemaInfo = null;
 
@@ -37,17 +38,24 @@ public class SchemaVersionAndRules   {
   @JsonProperty("validationRules")
   private SchemaValidationRules validationRules = null;
 
-  public SchemaVersionAndRules schemaInfo(SchemaInfo schemaInfo) {
+  @JsonProperty("timestamp")
+  private Long timestamp = null;
+
+  @JsonProperty("schemaString")
+  private String schemaString = null;
+
+  public GroupHistoryRecord schemaInfo(SchemaInfo schemaInfo) {
     this.schemaInfo = schemaInfo;
     return this;
   }
 
   /**
-   * Get schemaInfo
+   * Schema information object.
    * @return schemaInfo
    **/
   @JsonProperty("schemaInfo")
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(required = true, value = "Schema information object.")
+  @NotNull
   public SchemaInfo getSchemaInfo() {
     return schemaInfo;
   }
@@ -56,17 +64,18 @@ public class SchemaVersionAndRules   {
     this.schemaInfo = schemaInfo;
   }
 
-  public SchemaVersionAndRules version(VersionInfo version) {
+  public GroupHistoryRecord version(VersionInfo version) {
     this.version = version;
     return this;
   }
 
   /**
-   * Get version
+   * Schema version information object.
    * @return version
    **/
   @JsonProperty("version")
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(required = true, value = "Schema version information object.")
+  @NotNull
   public VersionInfo getVersion() {
     return version;
   }
@@ -75,23 +84,63 @@ public class SchemaVersionAndRules   {
     this.version = version;
   }
 
-  public SchemaVersionAndRules validationRules(SchemaValidationRules validationRules) {
+  public GroupHistoryRecord validationRules(SchemaValidationRules validationRules) {
     this.validationRules = validationRules;
     return this;
   }
 
   /**
-   * Get validationRules
+   * Schema validation rules applied.
    * @return validationRules
    **/
   @JsonProperty("validationRules")
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(required = true, value = "Schema validation rules applied.")
+  @NotNull
   public SchemaValidationRules getValidationRules() {
     return validationRules;
   }
 
   public void setValidationRules(SchemaValidationRules validationRules) {
     this.validationRules = validationRules;
+  }
+
+  public GroupHistoryRecord timestamp(Long timestamp) {
+    this.timestamp = timestamp;
+    return this;
+  }
+
+  /**
+   * Timestamp when the schema was added.
+   * @return timestamp
+   **/
+  @JsonProperty("timestamp")
+  @ApiModelProperty(required = true, value = "Timestamp when the schema was added.")
+  @NotNull
+  public Long getTimestamp() {
+    return timestamp;
+  }
+
+  public void setTimestamp(Long timestamp) {
+    this.timestamp = timestamp;
+  }
+
+  public GroupHistoryRecord schemaString(String schemaString) {
+    this.schemaString = schemaString;
+    return this;
+  }
+
+  /**
+   * Schema as json string for schema types that registry service understands.
+   * @return schemaString
+   **/
+  @JsonProperty("schemaString")
+  @ApiModelProperty(value = "Schema as json string for schema types that registry service understands.")
+  public String getSchemaString() {
+    return schemaString;
+  }
+
+  public void setSchemaString(String schemaString) {
+    this.schemaString = schemaString;
   }
 
 
@@ -103,26 +152,30 @@ public class SchemaVersionAndRules   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    SchemaVersionAndRules schemaVersionAndRules = (SchemaVersionAndRules) o;
-    return Objects.equals(this.schemaInfo, schemaVersionAndRules.schemaInfo) &&
-        Objects.equals(this.version, schemaVersionAndRules.version) &&
-        Objects.equals(this.validationRules, schemaVersionAndRules.validationRules);
+    GroupHistoryRecord groupHistoryRecord = (GroupHistoryRecord) o;
+    return Objects.equals(this.schemaInfo, groupHistoryRecord.schemaInfo) &&
+        Objects.equals(this.version, groupHistoryRecord.version) &&
+        Objects.equals(this.validationRules, groupHistoryRecord.validationRules) &&
+        Objects.equals(this.timestamp, groupHistoryRecord.timestamp) &&
+        Objects.equals(this.schemaString, groupHistoryRecord.schemaString);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schemaInfo, version, validationRules);
+    return Objects.hash(schemaInfo, version, validationRules, timestamp, schemaString);
   }
 
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class SchemaVersionAndRules {\n");
+    sb.append("class GroupHistoryRecord {\n");
     
     sb.append("    schemaInfo: ").append(toIndentedString(schemaInfo)).append("\n");
     sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("    validationRules: ").append(toIndentedString(validationRules)).append("\n");
+    sb.append("    timestamp: ").append(toIndentedString(timestamp)).append("\n");
+    sb.append("    schemaString: ").append(toIndentedString(schemaString)).append("\n");
     sb.append("}");
     return sb.toString();
   }

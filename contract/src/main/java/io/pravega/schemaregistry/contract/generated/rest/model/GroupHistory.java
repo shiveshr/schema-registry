@@ -16,6 +16,7 @@ package io.pravega.schemaregistry.contract.generated.rest.model;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import io.pravega.schemaregistry.contract.generated.rest.model.GroupHistoryRecord;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -23,38 +24,38 @@ import java.util.List;
 import javax.validation.constraints.*;
 
 /**
- * ObjectsList
+ * GroupHistory
  */
 
-public class ObjectsList   {
-  @JsonProperty("objects")
-  private List<String> objects = null;
+public class GroupHistory   {
+  @JsonProperty("history")
+  private List<GroupHistoryRecord> history = null;
 
-  public ObjectsList objects(List<String> objects) {
-    this.objects = objects;
+  public GroupHistory history(List<GroupHistoryRecord> history) {
+    this.history = history;
     return this;
   }
 
-  public ObjectsList addObjectsItem(String objectsItem) {
-    if (this.objects == null) {
-      this.objects = new ArrayList<String>();
+  public GroupHistory addHistoryItem(GroupHistoryRecord historyItem) {
+    if (this.history == null) {
+      this.history = new ArrayList<GroupHistoryRecord>();
     }
-    this.objects.add(objectsItem);
+    this.history.add(historyItem);
     return this;
   }
 
   /**
-   * Get objects
-   * @return objects
+   * Chronological list of Group History records.
+   * @return history
    **/
-  @JsonProperty("objects")
-  @ApiModelProperty(value = "")
-  public List<String> getObjects() {
-    return objects;
+  @JsonProperty("history")
+  @ApiModelProperty(value = "Chronological list of Group History records.")
+  public List<GroupHistoryRecord> getHistory() {
+    return history;
   }
 
-  public void setObjects(List<String> objects) {
-    this.objects = objects;
+  public void setHistory(List<GroupHistoryRecord> history) {
+    this.history = history;
   }
 
 
@@ -66,22 +67,22 @@ public class ObjectsList   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ObjectsList objectsList = (ObjectsList) o;
-    return Objects.equals(this.objects, objectsList.objects);
+    GroupHistory groupHistory = (GroupHistory) o;
+    return Objects.equals(this.history, groupHistory.history);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(objects);
+    return Objects.hash(history);
   }
 
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ObjectsList {\n");
+    sb.append("class GroupHistory {\n");
     
-    sb.append("    objects: ").append(toIndentedString(objects)).append("\n");
+    sb.append("    history: ").append(toIndentedString(history)).append("\n");
     sb.append("}");
     return sb.toString();
   }

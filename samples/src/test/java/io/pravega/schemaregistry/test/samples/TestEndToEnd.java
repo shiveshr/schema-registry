@@ -11,12 +11,13 @@ package io.pravega.schemaregistry.test.samples;
 
 import com.google.common.collect.ImmutableMap;
 import io.pravega.common.Exceptions;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.contract.data.Compatibility;
-import io.pravega.schemaregistry.contract.data.SchemaEvolution;
+import io.pravega.schemaregistry.contract.data.GroupHistoryRecord;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.SchemaType;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
+import io.pravega.schemaregistry.contract.data.SchemaWithVersion;
 import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
 import io.pravega.schemaregistry.storage.SchemaStore;
@@ -97,7 +98,7 @@ public abstract class TestEndToEnd {
     public void testEndToEnd() {
         SchemaStore store = getStore();
         SchemaRegistryService service = new SchemaRegistryService(store, executor);
-        SchemaRegistryClient client = new PassthruRegistryClient(service);
+        RegistryClient client = new PassthruRegistryClient(service);
         
         String group = "group";
 
@@ -140,15 +141,15 @@ public abstract class TestEndToEnd {
                 schemaTest2.toString().getBytes(Charsets.UTF_8), ImmutableMap.of());
         client.addSchema(group, schemaInfo4);
 
-        List<String> objectTypes = client.getObjects(group);
-        assertEquals(objectTypes.size(), 2);
-        assertTrue(objectTypes.contains(myTest));
-        assertTrue(objectTypes.contains(myTest2));
-        List<SchemaEvolution> groupEvolutionHistory = client.getGroupEvolutionHistory(group, null);
+        List<String> schemaNames = client.getSchemaNames(group);
+        assertEquals(schemaNames.size(), 2);
+        assertTrue(schemaNames.contains(myTest));
+        assertTrue(schemaNames.contains(myTest2));
+        List<GroupHistoryRecord> groupEvolutionHistory = client.getEvolutionHistory(group);
         assertEquals(groupEvolutionHistory.size(), 3);
-        List<SchemaEvolution> myTestHistory = client.getGroupEvolutionHistory(group, myTest);
+        List<SchemaWithVersion> myTestHistory = client.getSchemaVersions(group, myTest);
         assertEquals(myTestHistory.size(), 2);
-        List<SchemaEvolution> myTest2History = client.getGroupEvolutionHistory(group, myTest2);
+        List<SchemaWithVersion> myTest2History = client.getSchemaVersions(group, myTest2);
         assertEquals(myTest2History.size(), 1);
     }
 

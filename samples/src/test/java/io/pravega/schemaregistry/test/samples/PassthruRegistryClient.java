@@ -10,12 +10,12 @@
 package io.pravega.schemaregistry.test.samples;
 
 import io.pravega.schemaregistry.MapWithToken;
-import io.pravega.schemaregistry.client.SchemaRegistryClient;
+import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
+import io.pravega.schemaregistry.contract.data.GroupHistoryRecord;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
-import io.pravega.schemaregistry.contract.data.SchemaEvolution;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
 import io.pravega.schemaregistry.contract.data.SchemaType;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
@@ -26,8 +26,9 @@ import io.pravega.schemaregistry.service.SchemaRegistryService;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-public class PassthruRegistryClient implements SchemaRegistryClient {
+public class PassthruRegistryClient implements RegistryClient {
     private final SchemaRegistryService service;
 
     public PassthruRegistryClient(SchemaRegistryService service) {
@@ -47,7 +48,7 @@ public class PassthruRegistryClient implements SchemaRegistryClient {
 
     @Override
     public Map<String, GroupProperties> listGroups() {
-        return service.listGroups(null).thenApply(MapWithToken::getMap).join();
+        return service.listGroups(null, 100).thenApply(MapWithToken::getMap).join();
     }
 
     @Override
@@ -61,8 +62,8 @@ public class PassthruRegistryClient implements SchemaRegistryClient {
     }
     
     @Override
-    public List<String> getObjects(String group) {
-        return service.getObjectTypes(group, null).join().getList();
+    public List<String> getSchemaNames(String group) {
+        return service.getSchemaNames(group).join();
     }
 
     @Override
@@ -71,7 +72,7 @@ public class PassthruRegistryClient implements SchemaRegistryClient {
     }
 
     @Override
-    public SchemaInfo getSchema(String group, VersionInfo version) {
+    public SchemaInfo getSchemaForVersion(String group, VersionInfo version) {
         return service.getSchema(group, version.getOrdinal()).join();
     }
 
@@ -86,17 +87,23 @@ public class PassthruRegistryClient implements SchemaRegistryClient {
     }
 
     @Override
-    public SchemaWithVersion getLatestSchema(String group, @Nullable String subgroup) {
-        return service.getLatestSchema(group, subgroup).join();
+    public SchemaWithVersion getLatestSchemaVersion(String group, @Nullable String subgroup) {
+        return service.getGroupLatestSchemaVersion(group, subgroup).join();
     }
 
     @Override
-    public List<SchemaEvolution> getGroupEvolutionHistory(String group, @Nullable String subgroup) {
-        return service.getGroupEvolutionHistory(group, subgroup).join();
+    public List<SchemaWithVersion> getSchemaVersions(String groupId, @Nullable String schemaName) {
+        return service.getGroupHistory(groupId, schemaName)
+                .thenApply(history -> history.stream().map(x -> new SchemaWithVersion(x.getSchema(), x.getVersion())).collect(Collectors.toList())).join();
     }
 
     @Override
-    public VersionInfo getSchemaVersion(String group, SchemaInfo schema) {
+    public List<GroupHistoryRecord> getEvolutionHistory(String group) {
+        return service.getGroupHistory(group, null).join();
+    }
+    
+    @Override
+    public VersionInfo getVersionForSchema(String group, SchemaInfo schema) {
         return service.getSchemaVersion(group, schema).join();
     }
 
@@ -106,17 +113,17 @@ public class PassthruRegistryClient implements SchemaRegistryClient {
     }
 
     @Override
-    public boolean canRead(String group, SchemaInfo schema) {
+    public boolean canReadUsing(String group, SchemaInfo schema) {
         return service.canRead(group, schema).join();
     }
 
     @Override
-    public List<CodecType> getCodecs(String group) {
+    public List<CodecType> getCodecTypes(String group) {
         return service.getCodecTypes(group).join();
     }
 
     @Override
-    public void addCodec(String group, CodecType codecType) {
+    public void addCodecType(String group, CodecType codecType) {
         service.addCodec(group, codecType).join();
     }
 }

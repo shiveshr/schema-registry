@@ -16,36 +16,47 @@ package io.pravega.schemaregistry.contract.generated.rest.model;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo;
+import io.pravega.schemaregistry.contract.generated.rest.model.SchemaWithVersion;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import javax.validation.constraints.*;
 
 /**
- * AddSchemaToGroupRequest
+ * List of schemas with their versions.
  */
+@ApiModel(description = "List of schemas with their versions.")
 
-public class AddSchemaToGroupRequest   {
-  @JsonProperty("schemaInfo")
-  private SchemaInfo schemaInfo = null;
+public class SchemaVersionsList   {
+  @JsonProperty("schemas")
+  private List<SchemaWithVersion> schemas = null;
 
-  public AddSchemaToGroupRequest schemaInfo(SchemaInfo schemaInfo) {
-    this.schemaInfo = schemaInfo;
+  public SchemaVersionsList schemas(List<SchemaWithVersion> schemas) {
+    this.schemas = schemas;
+    return this;
+  }
+
+  public SchemaVersionsList addSchemasItem(SchemaWithVersion schemasItem) {
+    if (this.schemas == null) {
+      this.schemas = new ArrayList<SchemaWithVersion>();
+    }
+    this.schemas.add(schemasItem);
     return this;
   }
 
   /**
-   * Get schemaInfo
-   * @return schemaInfo
+   * List of schemas with their versions.
+   * @return schemas
    **/
-  @JsonProperty("schemaInfo")
-  @ApiModelProperty(value = "")
-  public SchemaInfo getSchemaInfo() {
-    return schemaInfo;
+  @JsonProperty("schemas")
+  @ApiModelProperty(value = "List of schemas with their versions.")
+  public List<SchemaWithVersion> getSchemas() {
+    return schemas;
   }
 
-  public void setSchemaInfo(SchemaInfo schemaInfo) {
-    this.schemaInfo = schemaInfo;
+  public void setSchemas(List<SchemaWithVersion> schemas) {
+    this.schemas = schemas;
   }
 
 
@@ -57,22 +68,22 @@ public class AddSchemaToGroupRequest   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AddSchemaToGroupRequest addSchemaToGroupRequest = (AddSchemaToGroupRequest) o;
-    return Objects.equals(this.schemaInfo, addSchemaToGroupRequest.schemaInfo);
+    SchemaVersionsList schemaVersionsList = (SchemaVersionsList) o;
+    return Objects.equals(this.schemas, schemaVersionsList.schemas);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schemaInfo);
+    return Objects.hash(schemas);
   }
 
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AddSchemaToGroupRequest {\n");
+    sb.append("class SchemaVersionsList {\n");
     
-    sb.append("    schemaInfo: ").append(toIndentedString(schemaInfo)).append("\n");
+    sb.append("    schemas: ").append(toIndentedString(schemas)).append("\n");
     sb.append("}");
     return sb.toString();
   }
