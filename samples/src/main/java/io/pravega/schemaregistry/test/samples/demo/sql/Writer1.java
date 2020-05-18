@@ -72,7 +72,7 @@ public class Writer1 {
 
     private Writer1(String controllerURI, String registryUri, String scope, String stream) {
         clientConfig = ClientConfig.builder().controllerURI(URI.create(controllerURI)).build();
-        RegistryClientConfig config = new RegistryClientConfig(URI.create(registryUri));
+        RegistryClientConfig config = RegistryClientConfig.builder().schemaRegistryUri(URI.create(registryUri)).build();
         client = RegistryClientFactory.createRegistryClient(config);
         this.scope = scope;
         this.stream = stream;

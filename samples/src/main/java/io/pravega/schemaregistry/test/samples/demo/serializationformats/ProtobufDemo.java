@@ -71,7 +71,7 @@ public class ProtobufDemo {
 
     public ProtobufDemo() {
         clientConfig = ClientConfig.builder().controllerURI(URI.create("tcp://localhost:9090")).build();
-        RegistryClientConfig config = new RegistryClientConfig(URI.create("http://localhost:9092"));
+        RegistryClientConfig config = RegistryClientConfig.builder().schemaRegistryUri(URI.create("http://localhost:9092")).build();
         client = RegistryClientFactory.createRegistryClient(config);
         id = Long.toString(System.currentTimeMillis());
     }

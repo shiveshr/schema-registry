@@ -11,7 +11,6 @@ package io.pravega.schemaregistry.client;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
-import io.pravega.schemaregistry.client.RegistryClient;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
@@ -53,7 +52,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.net.URI;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
@@ -62,12 +60,13 @@ import java.util.stream.Collectors;
 
 public class RegistryClientImpl implements RegistryClient {
     private final ApiV1.GroupsApi proxy;
-    
+
     RegistryClientImpl(RegistryClientConfig config) {
         Client client = ClientBuilder.newClient(new ClientConfig());
         if (config.isAuthEnabled()) {
-            client.register((ClientRequestFilter) context ->
-                    context.getHeaders().add(HttpHeaders.AUTHORIZATION, config.getAuthType() + ":" + config.getToken()));
+            client.register((ClientRequestFilter) context -> {
+                context.getHeaders().add(HttpHeaders.AUTHORIZATION, config.getAuthMethod() + " " + config.getAuthToken());
+            });
         }
         this.proxy = WebResourceFactory.newResource(ApiV1.GroupsApi.class, client.target(config.getSchemaRegistryUri()));
     }
@@ -122,14 +121,14 @@ public class RegistryClientImpl implements RegistryClient {
             ListGroupsResponse entity = response.readEntity(ListGroupsResponse.class);
             Map<String, GroupProperties> map = entity.getGroups().entrySet().stream()
                                                      .collect(HashMap::new, (m, x) -> {
-                        if (x.getValue() == null) {
-                            m.put(x.getKey(), null);
-                        } else {
-                            SchemaType schemaType = ModelHelper.decode(x.getValue().getSchemaType());
-                            SchemaValidationRules rules = ModelHelper.decode(x.getValue().getSchemaValidationRules());
-                            m.put(x.getKey(), new GroupProperties(schemaType, rules, x.getValue().isVersionBySchemaName(), x.getValue().getProperties()));
-                        }
-                    }, HashMap::putAll);
+                                                         if (x.getValue() == null) {
+                                                             m.put(x.getKey(), null);
+                                                         } else {
+                                                             SchemaType schemaType = ModelHelper.decode(x.getValue().getSchemaType());
+                                                             SchemaValidationRules rules = ModelHelper.decode(x.getValue().getSchemaValidationRules());
+                                                             m.put(x.getKey(), new GroupProperties(schemaType, rules, x.getValue().isVersionBySchemaName(), x.getValue().getProperties()));
+                                                         }
+                                                     }, HashMap::putAll);
             continuationToken = entity.getContinuationToken();
             result.putAll(map);
 
@@ -333,7 +332,7 @@ public class RegistryClientImpl implements RegistryClient {
             throw new RuntimeException("Internal Service error. Failed to get schema versions for group.");
         }
     }
-    
+
     @SneakyThrows
     @Override
     public VersionInfo getVersionForSchema(String groupId, SchemaInfo schema) {
