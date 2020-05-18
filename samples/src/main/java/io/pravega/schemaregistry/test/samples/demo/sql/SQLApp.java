@@ -98,7 +98,7 @@ public class SQLApp {
         String registryUri = cmd.getOptionValue("registryUri");
 
         ClientConfig clientConfig = ClientConfig.builder().controllerURI(URI.create(controllerUri)).build();
-        RegistryClientConfig config = new RegistryClientConfig(URI.create(registryUri));
+        RegistryClientConfig config = RegistryClientConfig.builder().schemaRegistryUri(URI.create(registryUri)).build();
         RegistryClient client = RegistryClientFactory.createRegistryClient(config);
 
         while (true) {

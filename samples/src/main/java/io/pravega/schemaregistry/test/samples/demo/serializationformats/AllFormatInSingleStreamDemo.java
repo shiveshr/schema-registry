@@ -91,7 +91,7 @@ public class AllFormatInSingleStreamDemo {
         String groupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, stream);
 
         ClientConfig clientConfig = ClientConfig.builder().controllerURI(URI.create("tcp://localhost:9090")).build();
-        RegistryClient registryClient = RegistryClientFactory.createRegistryClient(new RegistryClientConfig(URI.create("http://localhost:9092")));
+        RegistryClient registryClient = RegistryClientFactory.createRegistryClient(RegistryClientConfig.builder().schemaRegistryUri(URI.create("http://localhost:9092")).build());
         AllFormatInSingleStreamDemo demo = new AllFormatInSingleStreamDemo(clientConfig, registryClient, scope, stream, groupId);
 
         EventStreamWriter<Type1> avro = demo.createAvroWriter(groupId);
