@@ -7,7 +7,7 @@
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.pravega.schemaregistry.client.impl;
+package io.pravega.schemaregistry.client;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
@@ -50,6 +50,8 @@ import org.glassfish.jersey.client.proxy.WebResourceFactory;
 import javax.annotation.Nullable;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.ClientRequestFilter;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -60,10 +62,14 @@ import java.util.stream.Collectors;
 
 public class RegistryClientImpl implements RegistryClient {
     private final ApiV1.GroupsApi proxy;
-
-    public RegistryClientImpl(URI uri) {
+    
+    RegistryClientImpl(RegistryClientConfig config) {
         Client client = ClientBuilder.newClient(new ClientConfig());
-        this.proxy = WebResourceFactory.newResource(ApiV1.GroupsApi.class, client.target(uri));
+        if (config.isAuthEnabled()) {
+            client.register((ClientRequestFilter) context ->
+                    context.getHeaders().add(HttpHeaders.AUTHORIZATION, config.getAuthType() + ":" + config.getToken()));
+        }
+        this.proxy = WebResourceFactory.newResource(ApiV1.GroupsApi.class, client.target(config.getSchemaRegistryUri()));
     }
 
     @VisibleForTesting

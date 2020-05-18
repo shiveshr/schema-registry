@@ -27,8 +27,11 @@ public class ServiceConfig implements ServerConfig {
     private final String keyFilePath;
     private final String keyFilePasswordPath;
     private final boolean authEnabled;
-
-    private ServiceConfig(String host, int port, boolean tlsEnabled, String keyFilePath, String keyFilePasswordPath, boolean authEnabled) {
+    private final String userPasswordFile;
+    
+    private ServiceConfig(String host, int port, boolean tlsEnabled, String keyFilePath, String keyFilePasswordPath, 
+                          boolean authEnabled, String userPasswordFile) {
+        this.userPasswordFile = userPasswordFile;
         Exceptions.checkNotNullOrEmpty(host, "host");
         Exceptions.checkArgument(port > 0, "port", "Should be positive integer");
         Exceptions.checkArgument(!tlsEnabled || (!Strings.isNullOrEmpty(keyFilePath) 
@@ -43,9 +46,12 @@ public class ServiceConfig implements ServerConfig {
     }
 
     public static final class ServiceConfigBuilder {
+        private String host = "localhost";
+        private int port = 9092;
         private boolean tlsEnabled = false;
         private String keyFilePath = "";
         private String keyFilePasswordPath = "";
+        private boolean authEnabled = false;
     }
     
     @Override

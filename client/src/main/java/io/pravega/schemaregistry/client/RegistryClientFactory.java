@@ -9,8 +9,6 @@
  */
 package io.pravega.schemaregistry.client;
 
-import io.pravega.schemaregistry.client.impl.RegistryClientImpl;
-
 /**
  * Factory class for creating Schema Registry client. 
  */
@@ -22,6 +20,6 @@ public class RegistryClientFactory {
      * @return SchemaRegistry client implementation
      */
     public static RegistryClient createRegistryClient(RegistryClientConfig config) {
-        return new RegistryClientImpl(config.getSchemaRegistryUri());
+        return new RegistryClientImpl(config);
     }
 }

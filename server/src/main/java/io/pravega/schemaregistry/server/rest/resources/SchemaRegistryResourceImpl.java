@@ -9,7 +9,11 @@
  */
 package io.pravega.schemaregistry.server.rest.resources;
 
+import com.google.common.base.Preconditions;
 import io.pravega.auth.AuthException;
+import io.pravega.auth.AuthHandler;
+import io.pravega.auth.AuthenticationException;
+import io.pravega.auth.AuthorizationException;
 import io.pravega.common.Exceptions;
 import io.pravega.common.concurrent.Futures;
 import io.pravega.schemaregistry.contract.data.CodecType;
@@ -43,8 +47,8 @@ import io.pravega.schemaregistry.contract.generated.rest.model.VersionInfo;
 import io.pravega.schemaregistry.contract.generated.rest.server.api.NotFoundException;
 import io.pravega.schemaregistry.contract.transform.ModelHelper;
 import io.pravega.schemaregistry.contract.v1.ApiV1;
+import io.pravega.schemaregistry.server.rest.ServiceConfig;
 import io.pravega.schemaregistry.server.rest.auth.AuthHandlerManager;
-import io.pravega.schemaregistry.server.rest.auth.RESTAuthHelper;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
 import io.pravega.schemaregistry.storage.ContinuationToken;
 import io.pravega.schemaregistry.storage.StoreExceptions;
@@ -77,77 +81,49 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Context
     HttpHeaders headers;
 
-    private final RESTAuthHelper restAuthHelper;
+    private final AuthHandlerManager authManager;
 
     private SchemaRegistryService registryService;
-
-    public SchemaRegistryResourceImpl(SchemaRegistryService registryService, AuthHandlerManager pravegaAuthManager) {
+    private ServiceConfig config;
+    
+    public SchemaRegistryResourceImpl(SchemaRegistryService registryService, ServiceConfig config) {
         this.registryService = registryService;
-        this.restAuthHelper = new RESTAuthHelper(pravegaAuthManager);
+        this.config = config;
+        this.authManager = new AuthHandlerManager(config);
     }
 
     @Override
-    public void listGroups(String continuationToken, Integer limit, SecurityContext securityContext,
-                           AsyncResponse asyncResponse) throws NotFoundException {
+    public void listGroups(String continuationToken, Integer limit, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("List Groups called");
-        try {
-            // TODO: list groups that the user has permissions on
-            restAuthHelper.authenticateAuthorize(getAuthorizationHeader(), ROOT, READ);
-        } catch (AuthException e) {
-            log.warn("List group failed due to authentication failure {}.", e);
-            asyncResponse.resume(Response.status(Status.fromStatusCode(e.getResponseCode())).build());
-            return;
-        }
-
-        withCompletion("listGroups", () -> registryService.listGroups(ContinuationToken.fromString(continuationToken), limit)
-                                                          .thenApply(result -> {
-                                                              ListGroupsResponse groupsList = new ListGroupsResponse();
-                                                              result.getMap().forEach((x, y) -> {
-                                                                  if (y == null) {
-                                                                      // partially created group.
-                                                                      groupsList.putGroupsItem(x, null);
-                                                                  } else {
-                                                                      groupsList.putGroupsItem(x, ModelHelper.encode(y));
-                                                                  }
-                                                              });
-                                                              groupsList.continuationToken(result.getToken() == null ? null : result.getToken().toString());
-                                                              return Response.status(Status.OK).entity(groupsList).build();
-                                                          })
-                                                          .exceptionally(exception -> {
-                                                              log.warn("listGroups failed with exception: ", exception);
-                                                              return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                          }))
+        withCompletion("listGroups", READ, ROOT, asyncResponse,
+                () -> registryService.listGroups(ContinuationToken.fromString(continuationToken), limit)
+                                     .thenApply(result -> {
+                                         ListGroupsResponse groupsList = new ListGroupsResponse();
+                                         result.getMap().forEach((x, y) -> {
+                                             if (y == null) {
+                                                 // partially created group.
+                                                 groupsList.putGroupsItem(x, null);
+                                             } else {
+                                                 groupsList.putGroupsItem(x, ModelHelper.encode(y));
+                                             }
+                                         });
+                                         groupsList.continuationToken(result.getToken() == null ? null : result.getToken().toString());
+                                         return Response.status(Status.OK).entity(groupsList).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         log.warn("listGroups failed with exception: ", exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
                 });
     }
 
-    private CompletableFuture<Response> withCompletion(String request, Supplier<CompletableFuture<Response>> future) {
-        try {
-            return future.get();
-        } catch (IllegalArgumentException e) {
-            log.warn("Bad request {}", request);
-            return CompletableFuture.completedFuture(Response.status(Status.BAD_REQUEST).build());
-        } catch (Exception e) {
-            log.error("request failed with exception {}", e);
-            return Futures.failedFuture(e);
-        }
-    }
-
     @Override
     public void createGroup(CreateGroupRequest createGroupRequest, SecurityContext securityContext,
                             AsyncResponse asyncResponse) throws NotFoundException {
-        log.info("Create Group called with params {}", createGroupRequest);
-        try {
-            restAuthHelper.authenticateAuthorize(getAuthorizationHeader(), ROOT, READ_UPDATE);
-        } catch (AuthException e) {
-            log.warn("Create group for {} failed due to authentication failure {}.", createGroupRequest.getGroupName(), e);
-            asyncResponse.resume(Response.status(Status.fromStatusCode(e.getResponseCode())).build());
-            return;
-        }
-
-        withCompletion("createGroup", () -> {
+        withCompletion("createGroup", READ_UPDATE, ROOT, asyncResponse, () -> {
             SchemaType schemaType = ModelHelper.decode(createGroupRequest.getSchemaType());
             SchemaValidationRules validationRules = ModelHelper.decode(createGroupRequest.getValidationRules());
             GroupProperties properties = new GroupProperties(
@@ -175,28 +151,20 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Override
     public void getGroupProperties(String groupName, SecurityContext securityContext,
                                    AsyncResponse asyncResponse) throws NotFoundException {
-        log.info("Get group properties called for group {}", groupName);
-        try {
-            restAuthHelper.authenticateAuthorize(getAuthorizationHeader(), ROOT, READ_UPDATE);
-        } catch (AuthException e) {
-            log.warn("Get group properties failed due to authentication failure {}.", e);
-            asyncResponse.resume(Response.status(Status.fromStatusCode(e.getResponseCode())).build());
-            return;
-        }
-
-        withCompletion("getGroupProperties", () -> registryService.getGroupProperties(groupName)
-                                                                  .thenApply(groupProperty -> {
-                                                                      log.info("Group {} property found are {}", groupName, groupProperty);
-                                                                      return Response.status(Status.OK).entity(ModelHelper.encode(groupProperty)).build();
-                                                                  })
-                                                                  .exceptionally(exception -> {
-                                                                      if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                                                          log.warn("Group {} not found", groupName);
-                                                                          return Response.status(Status.NOT_FOUND).build();
-                                                                      }
-                                                                      log.warn("getGroupProperties for group {} failed with exception: {}", groupName, exception);
-                                                                      return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                                  }))
+        withCompletion("getGroupProperties", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> registryService.getGroupProperties(groupName)
+                                     .thenApply(groupProperty -> {
+                                         log.info("Group {} property found are {}", groupName, groupProperty);
+                                         return Response.status(Status.OK).entity(ModelHelper.encode(groupProperty)).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                             log.warn("Group {} not found", groupName);
+                                             return Response.status(Status.NOT_FOUND).build();
+                                         }
+                                         log.warn("getGroupProperties for group {} failed with exception: {}", groupName, exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
@@ -206,23 +174,24 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Override
     public void getGroupHistory(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get group history called for group {}", groupName);
-        withCompletion("getGroupHistory", () -> registryService.getGroupHistory(groupName, null)
-                                                               .thenApply(history -> {
-                                                                   GroupHistory list = new GroupHistory()
-                                                                           .history(history.stream().map(ModelHelper::encode)
-                                                                                           .collect(Collectors.toList()));
-                                                                   log.info("getGroupHistory: {} schemas found for group {}", list.getHistory().size(), groupName);
-                                                                   return Response.status(Status.OK).entity(list).build();
-                                                               })
-                                                               .exceptionally(exception -> {
-                                                                   if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                                                       log.warn("Group {} not found", groupName);
-                                                                       return Response.status(Status.NOT_FOUND).build();
-                                                                   }
+        withCompletion("getGroupHistory", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> registryService.getGroupHistory(groupName, null)
+                                     .thenApply(history -> {
+                                         GroupHistory list = new GroupHistory()
+                                                 .history(history.stream().map(ModelHelper::encode)
+                                                                 .collect(Collectors.toList()));
+                                         log.info("getGroupHistory: {} schemas found for group {}", list.getHistory().size(), groupName);
+                                         return Response.status(Status.OK).entity(list).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                             log.warn("Group {} not found", groupName);
+                                             return Response.status(Status.NOT_FOUND).build();
+                                         }
 
-                                                                   log.warn("getGroupHistory failed with exception: ", exception);
-                                                                   return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                               }))
+                                         log.warn("getGroupHistory failed with exception: ", exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
@@ -233,25 +202,26 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Override
     public void updateSchemaValidationRules(String groupName, UpdateValidationRulesPolicyRequest updateValidationRulesPolicyRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Update schema validation rules called for group {} with new request {}", groupName, updateValidationRulesPolicyRequest);
-        withCompletion("updateSchemaValidationRules", () -> {
-            SchemaValidationRules rules = ModelHelper.decode(updateValidationRulesPolicyRequest.getValidationRules());
-            SchemaValidationRules previousRules = updateValidationRulesPolicyRequest.getPreviousRules() == null ?
-                    null : ModelHelper.decode(updateValidationRulesPolicyRequest.getPreviousRules());
-            return registryService.updateSchemaValidationRules(groupName, rules, previousRules)
-                                  .thenApply(groupProperty -> Response.status(Status.OK).build())
-                                  .exceptionally(exception -> {
-                                      if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                          log.warn("Group {} not found", groupName);
-                                          return Response.status(Status.NOT_FOUND).build();
-                                      } else if (Exceptions.unwrap(exception) instanceof PreconditionFailedException) {
-                                          log.warn("updateSchemaValidationRules write conflict {}", groupName);
-                                          return Response.status(Status.CONFLICT).build();
-                                      } else {
-                                          log.warn("updateSchemaValidationRules failed with exception: ", exception);
-                                          return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                      }
-                                  });
-        }).thenApply(response -> {
+        withCompletion("updateSchemaValidationRules", READ_UPDATE, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> {
+                    SchemaValidationRules rules = ModelHelper.decode(updateValidationRulesPolicyRequest.getValidationRules());
+                    SchemaValidationRules previousRules = updateValidationRulesPolicyRequest.getPreviousRules() == null ?
+                            null : ModelHelper.decode(updateValidationRulesPolicyRequest.getPreviousRules());
+                    return registryService.updateSchemaValidationRules(groupName, rules, previousRules)
+                                          .thenApply(groupProperty -> Response.status(Status.OK).build())
+                                          .exceptionally(exception -> {
+                                              if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                                  log.warn("Group {} not found", groupName);
+                                                  return Response.status(Status.NOT_FOUND).build();
+                                              } else if (Exceptions.unwrap(exception) instanceof PreconditionFailedException) {
+                                                  log.warn("updateSchemaValidationRules write conflict {}", groupName);
+                                                  return Response.status(Status.CONFLICT).build();
+                                              } else {
+                                                  log.warn("updateSchemaValidationRules failed with exception: ", exception);
+                                                  return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                              }
+                                          });
+                }).thenApply(response -> {
             asyncResponse.resume(response);
             return response;
         });
@@ -260,19 +230,20 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Override
     public void getSchemaValidationRules(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get group schema validation rules called for group {}", groupName);
-        withCompletion("getSchemaValidationRules", () -> registryService.getGroupProperties(groupName)
-                                                                        .thenApply(groupProperty -> {
-                                                                            log.info("Group {} validation rules found are {}", groupName, groupProperty.getSchemaValidationRules());
-                                                                            return Response.status(Status.OK).entity(ModelHelper.encode(groupProperty.getSchemaValidationRules())).build();
-                                                                        })
-                                                                        .exceptionally(exception -> {
-                                                                            if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                                                                log.warn("Group {} not found", groupName);
-                                                                                return Response.status(Status.NOT_FOUND).build();
-                                                                            }
-                                                                            log.warn("getSchemaValidationRules for group {} failed with exception: {}", groupName, exception);
-                                                                            return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                                        }))
+        withCompletion("getSchemaValidationRules", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> registryService.getGroupProperties(groupName)
+                                     .thenApply(groupProperty -> {
+                                         log.info("Group {} validation rules found are {}", groupName, groupProperty.getSchemaValidationRules());
+                                         return Response.status(Status.OK).entity(ModelHelper.encode(groupProperty.getSchemaValidationRules())).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                             log.warn("Group {} not found", groupName);
+                                             return Response.status(Status.NOT_FOUND).build();
+                                         }
+                                         log.warn("getSchemaValidationRules for group {} failed with exception: {}", groupName, exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
@@ -283,15 +254,16 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     public void deleteGroup(String groupName, SecurityContext securityContext,
                             AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Delete group called for group {}", groupName);
-        withCompletion("deleteGroup", () -> registryService.deleteGroup(groupName)
-                                                           .thenApply(status -> {
-                                                               log.info("Group {} deleted", groupName);
-                                                               return Response.status(Status.NO_CONTENT).build();
-                                                           })
-                                                           .exceptionally(exception -> {
-                                                               log.warn("deleteGroup failed with exception: ", exception);
-                                                               return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                           }))
+        withCompletion("deleteGroup", READ_UPDATE, ROOT, asyncResponse,
+                () -> registryService.deleteGroup(groupName)
+                                     .thenApply(status -> {
+                                         log.info("Group {} deleted", groupName);
+                                         return Response.status(Status.NO_CONTENT).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         log.warn("deleteGroup failed with exception: ", exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
@@ -301,25 +273,26 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Override
     public void getSchemas(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get group schemas called for group {}", groupName);
-        withCompletion("getSchemas", () -> registryService.getGroupHistory(groupName, null)
-                                                               .thenApply(history -> {
-                                                                   SchemaVersionsList list = new SchemaVersionsList()
-                                                                           .schemas(history.stream().map(x -> new SchemaWithVersion()
-                                                                                   .schemaInfo(ModelHelper.encode(x.getSchema()))
-                                                                                   .version(ModelHelper.encode(x.getVersion())))
-                                                                                           .collect(Collectors.toList()));
-                                                                   log.info("GetGroupSchemas: {} schemas found for group {}", list.getSchemas().size(), groupName);
-                                                                   return Response.status(Status.OK).entity(list).build();
-                                                               })
-                                                               .exceptionally(exception -> {
-                                                                   if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                                                       log.warn("Group {} not found", groupName);
-                                                                       return Response.status(Status.NOT_FOUND).build();
-                                                                   }
+        withCompletion("getSchemas", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> registryService.getGroupHistory(groupName, null)
+                                     .thenApply(history -> {
+                                         SchemaVersionsList list = new SchemaVersionsList()
+                                                 .schemas(history.stream().map(x -> new SchemaWithVersion()
+                                                         .schemaInfo(ModelHelper.encode(x.getSchema()))
+                                                         .version(ModelHelper.encode(x.getVersion())))
+                                                                 .collect(Collectors.toList()));
+                                         log.info("GetGroupSchemas: {} schemas found for group {}", list.getSchemas().size(), groupName);
+                                         return Response.status(Status.OK).entity(list).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                             log.warn("Group {} not found", groupName);
+                                             return Response.status(Status.NOT_FOUND).build();
+                                         }
 
-                                                                   log.warn("getSchemas failed with exception: ", exception);
-                                                                   return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                               }))
+                                         log.warn("getSchemas failed with exception: ", exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
@@ -330,21 +303,22 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     public void getLatestSchema(String groupName, SecurityContext securityContext,
                                 AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get latest group schema called for group {}", groupName);
-        withCompletion("getLatestSchema", () -> registryService.getGroupLatestSchemaVersion(groupName, null)
-                                                                    .thenApply(schemaWithVersion -> {
-                                                                        SchemaWithVersion schema = ModelHelper.encode(schemaWithVersion);
-                                                                        log.info("Latest schema for group {} has version {}", groupName, schemaWithVersion.getVersion());
-                                                                        return Response.status(Status.OK).entity(schema).build();
-                                                                    })
-                                                                    .exceptionally(exception -> {
-                                                                        if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                                                            log.warn("Group {} not found", groupName);
-                                                                            return Response.status(Status.NOT_FOUND).build();
-                                                                        }
+        withCompletion("getLatestSchema", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> registryService.getGroupLatestSchemaVersion(groupName, null)
+                                     .thenApply(schemaWithVersion -> {
+                                         SchemaWithVersion schema = ModelHelper.encode(schemaWithVersion);
+                                         log.info("Latest schema for group {} has version {}", groupName, schemaWithVersion.getVersion());
+                                         return Response.status(Status.OK).entity(schema).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                             log.warn("Group {} not found", groupName);
+                                             return Response.status(Status.NOT_FOUND).build();
+                                         }
 
-                                                                        log.warn("getLatestSchema failed with exception: ", exception);
-                                                                        return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                                    }))
+                                         log.warn("getLatestSchema failed with exception: ", exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
@@ -353,34 +327,35 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
 
     @Override
     public void addSchema(String groupName, AddSchemaRequest addSchemaRequest,
-                                         SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+                          SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Add schema to group called for group {}", groupName);
-        withCompletion("addSchema", () -> {
-            io.pravega.schemaregistry.contract.data.SchemaInfo schemaInfo = ModelHelper.decode(addSchemaRequest.getSchemaInfo());
+        withCompletion("addSchema", READ_UPDATE, String.format(GROUP_SCHEMA_FORMAT, groupName), asyncResponse,
+                () -> {
+                    io.pravega.schemaregistry.contract.data.SchemaInfo schemaInfo = ModelHelper.decode(addSchemaRequest.getSchemaInfo());
 
-            return registryService.addSchema(groupName, schemaInfo)
-                                  .thenApply(versionInfo -> {
-                                      VersionInfo version = ModelHelper.encode(versionInfo);
-                                      log.info("schema added to group {} with new version {}", groupName, versionInfo);
-                                      return Response.status(Status.CREATED).entity(version).build();
-                                  })
-                                  .exceptionally(exception -> {
-                                      Throwable unwrap = Exceptions.unwrap(exception);
-                                      if (unwrap instanceof StoreExceptions.DataNotFoundException) {
-                                          log.warn("Group {} not found", groupName);
-                                          return Response.status(Status.NOT_FOUND).build();
-                                      } else if (unwrap instanceof IncompatibleSchemaException) {
-                                          log.info("addSchema incompatible schema {}", groupName);
-                                          return Response.status(Status.CONFLICT).build();
-                                      } else if (unwrap instanceof SchemaTypeMismatchException) {
-                                          log.info("addSchema schema type mismatched {}", groupName);
-                                          return Response.status(Status.EXPECTATION_FAILED).build();
-                                      } else {
-                                          log.warn("addSchema failed with exception: ", unwrap);
-                                          return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                      }
-                                  });
-        }).thenApply(response -> {
+                    return registryService.addSchema(groupName, schemaInfo)
+                                          .thenApply(versionInfo -> {
+                                              VersionInfo version = ModelHelper.encode(versionInfo);
+                                              log.info("schema added to group {} with new version {}", groupName, versionInfo);
+                                              return Response.status(Status.CREATED).entity(version).build();
+                                          })
+                                          .exceptionally(exception -> {
+                                              Throwable unwrap = Exceptions.unwrap(exception);
+                                              if (unwrap instanceof StoreExceptions.DataNotFoundException) {
+                                                  log.warn("Group {} not found", groupName);
+                                                  return Response.status(Status.NOT_FOUND).build();
+                                              } else if (unwrap instanceof IncompatibleSchemaException) {
+                                                  log.info("addSchema incompatible schema {}", groupName);
+                                                  return Response.status(Status.CONFLICT).build();
+                                              } else if (unwrap instanceof SchemaTypeMismatchException) {
+                                                  log.info("addSchema schema type mismatched {}", groupName);
+                                                  return Response.status(Status.EXPECTATION_FAILED).build();
+                                              } else {
+                                                  log.warn("addSchema failed with exception: ", unwrap);
+                                                  return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                              }
+                                          });
+                }).thenApply(response -> {
             asyncResponse.resume(response);
             return response;
         });
@@ -390,22 +365,23 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     public void validate(String groupName, ValidateRequest validateRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Validate schema called for group {}", groupName);
 
-        withCompletion("validate", () -> {
-            io.pravega.schemaregistry.contract.data.SchemaInfo schemaInfo = ModelHelper.decode(validateRequest.getSchemaInfo());
-            return registryService.validateSchema(groupName, schemaInfo)
-                                  .thenApply(compatible -> {
-                                      log.info("Schema is valid for group {}", groupName);
-                                      return Response.status(Status.OK).entity(new Valid().valid(compatible)).build();
-                                  })
-                                  .exceptionally(exception -> {
-                                      if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                          log.warn("Group {} not found", groupName);
-                                          return Response.status(Status.NOT_FOUND).build();
-                                      }
-                                      log.warn("validate failed with exception: ", exception);
-                                      return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                  });
-        }).thenApply(response -> {
+        withCompletion("validate", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> {
+                    io.pravega.schemaregistry.contract.data.SchemaInfo schemaInfo = ModelHelper.decode(validateRequest.getSchemaInfo());
+                    return registryService.validateSchema(groupName, schemaInfo)
+                                          .thenApply(compatible -> {
+                                              log.info("Schema is valid for group {}", groupName);
+                                              return Response.status(Status.OK).entity(new Valid().valid(compatible)).build();
+                                          })
+                                          .exceptionally(exception -> {
+                                              if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                                  log.warn("Group {} not found", groupName);
+                                                  return Response.status(Status.NOT_FOUND).build();
+                                              }
+                                              log.warn("validate failed with exception: ", exception);
+                                              return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                          });
+                }).thenApply(response -> {
             asyncResponse.resume(response);
             return response;
         });
@@ -415,22 +391,23 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     public void canRead(String groupName, CanReadRequest canReadRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Can read using schema called for group {}", groupName);
 
-        withCompletion("canRead", () -> {
-            io.pravega.schemaregistry.contract.data.SchemaInfo schemaInfo = ModelHelper.decode(canReadRequest.getSchemaInfo());
-            return registryService.canRead(groupName, schemaInfo)
-                                  .thenApply(canRead -> {
-                                      log.info("For group {}, can read using schema response = {}", groupName, canRead);
-                                      return Response.status(Status.OK).entity(new CanRead().compatible(canRead)).build();
-                                  })
-                                  .exceptionally(exception -> {
-                                      if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                          log.warn("Group {} not found", groupName);
-                                          return Response.status(Status.NOT_FOUND).build();
-                                      }
-                                      log.warn("can read failed with exception: ", exception);
-                                      return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                  });
-        }).thenApply(response -> {
+        withCompletion("canRead", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> {
+                    io.pravega.schemaregistry.contract.data.SchemaInfo schemaInfo = ModelHelper.decode(canReadRequest.getSchemaInfo());
+                    return registryService.canRead(groupName, schemaInfo)
+                                          .thenApply(canRead -> {
+                                              log.info("For group {}, can read using schema response = {}", groupName, canRead);
+                                              return Response.status(Status.OK).entity(new CanRead().compatible(canRead)).build();
+                                          })
+                                          .exceptionally(exception -> {
+                                              if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                                  log.warn("Group {} not found", groupName);
+                                                  return Response.status(Status.NOT_FOUND).build();
+                                              }
+                                              log.warn("can read failed with exception: ", exception);
+                                              return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                          });
+                }).thenApply(response -> {
             asyncResponse.resume(response);
             return response;
         });
@@ -440,20 +417,21 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     public void getSchemaFromVersion(String groupName, Integer version,
                                      SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get schema from version {} called for group {}", version, groupName);
-        withCompletion("getSchemaFromVersion", () -> registryService.getSchema(groupName, version)
-                                                                    .thenApply(schemaWithVersion -> {
-                                                                        SchemaInfo schema = ModelHelper.encode(schemaWithVersion);
-                                                                        log.info("Schema for version {} for group {} found.", version, groupName);
-                                                                        return Response.status(Status.OK).entity(schema).build();
-                                                                    })
-                                                                    .exceptionally(exception -> {
-                                                                        if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                                                            log.warn("Group {} or version {} not found", groupName, version);
-                                                                            return Response.status(Status.NOT_FOUND).build();
-                                                                        }
-                                                                        log.warn("getSchemaFromVersion failed with exception: ", exception);
-                                                                        return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                                    }))
+        withCompletion("getSchemaFromVersion", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> registryService.getSchema(groupName, version)
+                                     .thenApply(schemaWithVersion -> {
+                                         SchemaInfo schema = ModelHelper.encode(schemaWithVersion);
+                                         log.info("Schema for version {} for group {} found.", version, groupName);
+                                         return Response.status(Status.OK).entity(schema).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                             log.warn("Group {} or version {} not found", groupName, version);
+                                             return Response.status(Status.NOT_FOUND).build();
+                                         }
+                                         log.warn("getSchemaFromVersion failed with exception: ", exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
@@ -465,29 +443,30 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
                               SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getEncodingId called for group {} with version {} and codec {}", groupName,
                 getEncodingIdRequest.getVersionInfo(), getEncodingIdRequest.getCodecType());
-        withCompletion("getEncodingId", () -> {
-            io.pravega.schemaregistry.contract.data.VersionInfo version = ModelHelper.decode(getEncodingIdRequest.getVersionInfo());
-            CodecType codecType = ModelHelper.decode(getEncodingIdRequest.getCodecType());
-            return registryService.getEncodingId(groupName, version, codecType)
-                                  .thenApply(encodingId -> {
-                                      EncodingId id = ModelHelper.encode(encodingId);
-                                      log.info("For group {} with version {} and codec {}, returning encoding id {}", groupName,
-                                              getEncodingIdRequest.getVersionInfo(), getEncodingIdRequest.getCodecType(), id);
-                                      return Response.status(Status.OK).entity(id).build();
-                                  })
-                                  .exceptionally(exception -> {
-                                      if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                          log.warn("Group {} not found", groupName);
-                                          return Response.status(Status.NOT_FOUND).build();
-                                      } else if (Exceptions.unwrap(exception) instanceof CodecNotFoundException) {
-                                          log.info("getEncodingId failed Codec Not Found {}", groupName);
-                                          return Response.status(Status.PRECONDITION_FAILED).build();
-                                      } else {
-                                          log.warn("getEncodingId failed with exception: ", exception);
-                                          return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                      }
-                                  });
-        }).thenApply(response -> {
+        withCompletion("getEncodingId", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> {
+                    io.pravega.schemaregistry.contract.data.VersionInfo version = ModelHelper.decode(getEncodingIdRequest.getVersionInfo());
+                    CodecType codecType = ModelHelper.decode(getEncodingIdRequest.getCodecType());
+                    return registryService.getEncodingId(groupName, version, codecType)
+                                          .thenApply(encodingId -> {
+                                              EncodingId id = ModelHelper.encode(encodingId);
+                                              log.info("For group {} with version {} and codec {}, returning encoding id {}", groupName,
+                                                      getEncodingIdRequest.getVersionInfo(), getEncodingIdRequest.getCodecType(), id);
+                                              return Response.status(Status.OK).entity(id).build();
+                                          })
+                                          .exceptionally(exception -> {
+                                              if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                                  log.warn("Group {} not found", groupName);
+                                                  return Response.status(Status.NOT_FOUND).build();
+                                              } else if (Exceptions.unwrap(exception) instanceof CodecNotFoundException) {
+                                                  log.info("getEncodingId failed Codec Not Found {}", groupName);
+                                                  return Response.status(Status.PRECONDITION_FAILED).build();
+                                              } else {
+                                                  log.warn("getEncodingId failed with exception: ", exception);
+                                                  return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                              }
+                                          });
+                }).thenApply(response -> {
             asyncResponse.resume(response);
             return response;
         });
@@ -496,25 +475,26 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Override
     public void getSchemaVersion(String groupName, GetSchemaVersion getSchemaVersion, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get schema version called for group {}", groupName);
-        withCompletion("getSchemaVersion", () -> {
-            io.pravega.schemaregistry.contract.data.SchemaInfo schemaInfo = ModelHelper.decode(getSchemaVersion.getSchemaInfo());
+        withCompletion("getSchemaVersion", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> {
+                    io.pravega.schemaregistry.contract.data.SchemaInfo schemaInfo = ModelHelper.decode(getSchemaVersion.getSchemaInfo());
 
-            return registryService.getSchemaVersion(groupName, schemaInfo)
-                                  .thenApply(version -> {
-                                      VersionInfo versionInfo = ModelHelper.encode(version);
-                                      log.info("schema version {} found for group {}", versionInfo, groupName);
-                                      return Response.status(Status.OK).entity(versionInfo).build();
-                                  })
-                                  .exceptionally(exception -> {
-                                      if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                          log.warn("Group {} or schema not found", groupName);
-                                          return Response.status(Status.NOT_FOUND).build();
-                                      }
+                    return registryService.getSchemaVersion(groupName, schemaInfo)
+                                          .thenApply(version -> {
+                                              VersionInfo versionInfo = ModelHelper.encode(version);
+                                              log.info("schema version {} found for group {}", versionInfo, groupName);
+                                              return Response.status(Status.OK).entity(versionInfo).build();
+                                          })
+                                          .exceptionally(exception -> {
+                                              if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                                  log.warn("Group {} or schema not found", groupName);
+                                                  return Response.status(Status.NOT_FOUND).build();
+                                              }
 
-                                      log.warn("getSchemaVersion failed with exception: ", exception);
-                                      return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                  });
-        }).thenApply(response -> {
+                                              log.warn("getSchemaVersion failed with exception: ", exception);
+                                              return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                          });
+                }).thenApply(response -> {
             asyncResponse.resume(response);
             return response;
         });
@@ -523,24 +503,25 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Override
     public void getSchemasForSchemaName(String groupName, String schemaName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getSchemaNameSchemas called for group {} schemaName {}", groupName, schemaName);
-        withCompletion("getObjectSchemas", () -> registryService.getGroupHistory(groupName, schemaName)
-                                                                .thenApply(history -> {
-                                                                    SchemaVersionsList list = new SchemaVersionsList()
-                                                                            .schemas(history.stream().map(x -> new SchemaWithVersion()
-                                                                                    .schemaInfo(ModelHelper.encode(x.getSchema()))
-                                                                                    .version(ModelHelper.encode(x.getVersion())))
-                                                                                            .collect(Collectors.toList()));
-                                                                    log.info("Found {} object type schemas for group {} and object type {}", list.getSchemas().size(), groupName, schemaName);
-                                                                    return Response.status(Status.OK).entity(list).build();
-                                                                })
-                                                                .exceptionally(exception -> {
-                                                                    if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                                                        log.warn("Group {} not found", groupName);
-                                                                        return Response.status(Status.NOT_FOUND).build();
-                                                                    }
-                                                                    log.warn("getSchemaNameSchemas failed with exception: ", exception);
-                                                                    return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                                }))
+        withCompletion("getObjectSchemas", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> registryService.getGroupHistory(groupName, schemaName)
+                                     .thenApply(history -> {
+                                         SchemaVersionsList list = new SchemaVersionsList()
+                                                 .schemas(history.stream().map(x -> new SchemaWithVersion()
+                                                         .schemaInfo(ModelHelper.encode(x.getSchema()))
+                                                         .version(ModelHelper.encode(x.getVersion())))
+                                                                 .collect(Collectors.toList()));
+                                         log.info("Found {} object type schemas for group {} and object type {}", list.getSchemas().size(), groupName, schemaName);
+                                         return Response.status(Status.OK).entity(list).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                             log.warn("Group {} not found", groupName);
+                                             return Response.status(Status.NOT_FOUND).build();
+                                         }
+                                         log.warn("getSchemaNameSchemas failed with exception: ", exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
@@ -550,20 +531,21 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Override
     public void getSchemaNames(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getSchemaNames called for group {} ", groupName);
-        withCompletion("getObjects", () -> registryService.getSchemaNames(groupName)
-                                                          .thenApply(schemaNames -> {
-                                                              SchemaNamesList schemaNamesList = new SchemaNamesList().objects(schemaNames);
-                                                              log.info("Found object types {} for group {} ", schemaNamesList, groupName);
-                                                              return Response.status(Status.OK).entity(schemaNamesList).build();
-                                                          })
-                                                          .exceptionally(exception -> {
-                                                              if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                                                  log.warn("Group {} not found", groupName);
-                                                                  return Response.status(Status.NOT_FOUND).build();
-                                                              }
-                                                              log.warn("getSchemaNames failed with exception: ", exception);
-                                                              return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                          }))
+        withCompletion("getObjects", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> registryService.getSchemaNames(groupName)
+                                     .thenApply(schemaNames -> {
+                                         SchemaNamesList schemaNamesList = new SchemaNamesList().objects(schemaNames);
+                                         log.info("Found object types {} for group {} ", schemaNamesList, groupName);
+                                         return Response.status(Status.OK).entity(schemaNamesList).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                             log.warn("Group {} not found", groupName);
+                                             return Response.status(Status.NOT_FOUND).build();
+                                         }
+                                         log.warn("getSchemaNames failed with exception: ", exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
@@ -574,20 +556,21 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Override
     public void getLatestSchemaForSchemaName(String groupName, String schemaNameName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getLatestSchemaForSchemaName called for group {} object type {}", groupName, schemaNameName);
-        withCompletion("getLatestSchemaForSchemaName", () -> registryService.getGroupLatestSchemaVersion(groupName, schemaNameName)
-                                                                            .thenApply(schemaWithVersion -> {
-                                                                                SchemaWithVersion schema = ModelHelper.encode(schemaWithVersion);
-                                                                                log.info("Latest schema for group {} object type {} has version {} ", groupName, schemaNameName, schema.getVersion());
-                                                                                return Response.status(Status.OK).entity(schema).build();
-                                                                            })
-                                                                            .exceptionally(exception -> {
-                                                                                if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                                                                    log.warn("Group {} not found", groupName);
-                                                                                    return Response.status(Status.NOT_FOUND).build();
-                                                                                }
-                                                                                log.warn("getLatestSchemaForSchemaName failed with exception: ", exception);
-                                                                                return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                                            }))
+        withCompletion("getLatestSchemaForSchemaName", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> registryService.getGroupLatestSchemaVersion(groupName, schemaNameName)
+                                     .thenApply(schemaWithVersion -> {
+                                         SchemaWithVersion schema = ModelHelper.encode(schemaWithVersion);
+                                         log.info("Latest schema for group {} object type {} has version {} ", groupName, schemaNameName, schema.getVersion());
+                                         return Response.status(Status.OK).entity(schema).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                             log.warn("Group {} not found", groupName);
+                                             return Response.status(Status.NOT_FOUND).build();
+                                         }
+                                         log.warn("getLatestSchemaForSchemaName failed with exception: ", exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
@@ -597,23 +580,24 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Override
     public void getEncodingInfo(String groupName, Integer encodingId, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getEncodingInfo called for group {} encodingId {}", groupName, encodingId);
-        withCompletion("getEncodingInfo", () -> {
-            io.pravega.schemaregistry.contract.data.EncodingId id = new io.pravega.schemaregistry.contract.data.EncodingId(encodingId);
-            return registryService.getEncodingInfo(groupName, id)
-                                  .thenApply(encodingInfo -> {
-                                      EncodingInfo encoding = ModelHelper.encode(encodingInfo);
-                                      log.info("group {} encoding id {} encodingInfo {}", groupName, encodingId, encoding);
-                                      return Response.status(Status.OK).entity(encoding).build();
-                                  })
-                                  .exceptionally(exception -> {
-                                      if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                          log.warn("Group {} not found", groupName);
-                                          return Response.status(Status.NOT_FOUND).build();
-                                      }
-                                      log.warn("getEncodingInfo failed with exception: ", exception);
-                                      return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                  });
-        }).thenApply(response -> {
+        withCompletion("getEncodingInfo", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> {
+                    io.pravega.schemaregistry.contract.data.EncodingId id = new io.pravega.schemaregistry.contract.data.EncodingId(encodingId);
+                    return registryService.getEncodingInfo(groupName, id)
+                                          .thenApply(encodingInfo -> {
+                                              EncodingInfo encoding = ModelHelper.encode(encodingInfo);
+                                              log.info("group {} encoding id {} encodingInfo {}", groupName, encodingId, encoding);
+                                              return Response.status(Status.OK).entity(encoding).build();
+                                          })
+                                          .exceptionally(exception -> {
+                                              if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                                  log.warn("Group {} not found", groupName);
+                                                  return Response.status(Status.NOT_FOUND).build();
+                                              }
+                                              log.warn("getEncodingInfo failed with exception: ", exception);
+                                              return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                          });
+                }).thenApply(response -> {
             asyncResponse.resume(response);
             return response;
         });
@@ -624,21 +608,22 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     public void getCodecsList(String groupName, SecurityContext securityContext,
                               AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getCodecsList called for group {} ", groupName);
-        withCompletion("getCodecsList", () -> registryService.getCodecTypes(groupName)
-                                                             .thenApply(list -> {
-                                                                 CodecsList codecsList = new CodecsList()
-                                                                         .codecTypes(list.stream().map(ModelHelper::encode).collect(Collectors.toList()));
-                                                                 log.info("group {}, codecs {} ", groupName, codecsList);
-                                                                 return Response.status(Status.OK).entity(codecsList).build();
-                                                             })
-                                                             .exceptionally(exception -> {
-                                                                 if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                                                     log.warn("Group {} not found", groupName);
-                                                                     return Response.status(Status.NOT_FOUND).build();
-                                                                 }
-                                                                 log.warn("getCodecsList failed with exception: ", exception);
-                                                                 return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                             }))
+        withCompletion("getCodecsList", READ, String.format(GROUP_FORMAT, groupName), asyncResponse,
+                () -> registryService.getCodecTypes(groupName)
+                                     .thenApply(list -> {
+                                         CodecsList codecsList = new CodecsList()
+                                                 .codecTypes(list.stream().map(ModelHelper::encode).collect(Collectors.toList()));
+                                         log.info("group {}, codecs {} ", groupName, codecsList);
+                                         return Response.status(Status.OK).entity(codecsList).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                             log.warn("Group {} not found", groupName);
+                                             return Response.status(Status.NOT_FOUND).build();
+                                         }
+                                         log.warn("getCodecsList failed with exception: ", exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
@@ -648,19 +633,20 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Override
     public void addCodec(String groupName, AddCodec addCodec, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("addCodec called for group {} codec {}", groupName, addCodec.getCodec());
-        withCompletion("addCodec", () -> registryService.addCodec(groupName, ModelHelper.decode(addCodec.getCodec()))
-                                                        .thenApply(v -> {
-                                                            log.info("codec {} added to group {}", addCodec.getCodec(), groupName);
-                                                            return Response.status(Status.CREATED).build();
-                                                        })
-                                                        .exceptionally(exception -> {
-                                                            if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                                                log.warn("Group {} not found", groupName);
-                                                                return Response.status(Status.NOT_FOUND).build();
-                                                            }
-                                                            log.warn("addCodec failed with exception: ", exception);
-                                                            return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                                        }))
+        withCompletion("addCodec", READ, String.format(GROUP_CODEC_FORMAT, groupName), asyncResponse,
+                () -> registryService.addCodec(groupName, ModelHelper.decode(addCodec.getCodec()))
+                                     .thenApply(v -> {
+                                         log.info("codec {} added to group {}", addCodec.getCodec(), groupName);
+                                         return Response.status(Status.CREATED).build();
+                                     })
+                                     .exceptionally(exception -> {
+                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
+                                             log.warn("Group {} not found", groupName);
+                                             return Response.status(Status.NOT_FOUND).build();
+                                         }
+                                         log.warn("addCodec failed with exception: ", exception);
+                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                                     }))
                 .thenApply(response -> {
                     asyncResponse.resume(response);
                     return response;
@@ -677,4 +663,47 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     private List<String> getAuthorizationHeader() {
         return headers.getRequestHeader(HttpHeaders.AUTHORIZATION);
     }
+
+    private CompletableFuture<Response> withCompletion(String request, AuthHandler.Permissions permissions,
+                                                       String resource, AsyncResponse response,
+                                                       Supplier<CompletableFuture<Response>> future) {
+        try {
+            authenticateAuthorize(getAuthorizationHeader(), resource, permissions);
+            return future.get();
+        } catch (AuthException e) {
+            log.warn("Auth failed {}", request, e);
+            response.resume(Response.status(Status.fromStatusCode(e.getResponseCode())).build());
+            throw e;
+        } catch (IllegalArgumentException e) {
+            log.warn("Bad request {}", request);
+            return CompletableFuture.completedFuture(Response.status(Status.BAD_REQUEST).build());
+        } catch (Exception e) {
+            log.error("request failed with exception {}", e);
+            return Futures.failedFuture(e);
+        }
+    }
+
+    private void authenticateAuthorize(List<String> authHeader, String resource, AuthHandler.Permissions permission)
+            throws AuthException {
+        if (config.isAuthEnabled()) {
+            String credentials = parseCredentials(authHeader);
+            if (!authManager.authenticateAndAuthorize(resource, credentials, permission)) {
+                throw new AuthorizationException(
+                        String.format("Failed to authorize for resource [%s]", resource),
+                        Response.Status.FORBIDDEN.getStatusCode());
+            }
+        }
+    }
+
+    private String parseCredentials(List<String> authHeader) throws AuthenticationException {
+        if (authHeader == null || authHeader.isEmpty()) {
+            throw new AuthenticationException("Missing authorization header.");
+        }
+
+        // Expecting a single value here. If there are multiple, we'll deal with just the first one.
+        String credentials = authHeader.get(0);
+        Preconditions.checkNotNull(credentials, "Missing credentials.");
+        return credentials;
+    }
+
 }

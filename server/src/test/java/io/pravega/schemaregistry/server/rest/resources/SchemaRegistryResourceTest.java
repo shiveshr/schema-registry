@@ -20,6 +20,7 @@ import io.pravega.schemaregistry.contract.generated.rest.model.ListGroupsRespons
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo;
 import io.pravega.schemaregistry.contract.transform.ModelHelper;
 import io.pravega.schemaregistry.server.rest.RegistryApplication;
+import io.pravega.schemaregistry.server.rest.ServiceConfig;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
 import org.glassfish.jersey.test.JerseyTest;
 import org.junit.Test;
@@ -52,7 +53,7 @@ public class SchemaRegistryResourceTest extends JerseyTest {
     protected Application configure() {
         service = mock(SchemaRegistryService.class);
         final Set<Object> resourceObjs = new HashSet<>();
-        resourceObjs.add(new SchemaRegistryResourceImpl(service));
+        resourceObjs.add(new SchemaRegistryResourceImpl(service, ServiceConfig.builder().build()));
 
         return new RegistryApplication(resourceObjs);
     }
@@ -147,6 +148,4 @@ public class SchemaRegistryResourceTest extends JerseyTest {
         // region get encoding info
         // endregion
     }
-
-
 }

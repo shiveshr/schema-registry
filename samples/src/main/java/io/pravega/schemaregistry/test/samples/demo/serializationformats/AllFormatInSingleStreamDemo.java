@@ -28,7 +28,7 @@ import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.schemaregistry.GroupIdGenerator;
 import io.pravega.schemaregistry.client.RegistryClient;
-import io.pravega.schemaregistry.client.impl.RegistryClientImpl;
+import io.pravega.schemaregistry.client.RegistryClientImpl;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaType;

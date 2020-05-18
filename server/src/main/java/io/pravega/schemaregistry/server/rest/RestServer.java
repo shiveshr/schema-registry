@@ -45,12 +45,11 @@ public class RestServer extends AbstractIdleService {
     public RestServer(SchemaRegistryService registryService, ServiceConfig restServerConfig) {
         this.objectId = "RestServer";
         this.restServerConfig = restServerConfig;
-        final String serverURI = "http://" + restServerConfig.getHost() + "/";
-        this.baseUri = UriBuilder.fromUri(serverURI).port(restServerConfig.getPort()).build();
+        this.baseUri = UriBuilder.fromUri("http://" + restServerConfig.getHost()).port(restServerConfig.getPort()).build();
 
         final Set<Object> resourceObjs = new HashSet<>();
         resourceObjs.add(new PingImpl());
-        resourceObjs.add(new SchemaRegistryResourceImpl(registryService));
+        resourceObjs.add(new SchemaRegistryResourceImpl(registryService, restServerConfig));
 
         final RegistryApplication application = new RegistryApplication(resourceObjs);
         this.resourceConfig = ResourceConfig.forApplication(application);

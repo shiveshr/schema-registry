@@ -139,9 +139,25 @@ project('common') {
     }
 }
 
+project('auth') {
+    dependencies {
+        compile project(':common')
+        compile group: 'io.pravega', name: 'pravega-shared-authplugin', version: pravegaVersion
+    }
+
+    javadoc {
+        title = "Auth Libraries"
+        dependsOn delombok
+        source = delombok.outputDir
+        failOnError = false
+        options.addBooleanOption("Xdoclint:none", true)
+    }
+}
+
 project('client') {
     dependencies {
         compile project(':common')
+        compile project(':auth')
         compile project(':contract')
         compile group: 'org.glassfish.jersey.ext', name: 'jersey-proxy-client', version: jerseyVersion
         compile group: 'org.glassfish.jersey.core', name: 'jersey-client', version: jerseyVersion
@@ -253,6 +269,7 @@ project('server') {
 
     dependencies {
         compile project(':common')
+        compile project(':auth')
         compile project(':contract')
         compile group: 'io.pravega', name: 'pravega-client', version: pravegaVersion
         compile group: 'io.pravega', name: 'pravega-controller', version: pravegaVersion

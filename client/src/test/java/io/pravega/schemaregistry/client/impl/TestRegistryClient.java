@@ -9,6 +9,7 @@
  */
 package io.pravega.schemaregistry.client.impl;
 
+import io.pravega.schemaregistry.client.RegistryClientImpl;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.EncodingId;
