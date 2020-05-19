@@ -142,7 +142,7 @@ project('common') {
 project('auth') {
     dependencies {
         compile project(':common')
-        compile group: 'io.pravega', name: 'pravega-shared-authplugin', version: pravegaVersion
+        compile group: 'io.pravega', name: 'pravega-shared-authplugin', version: pravegaVersion 
     }
 
     javadoc {

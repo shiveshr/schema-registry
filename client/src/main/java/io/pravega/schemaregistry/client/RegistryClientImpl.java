@@ -11,6 +11,7 @@ package io.pravega.schemaregistry.client;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
+import io.pravega.schemaregistry.common.AuthHelper;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
@@ -65,7 +66,8 @@ public class RegistryClientImpl implements RegistryClient {
         Client client = ClientBuilder.newClient(new ClientConfig());
         if (config.isAuthEnabled()) {
             client.register((ClientRequestFilter) context -> {
-                context.getHeaders().add(HttpHeaders.AUTHORIZATION, config.getAuthMethod() + " " + config.getAuthToken());
+                context.getHeaders().add(HttpHeaders.AUTHORIZATION, 
+                        AuthHelper.getCredentials(config.getAuthMethod(), config.getAuthToken()));
             });
         }
         this.proxy = WebResourceFactory.newResource(ApiV1.GroupsApi.class, client.target(config.getSchemaRegistryUri()));

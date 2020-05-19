@@ -14,6 +14,7 @@ import com.google.common.base.Preconditions;
 import io.pravega.auth.AuthException;
 import io.pravega.auth.AuthHandler;
 import io.pravega.auth.AuthenticationException;
+import io.pravega.controller.server.rpc.auth.PasswordAuthHandler;
 import io.pravega.schemaregistry.server.rest.ServiceConfig;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,8 @@ import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
+
+import static io.pravega.schemaregistry.common.AuthHelper.extractMethodAndToken;
 
 /**
  * Manages instances of {@link AuthHandler}.
@@ -45,6 +48,9 @@ public class AuthHandlerManager {
             if (serverConfig.isAuthEnabled()) {
                 ServiceLoader<AuthHandler> loader = ServiceLoader.load(AuthHandler.class);
                 for (AuthHandler handler : loader) {
+                    if (handler instanceof PasswordAuthHandler) {
+                        continue;
+                    }
                     try {
                         handler.initialize(serverConfig);
                         registerHandler(handler);
@@ -99,14 +105,6 @@ public class AuthHandlerManager {
         return retVal;
     }
     
-    private String[] extractMethodAndToken(String credentials) throws AuthenticationException {
-        String[] parts = credentials.split("\\s+", 2);
-        if (parts.length != 2) {
-            throw new AuthenticationException("Malformed request");
-        }
-        return parts;
-    }
-
     /**
      * This method is not only visible for testing, but also intended to be used solely for testing. It allows tests
      * to inject and register custom auth handlers. Also, this method is idempotent.
