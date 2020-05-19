@@ -11,7 +11,6 @@ package io.pravega.schemaregistry.server.rest.resources;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.sun.org.apache.xml.internal.security.utils.Base64;
 import io.pravega.controller.server.rpc.auth.StrongPasswordProcessor;
 import io.pravega.schemaregistry.MapWithToken;
 import io.pravega.schemaregistry.common.AuthHelper;
@@ -37,6 +36,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -80,7 +80,6 @@ public class SchemaRegistryAuthTest extends JerseyTest {
     @After
     public void tearDown() {
         authFile.delete();
-        
     }
 
     @Test
@@ -97,12 +96,19 @@ public class SchemaRegistryAuthTest extends JerseyTest {
 
         Future<Response> future = target("v1/groups").queryParam("limit", 100)
                                                      .request().header(HttpHeaders.AUTHORIZATION, 
-                        AuthHelper.getCredentials("Basic", Base64.encode((SYSTEM_ADMIN + ":" + PASSWORD).getBytes(Charsets.UTF_8))))
+                        AuthHelper.getCredentials("Basic", Base64.getEncoder().encodeToString((SYSTEM_ADMIN + ":" + PASSWORD).getBytes(Charsets.UTF_8))))
                                                      .async().get();
         Response response = future.get();
         assertEquals(response.getStatus(), 200);
         ListGroupsResponse list = response.readEntity(ListGroupsResponse.class);
         assertEquals(list.getGroups().size(), 2);
+
+        future = target("v1/groups").queryParam("limit", 100)
+                                                     .request().header(HttpHeaders.AUTHORIZATION, 
+                        AuthHelper.getCredentials("Basic", Base64.getEncoder().encodeToString((GROUP1_ADMIN + ":" + PASSWORD).getBytes(Charsets.UTF_8))))
+                                                     .async().get();
+        response = future.get();
+        assertEquals(response.getStatus(), Response.Status.FORBIDDEN.getStatusCode());
 
         // region create group
         // endregion
