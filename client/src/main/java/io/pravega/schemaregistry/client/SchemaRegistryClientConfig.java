@@ -19,7 +19,7 @@ import java.net.URI;
  */
 @Data
 @Builder
-public class RegistryClientConfig {
+public class SchemaRegistryClientConfig {
     /**
      * URI for connecting with registry client.
      */
@@ -28,14 +28,14 @@ public class RegistryClientConfig {
     private final String authMethod;
     private final String authToken;
 
-    private RegistryClientConfig(URI schemaRegistryUri, boolean authEnabled, String authMethod, String authToken) {
+    private SchemaRegistryClientConfig(URI schemaRegistryUri, boolean authEnabled, String authMethod, String authToken) {
         this.schemaRegistryUri = schemaRegistryUri;
         this.authEnabled = authEnabled;
         this.authMethod = authMethod;
         this.authToken = authToken;
     }
 
-    public static final class RegistryClientConfigBuilder {
+    public static final class SchemaRegistryClientConfigBuilder {
         private URI schemaRegistryUri = URI.create("http://localhost:9092");
         private boolean authEnabled = false;
     }
