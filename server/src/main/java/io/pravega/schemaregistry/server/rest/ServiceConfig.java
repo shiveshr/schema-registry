@@ -24,33 +24,39 @@ public class ServiceConfig implements ServerConfig {
     private final String host;
     private final int port;
     private final boolean tlsEnabled;
-    private final String keyFilePath;
-    private final String keyFilePasswordPath;
+    private final String tlsCertFile;
+    private final String tlsTrustStore;
+    private final String tlsKeyFilePath;
+    private final String tlsKeyPasswordFilePath;
     private final boolean authEnabled;
     private final String userPasswordFile;
     
-    private ServiceConfig(String host, int port, boolean tlsEnabled, String keyFilePath, String keyFilePasswordPath, 
-                          boolean authEnabled, String userPasswordFile) {
+    private ServiceConfig(String host, int port, boolean tlsEnabled, String tlsCertFile, String tlsTrustStore, 
+                          String tlsKeyFilePath, String tlsKeyPasswordFilePath, boolean authEnabled, String userPasswordFile) {
         this.userPasswordFile = userPasswordFile;
         Exceptions.checkNotNullOrEmpty(host, "host");
         Exceptions.checkArgument(port > 0, "port", "Should be positive integer");
-        Exceptions.checkArgument(!tlsEnabled || (!Strings.isNullOrEmpty(keyFilePath) 
-                && !Strings.isNullOrEmpty(keyFilePasswordPath)), "keyFilePath", 
+        Exceptions.checkArgument(!tlsEnabled || (!Strings.isNullOrEmpty(tlsCertFile) &&
+                        !Strings.isNullOrEmpty(tlsKeyFilePath) && !Strings.isNullOrEmpty(tlsTrustStore)), "keyFilePath", 
                 "If tls is enabled then key file path and key file password path should be non empty");
         this.host = host;
         this.port = port;
         this.tlsEnabled = tlsEnabled;
-        this.keyFilePath = keyFilePath;
-        this.keyFilePasswordPath = keyFilePasswordPath;
+        this.tlsCertFile = tlsCertFile;
+        this.tlsKeyFilePath = tlsKeyFilePath;
+        this.tlsKeyPasswordFilePath = tlsKeyPasswordFilePath;
+        this.tlsTrustStore = tlsTrustStore;
         this.authEnabled = authEnabled;
     }
 
     public static final class ServiceConfigBuilder {
-        private String host = "localhost";
+        private String host = "0.0.0.0";
         private int port = 9092;
         private boolean tlsEnabled = false;
-        private String keyFilePath = "";
-        private String keyFilePasswordPath = "";
+        private String tlsCertFile = "";
+        private String tlsKeyFilePath = "";
+        private String tlsKeyPasswordFilePath = "";
+        private String tlsTrustStore = "";
         private boolean authEnabled = false;
     }
     

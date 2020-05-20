@@ -103,7 +103,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
         log.info("List Groups called");
         int limitUnboxed = limit == null ? DEFAULT_LIST_GROUPS_LIMIT : limit;
 
-        withCompletion("listGroups", READ, AuthResources.ROOT,asyncResponse,
+        withCompletion("listGroups", READ, AuthResources.ROOT, asyncResponse,
                 () -> registryService.listGroups(ContinuationToken.fromString(continuationToken), limitUnboxed)
                                      .thenApply(result -> {
                                          ListGroupsResponse groupsList = new ListGroupsResponse();
@@ -131,7 +131,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     @Override
     public void createGroup(CreateGroupRequest createGroupRequest, SecurityContext securityContext,
                             AsyncResponse asyncResponse) throws NotFoundException {
-        withCompletion("createGroup", READ_UPDATE, AuthResources.ROOT,asyncResponse, () -> {
+        withCompletion("createGroup", READ_UPDATE, AuthResources.ROOT, asyncResponse, () -> {
             SchemaType schemaType = ModelHelper.decode(createGroupRequest.getSchemaType());
             SchemaValidationRules validationRules = ModelHelper.decode(createGroupRequest.getValidationRules());
             GroupProperties properties = new GroupProperties(
@@ -262,7 +262,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     public void deleteGroup(String groupName, SecurityContext securityContext,
                             AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Delete group called for group {}", groupName);
-        withCompletion("deleteGroup", READ_UPDATE, AuthResources.ROOT,asyncResponse,
+        withCompletion("deleteGroup", READ_UPDATE, AuthResources.ROOT, asyncResponse,
                 () -> registryService.deleteGroup(groupName)
                                      .thenApply(status -> {
                                          log.info("Group {} deleted", groupName);
