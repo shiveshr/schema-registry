@@ -275,6 +275,27 @@ public class SchemaRegistryService {
     }
 
     /**
+     * Delete schema corresponding to the version.
+     *
+     * @param group   Name of group.
+     * @param versionOrdinal Version which uniquely identifies schema within a group.
+     * @return CompletableFuture that holds Schema info corresponding to the version info.
+     */
+    public CompletableFuture<Void> deleteSchema(String group, int versionOrdinal) {
+        log.info("Group {}, delete schema for version {} .", group, versionOrdinal);
+        return RETRY.runAsync(() -> store.getGroupEtag(group)
+                                         .thenCompose(etag ->
+                                                 store.deleteSchema(group, versionOrdinal, etag)
+                    .whenComplete((r, e) -> {
+                        if (e == null) {
+                            log.info("Group {}, schema for verison {} deleted.", group, versionOrdinal);
+                        } else {
+                            log.warn("Group {}, get schema version {} failed with error", e, group, versionOrdinal);
+                        }
+                    })), executor);
+    }
+
+    /**
      * Gets encoding info against the requested encoding Id.
      * Encoding Info uniquely identifies a combination of a schemaInfo and codecType.
      *

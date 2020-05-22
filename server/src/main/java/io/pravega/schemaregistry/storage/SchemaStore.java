@@ -51,6 +51,8 @@ public interface SchemaStore {
 
     CompletableFuture<List<SchemaWithVersion>> listSchemasByName(String group, String schemaName, VersionInfo from);
     
+    CompletableFuture<Void> deleteSchema(String group, int versionOrdinal, Etag etag);
+    
     CompletableFuture<SchemaInfo> getSchema(String group, int versionOrdinal);
 
     CompletableFuture<SchemaWithVersion> getGroupLatestSchemaVersion(String group);

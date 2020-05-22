@@ -45,8 +45,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -120,6 +123,7 @@ public class Group<V> {
         return groupTable.getEntry(LATEST_SCHEMA_VERSION_KEY, TableRecords.LatestSchemaVersionValue.class)
                          .thenCompose(latest -> {
                              int endPos = latest == null ? 0 : latest.getVersion().getOrdinal() + 1;
+                             // TODO: filter keys that were deleted
                              List<TableRecords.VersionKey> keys = IntStream
                                      .range(fromPos, endPos)
                                      .boxed()
@@ -140,14 +144,46 @@ public class Group<V> {
                                              .collect(Collectors.toList()));
     }
 
+    public CompletableFuture<Void> deleteSchema(int versionOrdinal, Etag etag) {
+        TableRecords.VersionDeletedRecord versionDeletedRecord = new TableRecords.VersionDeletedRecord(versionOrdinal);
+        return groupTable.getEntry(versionDeletedRecord, TableRecords.VersionDeletedRecord.class)
+                .thenCompose(entry -> {
+                    if (entry == null) {
+                        List<Map.Entry<TableRecords.TableKey, GroupTable.Value<TableRecords.TableValue, V>>> entries = new ArrayList<>();
+                        entries.add(new AbstractMap.SimpleEntry<>(ETAG, new GroupTable.Value<>(ETAG, groupTable.fromEtag(etag))));
+
+                        entries.add(new AbstractMap.SimpleEntry<>(versionDeletedRecord,
+                                new GroupTable.Value<>(versionDeletedRecord, null)));
+                        // TODO: find previous latest schema which is not deleted.
+                        
+                        return groupTable.updateEntries(entries);
+                    } else {
+                        return CompletableFuture.completedFuture(null);
+                    }
+                });
+    }
+
     public CompletableFuture<SchemaInfo> getSchema(int versionOrdinal) {
-        return groupTable.getEntry(new TableRecords.VersionKey(versionOrdinal), TableRecords.SchemaRecord.class)
-                         .thenApply(TableRecords.SchemaRecord::getSchemaInfo);
+        return getSchema(versionOrdinal, false);
+    }
+
+    private CompletableFuture<SchemaInfo> getSchema(int versionOrdinal, boolean throwOnDeleted) {
+        List<? extends TableRecords.TableKey> keys = Lists.newArrayList(new TableRecords.VersionKey(versionOrdinal), 
+                new TableRecords.VersionDeletedRecord(versionOrdinal));
+        return groupTable.getEntries(keys, TableRecords.TableValue.class)
+                         .thenApply(entries -> {
+                             if (entries.get(1) != null && throwOnDeleted) {
+                                 // TODO: throw schema is deleted
+                                 throw new RuntimeException();
+                             } else {
+                                 return ((TableRecords.SchemaRecord) entries.get(0)).getSchemaInfo();
+                             }
+                         });
     }
 
     public CompletableFuture<VersionInfo> getVersion(SchemaInfo schemaInfo) {
         long fingerprint = getFingerprint(schemaInfo);
-        TableRecords.SchemaInfoKey key = new TableRecords.SchemaInfoKey(fingerprint);
+        TableRecords.SchemaFingerprintKey key = new TableRecords.SchemaFingerprintKey(fingerprint);
 
         return groupTable.getEntry(key, TableRecords.SchemaVersionList.class)
                          .thenCompose(record -> {
@@ -257,14 +293,34 @@ public class Group<V> {
     public CompletableFuture<List<GroupHistoryRecord>> getHistory() {
         return groupTable.getEntry(LATEST_SCHEMA_VERSION_KEY, TableRecords.LatestSchemaVersionValue.class)
                          .thenCompose(latestPos -> {
-                             List<TableRecords.VersionKey> keys = IntStream.range(0, latestPos.getVersion().getOrdinal() + 1)
+                             List<TableRecords.TableKey> keys = new ArrayList<>();
+                             List<TableRecords.VersionKey> versionKeys = IntStream.range(0, latestPos.getVersion().getOrdinal() + 1)
                                                                            .boxed().map(TableRecords.VersionKey::new)
                                                                            .collect(Collectors.toList());
-                             return groupTable.getEntries(keys, TableRecords.SchemaRecord.class);
-                         }).thenApply(entries -> entries
-                        .stream().map(x -> new GroupHistoryRecord(x.getSchemaInfo(), x.getVersionInfo(), 
-                                x.getValidationRules(), x.getTimestamp(), getSchemaString(x.getSchemaInfo())))
-                        .collect(Collectors.toList()));
+                             List<TableRecords.VersionDeletedRecord> deletedKeys = IntStream.range(0, latestPos.getVersion().getOrdinal() + 1)
+                                                                           .boxed().map(TableRecords.VersionDeletedRecord::new)
+                                                                           .collect(Collectors.toList());
+                             keys.addAll(versionKeys);
+                             keys.addAll(deletedKeys);
+                             return groupTable.getEntries(keys, TableRecords.TableValue.class);
+                         }).thenApply(entries -> {
+                    // first find all keys for deleted records
+                    List<TableRecords.SchemaRecord> schemaRecords = new ArrayList<>();
+                    List<TableRecords.VersionDeletedRecord> deletedRecords = new ArrayList<>();
+                    for (TableRecords.TableValue entry : entries) {
+                        if (entry instanceof TableRecords.SchemaRecord) {
+                            schemaRecords.add((TableRecords.SchemaRecord) entries);
+                        }
+                        if (entry instanceof TableRecords.VersionDeletedRecord) {
+                            deletedRecords.add((TableRecords.VersionDeletedRecord) entries);
+                        }
+                    }
+                    
+                    return schemaRecords
+                            .stream().map(x -> new GroupHistoryRecord(x.getSchemaInfo(), x.getVersionInfo(),
+                                    x.getValidationRules(), x.getTimestamp(), getSchemaString(x.getSchemaInfo())))
+                            .collect(Collectors.toList());
+                });
     }
     
     public CompletableFuture<List<GroupHistoryRecord>> getHistory(String schemaName) {
@@ -276,8 +332,8 @@ public class Group<V> {
     public CompletableFuture<VersionInfo> addSchema(SchemaInfo schemaInfo, GroupProperties prop, Etag etag) {
         List<TableRecords.TableKey> keys = new ArrayList<>();
         keys.add(LATEST_SCHEMA_VERSION_KEY);
-        TableRecords.SchemaInfoKey schemaInfoKey = new TableRecords.SchemaInfoKey(getFingerprint(schemaInfo));
-        keys.add(schemaInfoKey);
+        TableRecords.SchemaFingerprintKey schemaFingerprintKey = new TableRecords.SchemaFingerprintKey(getFingerprint(schemaInfo));
+        keys.add(schemaFingerprintKey);
 
         if (prop.isVersionedBySchemaName()) {
             keys.add(new TableRecords.LatestSchemaVersionForSchemaNameKey(schemaInfo.getName()));
@@ -317,7 +373,7 @@ public class Group<V> {
                 versions = new ArrayList<>(schemaIndex.getVersions());
                 versions.add(next);
             }
-            entries.add(new AbstractMap.SimpleEntry<>(schemaInfoKey,
+            entries.add(new AbstractMap.SimpleEntry<>(schemaFingerprintKey,
                     new GroupTable.Value<>(new TableRecords.SchemaVersionList(versions), schemaIndexVersion)));
 
             // 3. latest schema version
@@ -384,7 +440,8 @@ public class Group<V> {
     }
 
     private CompletableFuture<EncodingId> generateNewEncodingId(VersionInfo versionInfo, CodecType codecType, Etag etag) {
-        return getCodecTypes()
+        return getSchema(versionInfo.getOrdinal(), true)
+                .thenCompose(schema -> getCodecTypes()
                 .thenCompose(codecs -> {
                     if (codecs.contains(codecType)) {
                         TableRecords.LatestEncodingIdKey key = new TableRecords.LatestEncodingIdKey();
@@ -411,7 +468,7 @@ public class Group<V> {
                     } else {
                         throw new CodecNotFoundException(String.format("codec %s not registered", codecType));
                     }
-                });
+                }));
     }
 
     public CompletableFuture<Either<EncodingId, Etag>> getEncodingId(VersionInfo versionInfo, CodecType codecType) {
@@ -433,7 +490,7 @@ public class Group<V> {
             return iterator.hasNext() && found.get() == null;
         }, () -> {
             VersionInfo version = iterator.next();
-            return getSchema(version.getOrdinal())
+            return getSchema(version.getOrdinal(), true)
                     .thenAccept(schema -> {
                         if (Arrays.equals(schema.getSchemaData(), toFind.getSchemaData()) && schema.getName().equals(toFind.getName())) {
                             found.set(version);
