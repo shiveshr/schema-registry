@@ -107,13 +107,13 @@ public class SchemaStoreImpl<T> implements SchemaStore {
     }
 
     @Override
-    public CompletableFuture<SchemaWithVersion> getGroupLatestSchemaVersion(String group) {
-        return getGroup(group).thenCompose(Group::getGroupLatestSchemaVersion);
+    public CompletableFuture<SchemaWithVersion> getLatestSchemaVersion(String group) {
+        return getGroup(group).thenCompose(Group::getLatestSchemaVersion);
     }
 
     @Override
-    public CompletableFuture<SchemaWithVersion> getGroupLatestSchemaVersion(String group, String schemaName) {
-        return getGroup(group).thenCompose(grp -> grp.getGroupLatestSchemaVersion(schemaName));
+    public CompletableFuture<SchemaWithVersion> getLatestSchemaVersion(String group, String schemaName) {
+        return getGroup(group).thenCompose(grp -> grp.getLatestSchemaVersion(schemaName));
     }
     
     @Override
