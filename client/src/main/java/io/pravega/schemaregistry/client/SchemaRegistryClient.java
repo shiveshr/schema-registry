@@ -100,6 +100,15 @@ public interface SchemaRegistryClient {
     VersionInfo addSchema(String groupId, SchemaInfo schema);
 
     /**
+     * Api to delete schema corresponding to the version. Users should be very careful while using this API and it is 
+     * advised to not be used in production, esp if the schema has already been used to write the data.  
+     * 
+     * @param groupId Id for the group. 
+     * @param version Version which uniquely identifies schema within a group. 
+     */
+    void deleteSchemaVersion(String groupId, VersionInfo version);
+
+    /**
      * Gets schema corresponding to the version. 
      * 
      * @param groupId Id for the group. 
