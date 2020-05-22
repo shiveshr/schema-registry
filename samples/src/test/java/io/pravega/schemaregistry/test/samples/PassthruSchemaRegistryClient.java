@@ -103,7 +103,7 @@ public class PassthruSchemaRegistryClient implements SchemaRegistryClient {
     }
 
     @Override
-    public List<GroupHistoryRecord> getEvolutionHistory(String group) {
+    public List<GroupHistoryRecord> getGroupHistory(String group) {
         return service.getGroupHistory(group, null).join();
     }
     

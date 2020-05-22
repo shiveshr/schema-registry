@@ -218,5 +218,5 @@ public interface SchemaRegistryClient {
      * @param groupId Id for the group.
      * @return Ordered list of schemas with versions and validation rules for all schemas in the group. 
      */
-    List<GroupHistoryRecord> getEvolutionHistory(String groupId);
+    List<GroupHistoryRecord> getGroupHistory(String groupId);
 }

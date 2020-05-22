@@ -297,7 +297,7 @@ public class SchemaRegistryClientImpl implements SchemaRegistryClient {
     }
 
     @Override
-    public List<GroupHistoryRecord> getEvolutionHistory(String groupId) {
+    public List<GroupHistoryRecord> getGroupHistory(String groupId) {
         Response response = proxy.getGroupHistory(groupId);
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             io.pravega.schemaregistry.contract.generated.rest.model.GroupHistory history = response.readEntity(io.pravega.schemaregistry.contract.generated.rest.model.GroupHistory.class);

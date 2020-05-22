@@ -191,7 +191,7 @@ public class Group<V> {
         return groupTable.getEntriesWithVersion(keys, TableRecords.TableValue.class)
                          .thenApply(entries -> {
                              if (entries.get(1).getValue() != null && throwOnDeleted) {
-                                 throw new SchemaDeletedException();
+                                 throw StoreExceptions.create(StoreExceptions.Type.DATA_NOT_FOUND, Integer.toString(versionOrdinal));
                              } else {
                                  TableRecords.TableValue value = entries.get(0).getValue();
                                  if (value != null) {
@@ -249,7 +249,7 @@ public class Group<V> {
                                  return Futures.exceptionallyComposeExpecting(
                                          getSchema(versionInfo.getOrdinal(), true)
                                                  .thenApply(schema -> new SchemaWithVersion(schema, versionInfo)), 
-                                         e -> Exceptions.unwrap(e) instanceof SchemaDeletedException, () -> {
+                                         e -> Exceptions.unwrap(e) instanceof StoreExceptions.DataNotFoundException, () -> {
                                             return getSchemas().thenApply(schemaRecords -> {
                                                 if (schemaRecords.size() == 0) {
                                                     return null;
@@ -278,8 +278,8 @@ public class Group<V> {
                                  return Futures.exceptionallyComposeExpecting(
                                          getSchema(versionInfo.getOrdinal(), true)
                                          .thenApply(schema -> new SchemaWithVersion(schema, versionInfo)),
-                                         e -> Exceptions.unwrap(e) instanceof SchemaDeletedException, () -> {
-                                             return getSchemas().thenApply(schemaRecords -> {
+                                         e -> Exceptions.unwrap(e) instanceof StoreExceptions.DataNotFoundException, () -> {
+                                             return getSchemas(schemaName).thenApply(schemaRecords -> {
                                                  if (schemaRecords.size() == 0) {
                                                      return null;
                                                  }
@@ -514,7 +514,7 @@ public class Group<V> {
                         if (Arrays.equals(schema.getSchemaData(), toFind.getSchemaData()) && schema.getName().equals(toFind.getName())) {
                             found.set(version);
                         }
-                    }), e -> Exceptions.unwrap(e) instanceof SchemaDeletedException, null);
+                    }), e -> Exceptions.unwrap(e) instanceof StoreExceptions.DataNotFoundException, null);
         }, executor).thenApply(v -> found.get());
     }
 
@@ -536,9 +536,5 @@ public class Group<V> {
                 break;
         }
         return schemaString;
-    }
-    
-    private static class SchemaDeletedException extends RuntimeException {
-        
     }
 }
