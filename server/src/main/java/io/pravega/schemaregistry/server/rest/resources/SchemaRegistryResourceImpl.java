@@ -278,7 +278,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getSchemas(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void getSchemas(String groupName, String schemaName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get group schemas called for group {}", groupName);
         withCompletion("getSchemas", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
                 () -> registryService.getGroupHistory(groupName, null)
@@ -307,7 +307,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getLatestSchema(String groupName, SecurityContext securityContext,
+    public void getLatestSchema(String groupName, String schemaName, SecurityContext securityContext,
                                 AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get latest group schema called for group {}", groupName);
         withCompletion("getLatestSchema", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
@@ -532,34 +532,6 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
     
     @Override
-    public void getSchemasForSchemaName(String groupName, String schemaName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
-        log.info("getSchemaNameSchemas called for group {} schemaName {}", groupName, schemaName);
-        withCompletion("getObjectSchemas", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
-                () -> registryService.getGroupHistory(groupName, schemaName)
-                                     .thenApply(history -> {
-                                         SchemaVersionsList list = new SchemaVersionsList()
-                                                 .schemas(history.stream().map(x -> new SchemaWithVersion()
-                                                         .schemaInfo(ModelHelper.encode(x.getSchema()))
-                                                         .version(ModelHelper.encode(x.getVersion())))
-                                                                 .collect(Collectors.toList()));
-                                         log.info("Found {} object type schemas for group {} and object type {}", list.getSchemas().size(), groupName, schemaName);
-                                         return Response.status(Status.OK).entity(list).build();
-                                     })
-                                     .exceptionally(exception -> {
-                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                             log.warn("Group {} not found", groupName);
-                                             return Response.status(Status.NOT_FOUND).build();
-                                         }
-                                         log.warn("getSchemaNameSchemas failed with exception: ", exception);
-                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                     }))
-                .thenApply(response -> {
-                    asyncResponse.resume(response);
-                    return response;
-                });
-    }
-
-    @Override
     public void getSchemaNames(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getSchemaNames called for group {} ", groupName);
         withCompletion("getObjects", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
@@ -582,30 +554,6 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
                     return response;
                 });
 
-    }
-
-    @Override
-    public void getLatestSchemaForSchemaName(String groupName, String schemaNameName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
-        log.info("getLatestSchemaForSchemaName called for group {} object type {}", groupName, schemaNameName);
-        withCompletion("getLatestSchemaForSchemaName", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
-                () -> registryService.getGroupLatestSchemaVersion(groupName, schemaNameName)
-                                     .thenApply(schemaWithVersion -> {
-                                         SchemaWithVersion schema = ModelHelper.encode(schemaWithVersion);
-                                         log.info("Latest schema for group {} object type {} has version {} ", groupName, schemaNameName, schema.getVersion());
-                                         return Response.status(Status.OK).entity(schema).build();
-                                     })
-                                     .exceptionally(exception -> {
-                                         if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
-                                             log.warn("Group {} not found", groupName);
-                                             return Response.status(Status.NOT_FOUND).build();
-                                         }
-                                         log.warn("getLatestSchemaForSchemaName failed with exception: ", exception);
-                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                     }))
-                .thenApply(response -> {
-                    asyncResponse.resume(response);
-                    return response;
-                });
     }
 
     @Override
