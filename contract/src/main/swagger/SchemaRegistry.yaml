@@ -30,7 +30,13 @@ tags:
 schemes:
   - http
 paths:
-  /groups:
+  /tenants/{tenantName}/groups:
+    parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
     get:
       tags:
       - "Group"
@@ -97,8 +103,13 @@ paths:
           description: Group with given name already exists
         500:
           description: Internal server error while creating a Group
-  /groups/{groupName}:
+  /tenants/{tenantName}/groups/{groupName}:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
@@ -130,8 +141,13 @@ paths:
           description: Successfully deleted the Group
         500:
           description: Internal server error while deleting the Group
-  /groups/{groupName}/history:
+  /tenants/{tenantName}/groups/{groupName}/history:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
@@ -153,8 +169,13 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
-  /groups/{groupName}/rules:
+  /tenants/{tenantName}/groups/{groupName}/rules:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
@@ -207,8 +228,13 @@ paths:
           description: Write conflict 
         500:
           description: Internal server error while fetching Group details
-  /groups/{groupName}/schemas/names:
+  /tenants/{tenantName}/groups/{groupName}/schemas/names:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
@@ -230,8 +256,13 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
-  /groups/{groupName}/schemas/versions:
+  /tenants/{tenantName}/groups/{groupName}/schemas/versions:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
@@ -291,8 +322,13 @@ paths:
           description: Invalid schema type
         500:
           description: Internal server error while creating a Group
-  /groups/{groupName}/schemas/versions/find:
+  /tenants/{tenantName}/groups/{groupName}/schemas/versions/find:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
@@ -328,8 +364,13 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
-  /groups/{groupName}/schemas/versions/{versionOrdinal}:
+  /tenants/{tenantName}/groups/{groupName}/schemas/versions/{versionOrdinal}:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
@@ -371,8 +412,13 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details  
-  /groups/{groupName}/schemas/versions/latest:
+  /tenants/{tenantName}/groups/{groupName}/schemas/versions/latest:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
@@ -398,8 +444,13 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
-  /groups/{groupName}/schemas/versions/validate:
+  /tenants/{tenantName}/groups/{groupName}/schemas/versions/validate:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
@@ -437,8 +488,13 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
-  /groups/{groupName}/schemas/versions/canRead:
+  /tenants/{tenantName}/groups/{groupName}/schemas/versions/canRead:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
@@ -474,8 +530,13 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
-  /groups/{groupName}/encodings:
+  /tenants/{tenantName}/groups/{groupName}/encodings:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
@@ -516,8 +577,13 @@ paths:
           description: Codec not registered
         500:
           description: Internal server error while fetching Group details
-  /groups/{groupName}/encodings/{encodingId}:
+  /tenants/{tenantName}/groups/{groupName}/encodings/{encodingId}:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
@@ -545,8 +611,13 @@ paths:
           description: Group or encoding id with given name not found
         500:
           description: Internal server error while fetching Group details
-  /groups/{groupName}/codecs:
+  /tenants/{tenantName}/groups/{groupName}/codecs:
     parameters:
+      - in: path
+        name: tenantName
+        description: Tenant name
+        required: true
+        type: string
       - in: path
         name: groupName
         description: Group name
