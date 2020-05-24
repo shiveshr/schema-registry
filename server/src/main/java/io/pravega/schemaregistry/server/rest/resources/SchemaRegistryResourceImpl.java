@@ -40,7 +40,7 @@ import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaNamesList;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaVersionsList;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaWithVersion;
-import io.pravega.schemaregistry.contract.generated.rest.model.UpdateValidationRulesPolicyRequest;
+import io.pravega.schemaregistry.contract.generated.rest.model.UpdateValidationRulesRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.Valid;
 import io.pravega.schemaregistry.contract.generated.rest.model.ValidateRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.VersionInfo;
@@ -207,13 +207,13 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void updateSchemaValidationRules(String groupName, UpdateValidationRulesPolicyRequest updateValidationRulesPolicyRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
-        log.info("Update schema validation rules called for group {} with new request {}", groupName, updateValidationRulesPolicyRequest);
+    public void updateSchemaValidationRules(String groupName, UpdateValidationRulesRequest updateValidationRulesRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+        log.info("Update schema validation rules called for group {} with new request {}", groupName, updateValidationRulesRequest);
         withCompletion("updateSchemaValidationRules", READ_UPDATE, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
                 () -> {
-                    SchemaValidationRules rules = ModelHelper.decode(updateValidationRulesPolicyRequest.getValidationRules());
-                    SchemaValidationRules previousRules = updateValidationRulesPolicyRequest.getPreviousRules() == null ?
-                            null : ModelHelper.decode(updateValidationRulesPolicyRequest.getPreviousRules());
+                    SchemaValidationRules rules = ModelHelper.decode(updateValidationRulesRequest.getValidationRules());
+                    SchemaValidationRules previousRules = updateValidationRulesRequest.getPreviousRules() == null ?
+                            null : ModelHelper.decode(updateValidationRulesRequest.getPreviousRules());
                     return registryService.updateSchemaValidationRules(groupName, rules, previousRules)
                                           .thenApply(groupProperty -> Response.status(Status.OK).build())
                                           .exceptionally(exception -> {
