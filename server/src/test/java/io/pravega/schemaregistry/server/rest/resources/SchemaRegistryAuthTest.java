@@ -94,7 +94,7 @@ public class SchemaRegistryAuthTest extends JerseyTest {
             return CompletableFuture.completedFuture(new MapWithToken<>(map, null));
         }).when(service).listGroups(any(), anyInt());
 
-        Future<Response> future = target("v1/scopes/scope/groups").queryParam("limit", 100)
+        Future<Response> future = target("/v1/scopes/scope/groups").queryParam("limit", 100)
                                                      .request().header(HttpHeaders.AUTHORIZATION, 
                         AuthHelper.getCredentials("Basic", Base64.getEncoder().encodeToString((SYSTEM_ADMIN + ":" + PASSWORD).getBytes(Charsets.UTF_8))))
                                                      .async().get();
@@ -103,7 +103,7 @@ public class SchemaRegistryAuthTest extends JerseyTest {
         ListGroupsResponse list = response.readEntity(ListGroupsResponse.class);
         assertEquals(list.getGroups().size(), 2);
 
-        future = target("v1/scopes/scope/groups").queryParam("limit", 100)
+        future = target("/v1/scopes/scope/groups").queryParam("limit", 100)
                                                      .request().header(HttpHeaders.AUTHORIZATION, 
                         AuthHelper.getCredentials("Basic", Base64.getEncoder().encodeToString((GROUP1_ADMIN + ":" + PASSWORD).getBytes(Charsets.UTF_8))))
                                                      .async().get();

@@ -102,6 +102,7 @@ public class ApiV1 {
                          @ApiParam(value = "Checks if schema can be used to read the data in the stream based on compatibility rules.", required = true) CanReadRequest canReadRequest);
 
         @POST
+        @Path("/{scopeName}/groups")
         @Consumes({"application/json"})
         @io.swagger.annotations.ApiOperation(value = "", notes = "Create a new Group", response = Void.class, tags = {"Group", })
         @io.swagger.annotations.ApiResponses(value = {
@@ -262,6 +263,7 @@ public class ApiV1 {
                                   @ApiParam(value = "Get schema corresponding to the version", required = true) GetSchemaVersion getSchemaVersion);
 
         @GET
+        @Path("/{scopeName}/groups")
         @Produces({"application/json"})
         @io.swagger.annotations.ApiOperation(value = "", notes = "List all groups", response = ListGroupsResponse.class, tags = {"Group", })
         @io.swagger.annotations.ApiResponses(value = {
@@ -346,6 +348,7 @@ public class ApiV1 {
                      @ApiParam(value = "Checks if schema can be used to read the data in the stream based on compatibility rules.", required = true) CanReadRequest canReadRequest, @Context SecurityContext securityContext, @Suspended AsyncResponse asyncResponse) throws NotFoundException;
 
         @POST
+        @Path("/{scopeName}/groups")
         @Consumes({"application/json"})
         @io.swagger.annotations.ApiOperation(value = "", notes = "Create a new Group", response = Void.class, tags = {"Group", })
         @io.swagger.annotations.ApiResponses(value = {
@@ -510,6 +513,7 @@ public class ApiV1 {
                               @Context SecurityContext securityContext, @Suspended AsyncResponse asyncResponse) throws NotFoundException;
 
         @GET
+        @Path("/{scopeName}/groups")
         @Produces({"application/json"})
         @io.swagger.annotations.ApiOperation(value = "", notes = "List all groups", response = ListGroupsResponse.class, tags = {"Group", })
         @io.swagger.annotations.ApiResponses(value = {

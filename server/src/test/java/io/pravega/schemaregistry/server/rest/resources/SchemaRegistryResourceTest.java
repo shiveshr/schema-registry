@@ -22,7 +22,6 @@ import io.pravega.schemaregistry.contract.transform.ModelHelper;
 import io.pravega.schemaregistry.server.rest.RegistryApplication;
 import io.pravega.schemaregistry.server.rest.ServiceConfig;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
-import io.pravega.test.common.AssertExtensions;
 import org.glassfish.grizzly.http.util.HttpStatus;
 import org.glassfish.jersey.test.JerseyTest;
 import org.glassfish.jersey.test.TestProperties;
@@ -49,7 +48,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 public class SchemaRegistryResourceTest extends JerseyTest {
-    private static final String GROUPS = "/v1/scopes/scope/groups";
+    private static final String SCOPES = "/v1/scopes";
     private SchemaRegistryService service;
 
     @Override
@@ -73,8 +72,8 @@ public class SchemaRegistryResourceTest extends JerseyTest {
             map.put("group2", null);
             return CompletableFuture.completedFuture(new MapWithToken<>(map, null));
         }).when(service).listGroups(any(), anyInt());
+        Future<Response> future = target(SCOPES).path("scope").path("groups").queryParam("limit", 100).request().async().get();
 
-        Future<Response> future = target(GROUPS).queryParam("limit", 100).request().async().get();
         Response response = future.get();
         assertEquals(response.getStatus(), 200);
         ListGroupsResponse list = response.readEntity(ListGroupsResponse.class);
@@ -115,8 +114,8 @@ public class SchemaRegistryResourceTest extends JerseyTest {
                 .schemaData(new byte[0])
                 .properties(Collections.emptyMap())
         );
-        Future<Response> future = target(GROUPS).path("mygroup").path("schemas/versions/canRead").request().async()
-                                                                                       .post(Entity.entity(canReadRequest, MediaType.APPLICATION_JSON));
+        Future<Response> future = target(SCOPES).path("scope/groups").path("mygroup").path("schemas/versions/canRead").request().async()
+                                                .post(Entity.entity(canReadRequest, MediaType.APPLICATION_JSON));
         Response response = future.get();
         assertEquals(HttpStatus.OK_200.getStatusCode(), response.getStatus());
         assertTrue(response.readEntity(CanRead.class).isCompatible());
@@ -126,8 +125,8 @@ public class SchemaRegistryResourceTest extends JerseyTest {
                 .schemaData(new byte[0])
                 .properties(Collections.emptyMap())
         );
-        future = target(GROUPS).path("mygroup").path("schemas/versions/canRead").request().async()
-                                                .post(Entity.entity(canReadRequest, MediaType.APPLICATION_JSON));
+        future = target(SCOPES).path("scope/groups").path("mygroup").path("schemas/versions/canRead").request().async()
+                               .post(Entity.entity(canReadRequest, MediaType.APPLICATION_JSON));
         response = future.get();
         assertEquals(400, response.getStatus());
     }
