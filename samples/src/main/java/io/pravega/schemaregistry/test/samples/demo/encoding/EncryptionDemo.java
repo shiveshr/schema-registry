@@ -101,9 +101,6 @@ public class EncryptionDemo {
         try (StreamManager streamManager = new StreamManagerImpl(clientConfig)) {
             streamManager.createScope(scope);
             streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
-            SchemaType schemaType = SchemaType.Avro;
-            client.addGroup(groupId, schemaType, SchemaValidationRules.of(Compatibility.backward()), true, Collections.emptyMap());
         }
     }
     
@@ -116,6 +113,8 @@ public class EncryptionDemo {
 
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
+                                                            .autoCreateGroup(SchemaType.Avro, 
+                                                                    SchemaValidationRules.of(Compatibility.backward()), true)
                                                             .autoRegisterSchema(true)
                                                             .autoRegisterCodec(true)
                                                             .codec(myCodec)

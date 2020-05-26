@@ -69,7 +69,7 @@ public class MessageBusConsumerProto {
         this.scope = scope;
         this.stream = stream;
         String groupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, stream);
-        initialize(groupId);
+        initialize();
         this.reader = createReader(groupId);
     }
 
@@ -131,16 +131,11 @@ public class MessageBusConsumerProto {
         }
     }
     
-    private void initialize(String groupId) {
+    private void initialize() {
         // create stream
         StreamManager streamManager = new StreamManagerImpl(clientConfig);
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
-        SchemaType schemaType = SchemaType.Protobuf;
-        client.addGroup(groupId, schemaType,
-                SchemaValidationRules.of(Compatibility.allowAny()),
-                true, Collections.emptyMap());
     }
 
     @SneakyThrows
@@ -156,6 +151,9 @@ public class MessageBusConsumerProto {
         // region serializer
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
+                                                            .autoCreateGroup(SchemaType.Avro,
+                                                                    SchemaValidationRules.of(Compatibility.allowAny()),
+                                                                    true)
                                                             .autoRegisterSchema(true)
                                                             .registryConfigOrClient(Either.right(client))
                                                             .build();

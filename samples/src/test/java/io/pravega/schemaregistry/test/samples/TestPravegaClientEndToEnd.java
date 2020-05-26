@@ -159,9 +159,6 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
-        client.addGroup(groupId, schemaType,  
-                SchemaValidationRules.of(Compatibility.backward()), 
-                true, Collections.emptyMap());
 
         AvroSchema<GenericRecord> schema1 = AvroSchema.of(SCHEMA1);
         AvroSchema<GenericRecord> schema2 = AvroSchema.of(SCHEMA2);
@@ -169,6 +166,9 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
 
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
+                                                            .autoCreateGroup(schemaType,
+                                                                    SchemaValidationRules.of(Compatibility.backward()),
+                                                                    true)
                                                             .autoRegisterSchema(true)
                                                             .registryConfigOrClient(Either.right(client))
                                                             .build();
@@ -270,9 +270,6 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
-        client.addGroup(groupId, schemaType,
-                SchemaValidationRules.of(Compatibility.backward()),
-                true, Collections.emptyMap());
 
         AvroSchema<GenericRecord> schema1 = AvroSchema.of(SCHEMA1);
         AvroSchema<GenericRecord> schema2 = AvroSchema.of(SCHEMA2);
@@ -280,6 +277,9 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
 
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
+                                                            .autoCreateGroup(schemaType,
+                                                                    SchemaValidationRules.of(Compatibility.backward()),
+                                                                    true)
                                                             .autoRegisterSchema(true)
                                                             .autoRegisterCodec(true)
                                                             .registryConfigOrClient(Either.right(client))
@@ -451,14 +451,14 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
-        client.addGroup(groupId, schemaType,  
-                SchemaValidationRules.of(Compatibility.backward()), 
-                true, Collections.emptyMap());
 
         AvroSchema<TestClass> schema = AvroSchema.of(TestClass.class);
 
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
+                                                            .autoCreateGroup(schemaType,
+                                                                    SchemaValidationRules.of(Compatibility.backward()),
+                                                                    true)
                                                             .autoRegisterSchema(true)
                                                             .registryConfigOrClient(Either.right(client))
                                                             .build();
@@ -516,14 +516,14 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
-        client.addGroup(groupId, schemaType,  
-                SchemaValidationRules.of(Compatibility.backward()), 
-                true, Collections.emptyMap());
 
         AvroSchema<Test1> schema = AvroSchema.of(Test1.class);
 
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
+                                                            .autoCreateGroup(schemaType,
+                                                                    SchemaValidationRules.of(Compatibility.backward()),
+                                                                    true)
                                                             .autoRegisterSchema(true)
                                                             .registryConfigOrClient(Either.right(client))
                                                             .build();
@@ -581,9 +581,6 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
-        client.addGroup(groupId, schemaType,  
-                SchemaValidationRules.of(Compatibility.backward()), 
-                true, Collections.emptyMap());
 
         AvroSchema<SpecificRecordBase> schema1 = AvroSchema.ofBaseType(Test1.class);
         AvroSchema<SpecificRecordBase> schema2 = AvroSchema.ofBaseType(Test2.class);
@@ -591,6 +588,9 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
 
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
+                                                            .autoCreateGroup(schemaType,
+                                                                    SchemaValidationRules.of(Compatibility.backward()),
+                                                                    true)
                                                             .autoRegisterSchema(true)
                                                             .registryConfigOrClient(Either.right(client))
                                                             .build();
@@ -696,9 +696,6 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Protobuf;
-        client.addGroup(groupId, schemaType,
-                SchemaValidationRules.of(Compatibility.allowAny()), 
-                false, Collections.singletonMap(SerializerFactory.ENCODE, Boolean.toString(encodeHeaders)));
 
         Path path = Paths.get("resources/proto/protobufTest.pb");
         byte[] schemaBytes = Files.readAllBytes(path);
@@ -708,6 +705,9 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
 
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
+                                                            .autoCreateGroup(schemaType,
+                                                                    SchemaValidationRules.of(Compatibility.allowAny()),
+                                                                    false)
                                                             .autoRegisterSchema(true)
                                                             .registryConfigOrClient(Either.right(client))
                                                             .build();
@@ -810,6 +810,9 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
 
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
+                                                            .autoCreateGroup(schemaType,
+                                                                    SchemaValidationRules.of(Compatibility.allowAny()),
+                                                                    true)
                                                             .autoRegisterSchema(true)
                                                             .registryConfigOrClient(Either.right(client))
                                                             .build();
@@ -923,6 +926,9 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
 
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
+                                                            .autoCreateGroup(schemaType,
+                                                                    SchemaValidationRules.of(Compatibility.allowAny()),
+                                                                    false)
                                                             .autoRegisterSchema(true)
                                                             .registryConfigOrClient(Either.right(client))
                                                             .build();
@@ -986,15 +992,15 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Json;
-        client.addGroup(groupId, schemaType,
-                SchemaValidationRules.of(Compatibility.allowAny()), 
-                true, Collections.emptyMap());
 
         JSONSchema<User> schema1 = JSONSchema.ofBaseType(DerivedUser1.class, User.class);
         JSONSchema<User> schema2 = JSONSchema.ofBaseType(DerivedUser2.class, User.class);
 
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
+                                                            .autoCreateGroup(schemaType,
+                                                                    SchemaValidationRules.of(Compatibility.allowAny()),
+                                                                    true)
                                                             .autoRegisterSchema(true)
                                                             .registryConfigOrClient(Either.right(client))
                                                             .build();

@@ -71,19 +71,18 @@ public class Writer3 {
     private static final Random RANDOM = new Random();
 
     private final ClientConfig clientConfig;
-    private final SchemaRegistryClient client;
+    private final SchemaRegistryClientConfig config;
     private final String scope;
     private final String stream;
     private final EventStreamWriter<GenericRecord> writer;
 
     private Writer3(String controllerURI, String registryUri, String scope, String stream) {
         clientConfig = ClientConfig.builder().controllerURI(URI.create(controllerURI)).build();
-        SchemaRegistryClientConfig config = SchemaRegistryClientConfig.builder().schemaRegistryUri(URI.create(registryUri)).build();
-        client = SchemaRegistryClientFactory.createRegistryClient(config);
+        this.config = SchemaRegistryClientConfig.builder().schemaRegistryUri(URI.create(registryUri)).build();
         this.scope = scope;
         this.stream = stream;
         String groupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, stream);
-        initialize(groupId);
+        initialize();
         this.writer = createWriter(groupId);
     }
 
@@ -137,16 +136,11 @@ public class Writer3 {
         }, executor);
     }
 
-    private void initialize(String groupId) {
+    private void initialize() {
         // create stream
         StreamManager streamManager = new StreamManagerImpl(clientConfig);
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
-
-        SchemaType schemaType = SchemaType.Avro;
-        client.addGroup(groupId, schemaType,
-                SchemaValidationRules.of(Compatibility.backward()),
-                false, Collections.emptyMap());
     }
 
     private EventStreamWriter<GenericRecord> createWriter(String groupId) {
@@ -154,8 +148,10 @@ public class Writer3 {
         // region serializer
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
+                                                            .autoCreateGroup(SchemaType.Avro, SchemaValidationRules.of(Compatibility.backward()),
+                                                                    false)
                                                             .autoRegisterSchema(true)
-                                                            .registryConfigOrClient(Either.right(client))
+                                                            .registryConfigOrClient(Either.left(config))
                                                             .build();
 
         AvroSchema<GenericRecord> schema = AvroSchema.of(SCHEMA);
