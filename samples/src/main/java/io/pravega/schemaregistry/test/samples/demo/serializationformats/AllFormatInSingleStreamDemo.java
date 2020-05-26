@@ -80,7 +80,7 @@ public class AllFormatInSingleStreamDemo {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
         SchemaType schemaType = SchemaType.Any;
-        client.addGroup(groupId, schemaType,
+        client.addGroup("", groupId, schemaType,
                 SchemaValidationRules.of(Compatibility.allowAny()),
                 true, Collections.emptyMap());
     }

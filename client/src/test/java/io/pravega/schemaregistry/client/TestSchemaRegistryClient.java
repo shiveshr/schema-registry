@@ -57,23 +57,23 @@ public class TestSchemaRegistryClient {
         
         // add group
         // 1. success response code
-        doReturn(response).when(proxy).createGroup(any());
+        doReturn(response).when(proxy).createGroup(any(), any());
         doReturn(Response.Status.CREATED.getStatusCode()).when(response).getStatus();
-        boolean addGroup = client.addGroup("grp1", SchemaType.Avro, SchemaValidationRules.of(Compatibility.backward()), true, Collections.emptyMap());
+        boolean addGroup = client.addGroup("tenant", "grp1", SchemaType.Avro, SchemaValidationRules.of(Compatibility.backward()), true, Collections.emptyMap());
         assertTrue(addGroup);
         
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
-        addGroup = client.addGroup("grp1", SchemaType.Avro, SchemaValidationRules.of(Compatibility.backward()), true, Collections.emptyMap());
+        addGroup = client.addGroup("tenant", "grp1", SchemaType.Avro, SchemaValidationRules.of(Compatibility.backward()), true, Collections.emptyMap());
         assertFalse(addGroup);
 
         doReturn(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("Exception should have been thrown", 
-                () -> client.addGroup("grp1", SchemaType.Avro, SchemaValidationRules.of(Compatibility.backward()), true, Collections.emptyMap()),
+                () -> client.addGroup("tenant", "grp1", SchemaType.Avro, SchemaValidationRules.of(Compatibility.backward()), true, Collections.emptyMap()),
                 e -> e instanceof RuntimeException);
         reset(response);
         
         // list groups
-        doReturn(response).when(proxy).listGroups(null, 100);
+        doReturn(response).when(proxy).listGroups("tenant", null, 100);
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         GroupProperties mygroup = new GroupProperties().properties(Collections.emptyMap())
                                                        .schemaType(new io.pravega.schemaregistry.contract.generated.rest.model.SchemaType()
@@ -84,7 +84,7 @@ public class TestSchemaRegistryClient {
         ListGroupsResponse groupList = new ListGroupsResponse().groups(Collections.singletonMap(groupName, mygroup));
         doReturn(groupList).when(response).readEntity(eq(ListGroupsResponse.class));
 
-        Map<String, io.pravega.schemaregistry.contract.data.GroupProperties> groups = client.listGroups();
+        Map<String, io.pravega.schemaregistry.contract.data.GroupProperties> groups = client.listGroups("tenant");
         assertEquals(1, groups.size());
         assertTrue(groups.containsKey(groupName));
         assertEquals(groups.get(groupName).getSchemaType(), SchemaType.Any);
@@ -107,10 +107,10 @@ public class TestSchemaRegistryClient {
                                                        .versionedBySchemaName(false);
         String groupId = "mygroup";
         ListGroupsResponse groupList = new ListGroupsResponse().groups(Collections.singletonMap(groupId, mygroup));
-        doReturn(response).when(proxy).listGroups(null, 100);
+        doReturn(response).when(proxy).listGroups("tenant", null, 100);
 
         doReturn(groupList).when(response).readEntity(eq(ListGroupsResponse.class));
-        Map<String, io.pravega.schemaregistry.contract.data.GroupProperties> groups = client.listGroups();
+        Map<String, io.pravega.schemaregistry.contract.data.GroupProperties> groups = client.listGroups("tenant");
         assertEquals(1, groups.size());
         assertTrue(groups.containsKey(groupId));
         assertEquals(groups.get(groupId).getSchemaType(), SchemaType.Any);
@@ -118,7 +118,7 @@ public class TestSchemaRegistryClient {
         
         // Runtime Exception
         doReturn(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()).when(response).getStatus();
-        AssertExtensions.assertThrows("Exception should have been thrown", () -> client.listGroups(), e -> e instanceof RuntimeException);
+        AssertExtensions.assertThrows("Exception should have been thrown", () -> client.listGroups("tenant"), e -> e instanceof RuntimeException);
     }
 
     @Test
@@ -126,14 +126,14 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).deleteGroup(anyString());
+        doReturn(response).when(proxy).deleteGroup(anyString(), anyString());
         doReturn(Response.Status.NO_CONTENT.getStatusCode()).when(response).getStatus();
         
-        client.removeGroup("mygroup");
+        client.removeGroup("tenant", "mygroup");
         
         // not OK response
         doReturn(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()).when(response).getStatus();
-        AssertExtensions.assertThrows("An exception should have been thrown", () -> client.removeGroup("mygroup"),
+        AssertExtensions.assertThrows("An exception should have been thrown", () -> client.removeGroup("tenant", "mygroup"),
                 e -> e instanceof RuntimeException);
     }
 
@@ -142,7 +142,7 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).getGroupProperties(anyString());
+        doReturn(response).when(proxy).getGroupProperties(anyString(), anyString());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         GroupProperties mygroup
@@ -153,18 +153,18 @@ public class TestSchemaRegistryClient {
                                                        .schemaValidationRules(ModelHelper.encode(SchemaValidationRules.of(Compatibility.backward())))
                                                        .versionedBySchemaName(false);
         doReturn(mygroup).when(response).readEntity(eq(GroupProperties.class));
-        io.pravega.schemaregistry.contract.data.GroupProperties groupProperties = client.getGroupProperties("mygroup");
+        io.pravega.schemaregistry.contract.data.GroupProperties groupProperties = client.getGroupProperties("tenant", "mygroup");
         assertEquals(groupProperties.getSchemaType(), SchemaType.Any);
         assertEquals(groupProperties.getSchemaValidationRules().getRules().get(Compatibility.class.getSimpleName()),
                 Compatibility.backward());
         // ResourceNotFoundException
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown", () -> client.getGroupProperties(
-                "mygroup"), e -> e instanceof ResourceNotFoundException);
+                "tenant", "mygroup"), e -> e instanceof ResourceNotFoundException);
         //Runtime Exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown", () -> client.getGroupProperties(
-                "mygroup"), e -> e instanceof RuntimeException);
+                "tenant", "mygroup"), e -> e instanceof RuntimeException);
     }
 
     @Test
@@ -172,26 +172,26 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).updateSchemaValidationRules(anyString(), any());
+        doReturn(response).when(proxy).updateSchemaValidationRules(anyString(), anyString(), any());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         SchemaValidationRules schemaValidationRules = SchemaValidationRules.of(Compatibility.backward());
-        client.updateSchemaValidationRules("mygroup", schemaValidationRules);
+        client.updateSchemaValidationRules("tenant", "mygroup", schemaValidationRules);
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         // Precondition Failed
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.updateSchemaValidationRules("mygroup", schemaValidationRules),
+                () -> client.updateSchemaValidationRules("tenant", "mygroup", schemaValidationRules),
                 e -> e instanceof PreconditionFailedException);
         // NotFound exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.updateSchemaValidationRules("mygroup", schemaValidationRules),
+                () -> client.updateSchemaValidationRules("tenant", "mygroup", schemaValidationRules),
                 e -> e instanceof ResourceNotFoundException);
         // Runtime Exception
         doReturn(Response.Status.EXPECTATION_FAILED.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.updateSchemaValidationRules("mygroup", schemaValidationRules),
+                () -> client.updateSchemaValidationRules("tenant", "mygroup", schemaValidationRules),
                 e -> e instanceof RuntimeException);
     }
 
@@ -200,7 +200,7 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).getSchemaNames(anyString());
+        doReturn(response).when(proxy).getSchemaNames(anyString(), anyString());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         List<String> stringList = new ArrayList<>();
@@ -209,17 +209,17 @@ public class TestSchemaRegistryClient {
         SchemaNamesList schemaNamesList = new SchemaNamesList();
         schemaNamesList.objects(stringList);
         doReturn(schemaNamesList).when(response).readEntity(SchemaNamesList.class);
-        List<String> output = client.getSchemaNames("mygroup");
+        List<String> output = client.getSchemaNames("tenant", "mygroup");
         assertEquals(2, output.size());
         assertEquals("element1", output.get(0));
         assertEquals("element2", output.get(1));
         //NotFound Exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
-        AssertExtensions.assertThrows("An exception should have been thrown", () -> client.getSchemaNames("mygroup"),
+        AssertExtensions.assertThrows("An exception should have been thrown", () -> client.getSchemaNames("tenant", "mygroup"),
                 e -> e instanceof ResourceNotFoundException);
         // Runtime exception
         doReturn(Response.Status.EXPECTATION_FAILED.getStatusCode()).when(response).getStatus();
-        AssertExtensions.assertThrows("An exception should have been thrown", () -> client.getSchemaNames("mygroup"),
+        AssertExtensions.assertThrows("An exception should have been thrown", () -> client.getSchemaNames("tenant", "mygroup"),
                 e -> e instanceof RuntimeException);
     }
 
@@ -228,7 +228,7 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).addSchema(anyString(), any());
+        doReturn(response).when(proxy).addSchema(anyString(), anyString(), any());
         doReturn(Response.Status.CREATED.getStatusCode()).when(response).getStatus();
         SchemaType schemaType = SchemaType.Any;
         byte[] schemaData = new byte[0];
@@ -239,26 +239,26 @@ public class TestSchemaRegistryClient {
                         5).schemaName("schema2").ordinal(5);
         doReturn(versionInfo).when(response).readEntity(
                 io.pravega.schemaregistry.contract.generated.rest.model.VersionInfo.class);
-        VersionInfo versionInfo1 = client.addSchema("mygroup", schemaInfo);
+        VersionInfo versionInfo1 = client.addSchema("tenant", "mygroup", schemaInfo);
         assertEquals(5, versionInfo1.getVersion());
         assertEquals("schema2", versionInfo1.getSchemaName());
         assertEquals(5, versionInfo1.getOrdinal());
         // NotFound Exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.addSchema("mygroup", schemaInfo), e -> e instanceof ResourceNotFoundException);
+                () -> client.addSchema("tenant", "mygroup", schemaInfo), e -> e instanceof ResourceNotFoundException);
         // SchemaIncompatible exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.addSchema("mygroup", schemaInfo), e -> e instanceof IncompatibleSchemaException);
+                () -> client.addSchema("tenant", "mygroup", schemaInfo), e -> e instanceof IncompatibleSchemaException);
         // SchemaTypeInvalid Exception
         doReturn(Response.Status.EXPECTATION_FAILED.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.addSchema("mygroup", schemaInfo), e -> e instanceof SchemaTypeMismatchException);
+                () -> client.addSchema("tenant", "mygroup", schemaInfo), e -> e instanceof SchemaTypeMismatchException);
         //Runtime Exception
         doReturn(Response.Status.BAD_GATEWAY.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.addSchema("mygroup", schemaInfo), e -> e instanceof RuntimeException);
+                () -> client.addSchema("tenant", "mygroup", schemaInfo), e -> e instanceof RuntimeException);
     }
 
     @Test
@@ -266,7 +266,7 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).getSchemaFromVersion(anyString(), anyInt());
+        doReturn(response).when(proxy).getSchemaFromVersion(anyString(), anyString(), anyInt());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         io.pravega.schemaregistry.contract.generated.rest.model.SchemaType schemaType = ModelHelper.encode(SchemaType.Any);
@@ -276,16 +276,16 @@ public class TestSchemaRegistryClient {
         VersionInfo versionInfo = new VersionInfo("schema2", 5, 5);
         doReturn(schemaInfo).when(response).readEntity(
                 io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo.class);
-        SchemaInfo schemaInfo1 = client.getSchemaForVersion("mygroup", versionInfo);
+        SchemaInfo schemaInfo1 = client.getSchemaForVersion("tenant", "mygroup", versionInfo);
         assertEquals(schemaInfo.getSchemaName(), schemaInfo1.getName());
         // NotFound Exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getSchemaForVersion("mygroup", versionInfo), e -> e instanceof ResourceNotFoundException);
+                () -> client.getSchemaForVersion("tenant", "mygroup", versionInfo), e -> e instanceof ResourceNotFoundException);
         // Runtime Exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getSchemaForVersion("mygroup", versionInfo), e -> e instanceof RuntimeException);
+                () -> client.getSchemaForVersion("tenant", "mygroup", versionInfo), e -> e instanceof RuntimeException);
     }
 
     @Test
@@ -293,7 +293,7 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).getEncodingInfo(anyString(), anyInt());
+        doReturn(response).when(proxy).getEncodingInfo(anyString(), anyString(), anyInt());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         VersionInfo versionInfo = new VersionInfo("schema2", 5, 5);
@@ -306,18 +306,18 @@ public class TestSchemaRegistryClient {
         EncodingId encodingId = new EncodingId(5);
         doReturn(ModelHelper.encode(encodingInfo)).when(response).readEntity(
                 io.pravega.schemaregistry.contract.generated.rest.model.EncodingInfo.class);
-        EncodingInfo encodingInfo1 = client.getEncodingInfo("mygroup", encodingId);
+        EncodingInfo encodingInfo1 = client.getEncodingInfo("tenant", "mygroup", encodingId);
         assertEquals(encodingInfo.getCodec(), encodingInfo1.getCodec());
         assertEquals(encodingInfo.getSchemaInfo(), encodingInfo1.getSchemaInfo());
         assertEquals(encodingInfo.getVersionInfo(), encodingInfo1.getVersionInfo());
         // NotFound exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getEncodingInfo("mygroup", encodingId), e -> e instanceof ResourceNotFoundException);
+                () -> client.getEncodingInfo("tenant", "mygroup", encodingId), e -> e instanceof ResourceNotFoundException);
         // Runtime Exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getEncodingInfo("mygroup", encodingId), e -> e instanceof RuntimeException);
+                () -> client.getEncodingInfo("tenant", "mygroup", encodingId), e -> e instanceof RuntimeException);
     }
 
     @Test
@@ -325,7 +325,7 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).getEncodingId(anyString(), any());
+        doReturn(response).when(proxy).getEncodingId(anyString(), anyString(), any());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         CodecType codecType = CodecType.GZip;
@@ -333,20 +333,20 @@ public class TestSchemaRegistryClient {
         io.pravega.schemaregistry.contract.generated.rest.model.EncodingId encodingId = ModelHelper.encode(new EncodingId(5));
         doReturn(encodingId).when(response).readEntity(
                 io.pravega.schemaregistry.contract.generated.rest.model.EncodingId.class);
-        EncodingId encodingId1 = client.getEncodingId("mygroup", versionInfo, codecType);
+        EncodingId encodingId1 = client.getEncodingId("tenant", "mygroup", versionInfo, codecType);
         assertEquals(encodingId.getEncodingId().intValue(), encodingId1.getId());
         // NotFound Exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getEncodingId("mygroup", versionInfo, codecType), e -> e instanceof ResourceNotFoundException);
+                () -> client.getEncodingId("tenant", "mygroup", versionInfo, codecType), e -> e instanceof ResourceNotFoundException);
         // CodecTypeNotFound Exception
         doReturn(Response.Status.PRECONDITION_FAILED.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getEncodingId("mygroup", versionInfo, codecType), e -> e instanceof CodecNotFoundException);
+                () -> client.getEncodingId("tenant", "mygroup", versionInfo, codecType), e -> e instanceof CodecNotFoundException);
         // Runtime Exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getEncodingId("mygroup", versionInfo, codecType), e -> e instanceof RuntimeException);
+                () -> client.getEncodingId("tenant", "mygroup", versionInfo, codecType), e -> e instanceof RuntimeException);
     }
 
     @Test
@@ -354,7 +354,7 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).getLatestSchema(anyString(), any());
+        doReturn(response).when(proxy).getLatestSchema(anyString(), anyString(), any());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         VersionInfo versionInfo = new VersionInfo("schema2", 5, 5);
@@ -365,17 +365,17 @@ public class TestSchemaRegistryClient {
         SchemaWithVersion schemaWithVersion = new SchemaWithVersion(schemaInfo, versionInfo);
         doReturn(ModelHelper.encode(schemaWithVersion)).when(response).readEntity(
                 io.pravega.schemaregistry.contract.generated.rest.model.SchemaWithVersion.class);
-        SchemaWithVersion schemaWithVersion1 = client.getLatestSchemaVersion("mygroup", null);
+        SchemaWithVersion schemaWithVersion1 = client.getLatestSchemaVersion("tenant", "mygroup", null);
         assertEquals(schemaWithVersion.getSchema(), schemaWithVersion1.getSchema());
         assertEquals(schemaWithVersion.getVersion(), schemaWithVersion1.getVersion());
         // NotFound Exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getLatestSchemaVersion("mygroup", null), e -> e instanceof ResourceNotFoundException);
+                () -> client.getLatestSchemaVersion("tenant", "mygroup", null), e -> e instanceof ResourceNotFoundException);
         // Runtime Exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getLatestSchemaVersion("mygroup", null), e -> e instanceof RuntimeException);
+                () -> client.getLatestSchemaVersion("tenant", "mygroup", null), e -> e instanceof RuntimeException);
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         versionInfo = new VersionInfo("schema2", 5, 5);
@@ -386,17 +386,17 @@ public class TestSchemaRegistryClient {
         schemaWithVersion = new SchemaWithVersion(schemaInfo, versionInfo);
         doReturn(ModelHelper.encode(schemaWithVersion)).when(response).readEntity(
                 io.pravega.schemaregistry.contract.generated.rest.model.SchemaWithVersion.class);
-        schemaWithVersion1 = client.getLatestSchemaVersion("mygroup", "myobject");
+        schemaWithVersion1 = client.getLatestSchemaVersion("tenant", "mygroup", "myobject");
         assertEquals(schemaWithVersion.getSchema(), schemaWithVersion1.getSchema());
         assertEquals(schemaWithVersion.getVersion(), schemaWithVersion1.getVersion());
         // NotFound Exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getLatestSchemaVersion("mygroup", "myobject"), e -> e instanceof ResourceNotFoundException);
+                () -> client.getLatestSchemaVersion("tenant", "mygroup", "myobject"), e -> e instanceof ResourceNotFoundException);
         // Runtime Exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getLatestSchemaVersion("mygroup", "myobject"), e -> e instanceof RuntimeException);
+                () -> client.getLatestSchemaVersion("tenant", "mygroup", "myobject"), e -> e instanceof RuntimeException);
     }
     
     @Test
@@ -404,7 +404,7 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).getGroupHistory(anyString());
+        doReturn(response).when(proxy).getGroupHistory(anyString(), anyString());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         VersionInfo versionInfo = new VersionInfo("schema2", 5, 5);
@@ -419,7 +419,7 @@ public class TestSchemaRegistryClient {
         GroupHistory history = new GroupHistory();
         history.addHistoryItem(groupHistoryRecord);
         doReturn(history).when(response).readEntity(GroupHistory.class);
-        List<io.pravega.schemaregistry.contract.data.GroupHistoryRecord> groupHistoryList = client.getGroupHistory("mygroup");
+        List<io.pravega.schemaregistry.contract.data.GroupHistoryRecord> groupHistoryList = client.getGroupHistory("tenant", "mygroup");
         assertEquals(1, groupHistoryList.size());
         assertEquals(schemaValidationRules, groupHistoryList.get(0).getRules());
         assertEquals(schemaInfo, groupHistoryList.get(0).getSchema());
@@ -429,11 +429,11 @@ public class TestSchemaRegistryClient {
         //NotFound Exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getGroupHistory("mygroup"), e -> e instanceof ResourceNotFoundException);
+                () -> client.getGroupHistory("tenant", "mygroup"), e -> e instanceof ResourceNotFoundException);
         //Runtime Exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getGroupHistory("mygroup"), e -> e instanceof RuntimeException);
+                () -> client.getGroupHistory("tenant", "mygroup"), e -> e instanceof RuntimeException);
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         versionInfo = new VersionInfo("schema2", 5, 5);
@@ -453,7 +453,7 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).getSchemaVersion(anyString(), any());
+        doReturn(response).when(proxy).getSchemaVersion(anyString(), anyString(), any());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         SchemaType schemaType = SchemaType.Any;
@@ -463,17 +463,17 @@ public class TestSchemaRegistryClient {
         VersionInfo versionInfo = new VersionInfo("schema2", 5, 5);
         doReturn(ModelHelper.encode(versionInfo)).when(response).readEntity(
                 io.pravega.schemaregistry.contract.generated.rest.model.VersionInfo.class);
-        VersionInfo versionInfo1 = client.getVersionForSchema("mygroup", schemaInfo);
+        VersionInfo versionInfo1 = client.getVersionForSchema("tenant", "mygroup", schemaInfo);
         assertEquals(versionInfo.getSchemaName(), versionInfo1.getSchemaName());
         assertEquals(versionInfo.getVersion(), versionInfo1.getVersion());
         //NotFound Exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getVersionForSchema("mygroup", schemaInfo), e -> e instanceof ResourceNotFoundException);
+                () -> client.getVersionForSchema("tenant", "mygroup", schemaInfo), e -> e instanceof ResourceNotFoundException);
         //Runtime Exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getVersionForSchema("mygroup", schemaInfo), e -> e instanceof RuntimeException);
+                () -> client.getVersionForSchema("tenant", "mygroup", schemaInfo), e -> e instanceof RuntimeException);
     }
 
     @Test
@@ -481,7 +481,7 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).validate(anyString(), any());
+        doReturn(response).when(proxy).validate(anyString(), anyString(), any());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         SchemaType schemaType = SchemaType.Any;
@@ -490,16 +490,16 @@ public class TestSchemaRegistryClient {
         SchemaInfo schemaInfo = new SchemaInfo("schema1", schemaType, schemaData, properties);
         Valid valid = new Valid().valid(Boolean.TRUE);
         doReturn(valid).when(response).readEntity(Valid.class);
-        Boolean valid1 = client.validateSchema("mygroup", schemaInfo);
+        Boolean valid1 = client.validateSchema("tenant", "mygroup", schemaInfo);
         assertEquals(valid.isValid(), valid1);
         //NotFound Exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.validateSchema("mygroup", schemaInfo), e -> e instanceof ResourceNotFoundException);
+                () -> client.validateSchema("tenant", "mygroup", schemaInfo), e -> e instanceof ResourceNotFoundException);
         //Runtime Exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.validateSchema("mygroup", schemaInfo), e -> e instanceof RuntimeException);
+                () -> client.validateSchema("tenant", "mygroup", schemaInfo), e -> e instanceof RuntimeException);
     }
 
     @Test
@@ -507,7 +507,7 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).canRead(anyString(), any());
+        doReturn(response).when(proxy).canRead(anyString(), anyString(), any());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         SchemaType schemaType = SchemaType.Any;
@@ -516,16 +516,16 @@ public class TestSchemaRegistryClient {
         SchemaInfo schemaInfo = new SchemaInfo("schema1", schemaType, schemaData, properties);
         CanRead canRead = new CanRead().compatible(Boolean.TRUE);
         doReturn(canRead).when(response).readEntity(CanRead.class);
-        Boolean canRead1 = client.canReadUsing("mygroup", schemaInfo);
+        Boolean canRead1 = client.canReadUsing("tenant", "mygroup", schemaInfo);
         assertEquals(canRead.isCompatible(), canRead1);
         //NotFound Exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.canReadUsing("mygroup", schemaInfo), e -> e instanceof ResourceNotFoundException);
+                () -> client.canReadUsing("tenant", "mygroup", schemaInfo), e -> e instanceof ResourceNotFoundException);
         //Runtime Exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.canReadUsing("mygroup", schemaInfo), e -> e instanceof RuntimeException);
+                () -> client.canReadUsing("tenant", "mygroup", schemaInfo), e -> e instanceof RuntimeException);
     }
 
     @Test
@@ -533,7 +533,7 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).getCodecsList(anyString());
+        doReturn(response).when(proxy).getCodecsList(anyString(), anyString());
 
         doReturn(Response.Status.OK.getStatusCode()).when(response).getStatus();
         CodecType codecType = CodecType.GZip;
@@ -542,18 +542,18 @@ public class TestSchemaRegistryClient {
         codecsList.addCodecTypesItem(ModelHelper.encode(codecType));
         codecsList.addCodecTypesItem(ModelHelper.encode(codecType1));
         doReturn(codecsList).when(response).readEntity(CodecsList.class);
-        List<CodecType> codecsList1 = client.getCodecTypes("mygroup");
+        List<CodecType> codecsList1 = client.getCodecTypes("tenant", "mygroup");
         assertEquals(2, codecsList1.size());
         assertEquals(CodecType.GZip, codecsList1.get(0));
         assertEquals(CodecType.Snappy, codecsList1.get(1));
         //NotFound Exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getCodecTypes("mygroup"), e -> e instanceof ResourceNotFoundException);
+                () -> client.getCodecTypes("tenant", "mygroup"), e -> e instanceof ResourceNotFoundException);
         //Runtime Exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.getCodecTypes("mygroup"), e -> e instanceof RuntimeException);
+                () -> client.getCodecTypes("tenant", "mygroup"), e -> e instanceof RuntimeException);
     }
 
     @Test
@@ -561,19 +561,19 @@ public class TestSchemaRegistryClient {
         ApiV1.GroupsApi proxy = mock(ApiV1.GroupsApi.class);
         SchemaRegistryClientImpl client = new SchemaRegistryClientImpl(proxy);
         Response response = mock(Response.class);
-        doReturn(response).when(proxy).addCodec(anyString(), any());
+        doReturn(response).when(proxy).addCodec(anyString(), anyString(), any());
 
         doReturn(Response.Status.CREATED.getStatusCode()).when(response).getStatus();
         CodecType codecType = CodecType.GZip;
-        client.addCodecType("mygroup", codecType);
+        client.addCodecType("tenant", "mygroup", codecType);
         assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
         //NotFound Exception
         doReturn(Response.Status.NOT_FOUND.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.addCodecType("mygroup", codecType), e -> e instanceof ResourceNotFoundException);
+                () -> client.addCodecType("tenant", "mygroup", codecType), e -> e instanceof ResourceNotFoundException);
         //Runtime Exception
         doReturn(Response.Status.CONFLICT.getStatusCode()).when(response).getStatus();
         AssertExtensions.assertThrows("An exception should have been thrown",
-                () -> client.addCodecType("mygroup", codecType), e -> e instanceof RuntimeException);
+                () -> client.addCodecType("tenant", "mygroup", codecType), e -> e instanceof RuntimeException);
     }
 }

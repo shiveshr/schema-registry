@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
     private static final byte PROTOCOL = 0x0;
 
+    private final String tenant;
     private final String groupId;
     
     private final SchemaInfo schemaInfo;
@@ -42,16 +43,18 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
     private final Codec codec;
     private final boolean registerSchema;
 
-    protected AbstractPravegaSerializer(String groupId,
+    protected AbstractPravegaSerializer(String tenant,
+                                        String groupId,
                                         SchemaRegistryClient client,
                                         SchemaContainer<T> schema,
                                         Codec codec, 
                                         boolean registerSchema) {
+        Preconditions.checkNotNull(tenant);
         Preconditions.checkNotNull(groupId);
         Preconditions.checkNotNull(client);
         Preconditions.checkNotNull(codec);
         Preconditions.checkNotNull(schema);
-        
+        this.tenant = tenant;
         this.groupId = groupId;
         this.client = client;
         this.schemaInfo = schema.getSchemaInfo();
@@ -63,7 +66,7 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
     }
     
     private void initialize() {
-        GroupProperties groupProperties = client.getGroupProperties(groupId);
+        GroupProperties groupProperties = client.getGroupProperties(tenant, groupId);
 
         Map<String, String> properties = groupProperties.getProperties();
         boolean toEncodeHeader = !properties.containsKey(SerializerFactory.ENCODE) ||
@@ -72,13 +75,13 @@ abstract class AbstractPravegaSerializer<T> implements Serializer<T> {
         VersionInfo version;
         if (registerSchema) {
             // register schema
-            version = client.addSchema(groupId, schemaInfo);
+            version = client.addSchema(tenant, groupId, schemaInfo);
         } else {
             // get already registered schema version. If schema is not registered, this will throw an exception. 
-            version = client.getVersionForSchema(groupId, schemaInfo);
+            version = client.getVersionForSchema(tenant, groupId, schemaInfo);
         }
         if (toEncodeHeader) {
-            encodingId.set(client.getEncodingId(groupId, version, codec.getCodecType()));
+            encodingId.set(client.getEncodingId(tenant, groupId, version, codec.getCodecType()));
         }
     }
     

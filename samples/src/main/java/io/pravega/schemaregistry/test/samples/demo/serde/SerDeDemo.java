@@ -90,7 +90,7 @@ public class SerDeDemo {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
         SchemaType schemaType = SchemaType.custom("serDe");
-        client.addGroup(groupId, schemaType, SchemaValidationRules.of(Compatibility.denyAll()),
+        client.addGroup("", groupId, schemaType, SchemaValidationRules.of(Compatibility.denyAll()),
                 false, Collections.emptyMap());
     }
 
@@ -134,7 +134,7 @@ public class SerDeDemo {
         readerGroupManager.createReaderGroup(rg,
                 ReaderGroupConfig.builder().stream(NameUtils.getScopedStreamName(scope, stream)).disableAutomaticCheckpoints().build());
 
-        SchemaInfo schema = client.getLatestSchemaVersion(groupId, null).getSchema();
+        SchemaInfo schema = client.getLatestSchemaVersion("", groupId, null).getSchema();
         String urlString = new String(schema.getSchemaData(), Charsets.UTF_8);
         URL url = new URL(urlString);
 

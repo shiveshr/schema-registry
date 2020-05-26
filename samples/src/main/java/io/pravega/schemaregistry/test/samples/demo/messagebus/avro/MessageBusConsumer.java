@@ -135,7 +135,7 @@ public class MessageBusConsumer {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
         SchemaType schemaType = SchemaType.Avro;
-        client.addGroup(groupId, schemaType,
+        client.addGroup("", groupId, schemaType,
                 SchemaValidationRules.of(Compatibility.backward()),
                 true, Collections.emptyMap());
     }

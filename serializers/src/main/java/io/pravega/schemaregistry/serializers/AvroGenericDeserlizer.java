@@ -30,9 +30,9 @@ import java.io.InputStream;
 class AvroGenericDeserlizer extends AbstractPravegaDeserializer<GenericRecord> {
     private final LoadingCache<SchemaInfo, Schema> knownSchemas;
 
-    AvroGenericDeserlizer(String groupId, SchemaRegistryClient client, @Nullable AvroSchema<GenericRecord> schema,
+    AvroGenericDeserlizer(String tenant, String groupId, SchemaRegistryClient client, @Nullable AvroSchema<GenericRecord> schema,
                           SerializerConfig.Decoder decoder, EncodingCache encodingCache) {
-        super(groupId, client, schema, false, decoder, encodingCache);
+        super(tenant, groupId, client, schema, false, decoder, encodingCache);
         this.knownSchemas = CacheBuilder.newBuilder().build(new CacheLoader<SchemaInfo, Schema>() {
             @Override
             public Schema load(SchemaInfo schemaInfo) throws Exception {

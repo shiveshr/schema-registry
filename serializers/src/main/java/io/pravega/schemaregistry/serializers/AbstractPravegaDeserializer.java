@@ -33,6 +33,7 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
     private static final byte PROTOCOL = 0x0;
     private static final int HEADER_SIZE = 1 + Integer.BYTES;
 
+    private final String tenant;
     private final String groupId;
     private final SchemaRegistryClient client;
     // This can be null. If no schema is supplied, it means the intent is to deserialize into writer schema. 
@@ -43,12 +44,14 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
     private final boolean skipHeaders;
     private final EncodingCache encodingCache;
     
-    protected AbstractPravegaDeserializer(String groupId,
+    protected AbstractPravegaDeserializer(String tenant, 
+                                          String groupId,
                                           SchemaRegistryClient client,
                                           @Nullable SchemaContainer<T> schema,
                                           boolean skipHeaders,
                                           SerializerConfig.Decoder decoder,
                                           EncodingCache encodingCache) {
+        this.tenant = tenant;
         this.groupId = groupId;
         this.client = client;
         this.encodingCache = encodingCache;
@@ -62,7 +65,7 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
 
     @Synchronized
     private void initialize() {
-        GroupProperties groupProperties = client.getGroupProperties(groupId);
+        GroupProperties groupProperties = client.getGroupProperties(tenant, groupId);
 
         Map<String, String> properties = groupProperties.getProperties();
         boolean toEncodeHeader = !properties.containsKey(SerializerFactory.ENCODE) ||
@@ -71,7 +74,7 @@ abstract class AbstractPravegaDeserializer<T> implements Serializer<T> {
 
         if (schemaInfo != null) {
             log.info("Validate caller supplied schema.");
-            if (!client.canReadUsing(groupId, schemaInfo)) {
+            if (!client.canReadUsing(tenant, groupId, schemaInfo)) {
                 throw new IllegalArgumentException("Cannot read using schema" + schemaInfo.getName());
             }
         } else {

@@ -161,7 +161,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
-        client.addGroup(groupId, schemaType,  
+        client.addGroup("", groupId, schemaType,  
                 SchemaValidationRules.of(Compatibility.backward()), 
                 true, Collections.emptyMap());
 
@@ -272,7 +272,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
-        client.addGroup(groupId, schemaType,
+        client.addGroup("", groupId, schemaType,
                 SchemaValidationRules.of(Compatibility.backward()),
                 true, Collections.emptyMap());
 
@@ -319,7 +319,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         String bigString = generateBigString(100);
         writer3.writeEvent(new Test1(bigString, 1)).join();
 
-        List<CodecType> list = client.getCodecTypes(groupId);
+        List<CodecType> list = client.getCodecTypes("", groupId);
         assertEquals(2, list.size());
         assertTrue(list.stream().anyMatch(x -> x.equals(CodecType.None)));
         assertTrue(list.stream().anyMatch(x -> x.equals(CodecType.GZip)));
@@ -339,7 +339,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         String bigString2 = generateBigString(200);
         writer4.writeEvent(new Test1(bigString2, 1)).join();
 
-        list = client.getCodecTypes(groupId);
+        list = client.getCodecTypes("", groupId);
         assertEquals(3, list.size());
         assertTrue(list.stream().anyMatch(x -> x.equals(CodecType.None)));
         assertTrue(list.stream().anyMatch(x -> x.equals(CodecType.GZip)));
@@ -399,7 +399,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         writer2.writeEvent(new Test1(bigString3, 1)).join();
         // endregion 
 
-        list = client.getCodecTypes(groupId);
+        list = client.getCodecTypes("", groupId);
         assertEquals(4, list.size());
         assertTrue(list.stream().anyMatch(x -> x.equals(CodecType.None)));
         assertTrue(list.stream().anyMatch(x -> x.equals(CodecType.GZip)));
@@ -453,7 +453,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
-        client.addGroup(groupId, schemaType,  
+        client.addGroup("", groupId, schemaType,  
                 SchemaValidationRules.of(Compatibility.backward()), 
                 true, Collections.emptyMap());
 
@@ -518,7 +518,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
-        client.addGroup(groupId, schemaType,  
+        client.addGroup("", groupId, schemaType,  
                 SchemaValidationRules.of(Compatibility.backward()), 
                 true, Collections.emptyMap());
 
@@ -583,7 +583,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Avro;
-        client.addGroup(groupId, schemaType,  
+        client.addGroup("", groupId, schemaType,  
                 SchemaValidationRules.of(Compatibility.backward()), 
                 true, Collections.emptyMap());
 
@@ -698,7 +698,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Protobuf;
-        client.addGroup(groupId, schemaType,
+        client.addGroup("", groupId, schemaType,
                 SchemaValidationRules.of(Compatibility.allowAny()), 
                 false, Collections.singletonMap(SerializerFactory.ENCODE, Boolean.toString(encodeHeaders)));
 
@@ -744,7 +744,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
                 ReaderGroupConfig.builder().stream(NameUtils.getScopedStreamName(scope, stream)).disableAutomaticCheckpoints().build());
 
         ProtobufSchema<DynamicMessage> readerSchema = encodeHeaders ? null : 
-                ProtobufSchema.from(client.getLatestSchemaVersion(groupId, null).getSchema());
+                ProtobufSchema.from(client.getLatestSchemaVersion("", groupId, null).getSchema());
         Serializer<DynamicMessage> genericDeserializer = SerializerFactory.protobufGenericDeserializer(serializerConfig, readerSchema);
 
         EventStreamReader<DynamicMessage> reader2 = clientFactory.createReader("r1", rg2, genericDeserializer, ReaderConfig.builder().build());
@@ -799,7 +799,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Protobuf;
-        client.addGroup(groupId, schemaType,
+        client.addGroup("", groupId, schemaType,
                 SchemaValidationRules.of(Compatibility.allowAny()), true, Collections.emptyMap());
 
         Path path = Paths.get("resources/proto/protobufTest.pb");
@@ -917,7 +917,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Json;
-        client.addGroup(groupId, schemaType,
+        client.addGroup("", groupId, schemaType,
                 SchemaValidationRules.of(Compatibility.allowAny()), 
                 false, Collections.singletonMap(SerializerFactory.ENCODE, Boolean.toString(encodeHeaders)));
         
@@ -988,7 +988,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
         streamManager.close();
         SchemaType schemaType = SchemaType.Json;
-        client.addGroup(groupId, schemaType,
+        client.addGroup("", groupId, schemaType,
                 SchemaValidationRules.of(Compatibility.allowAny()), 
                 true, Collections.emptyMap());
 

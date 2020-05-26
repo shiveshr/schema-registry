@@ -103,7 +103,7 @@ public class EncryptionDemo {
             streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
             SchemaType schemaType = SchemaType.Avro;
-            client.addGroup(groupId, schemaType, SchemaValidationRules.of(Compatibility.backward()), true, Collections.emptyMap());
+            client.addGroup("", groupId, schemaType, SchemaValidationRules.of(Compatibility.backward()), true, Collections.emptyMap());
         }
     }
     
@@ -132,7 +132,7 @@ public class EncryptionDemo {
     }
     
     private void startReader() {
-        List<CodecType> list = client.getCodecTypes(groupId);
+        List<CodecType> list = client.getCodecTypes("", groupId);
         assert 1 == list.size();
         assert list.stream().anyMatch(x -> x.equals(CodecType.Custom) && x.getCustomTypeName().equals(myEncryption));
         Map<String, String> propertiesFromRegistry = list.get(0).getProperties();

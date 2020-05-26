@@ -36,99 +36,99 @@ public class PassthruSchemaRegistryClient implements SchemaRegistryClient {
     }
     
     @Override
-    public boolean addGroup(String group, SchemaType schemaType, SchemaValidationRules validationRules,
+    public boolean addGroup(String tenant, String group, SchemaType schemaType, SchemaValidationRules validationRules,
                             boolean versionedBySchemaName, Map<String, String> properties) {
         return service.createGroup(group, new GroupProperties(schemaType, validationRules, versionedBySchemaName, properties)).join();
     }
 
     @Override
-    public void removeGroup(String group) {
+    public void removeGroup(String tenant, String group) {
         service.deleteGroup(group).join();
     }
 
     @Override
-    public Map<String, GroupProperties> listGroups() {
+    public Map<String, GroupProperties> listGroups(String tenant) {
         return service.listGroups(null, 100).thenApply(MapWithToken::getMap).join();
     }
 
     @Override
-    public GroupProperties getGroupProperties(String group) {
+    public GroupProperties getGroupProperties(String tenant, String group) {
         return service.getGroupProperties(group).join();
     }
 
     @Override
-    public void updateSchemaValidationRules(String group, SchemaValidationRules validationRules) {
+    public void updateSchemaValidationRules(String tenant, String group, SchemaValidationRules validationRules) {
         service.updateSchemaValidationRules(group, validationRules, null).join();
     }
     
     @Override
-    public List<String> getSchemaNames(String group) {
+    public List<String> getSchemaNames(String tenant, String group) {
         return service.getSchemaNames(group).join();
     }
 
     @Override
-    public VersionInfo addSchema(String group, SchemaInfo schema) {
+    public VersionInfo addSchema(String tenant, String group, SchemaInfo schema) {
         return service.addSchema(group, schema).join();
     }
 
     @Override
-    public void deleteSchemaVersion(String groupId, VersionInfo version) {
+    public void deleteSchemaVersion(String tenant, String groupId, VersionInfo version) {
         service.deleteSchema(groupId, version.getOrdinal()).join();
     }
 
     @Override
-    public SchemaInfo getSchemaForVersion(String group, VersionInfo version) {
+    public SchemaInfo getSchemaForVersion(String tenant, String group, VersionInfo version) {
         return service.getSchema(group, version.getOrdinal()).join();
     }
 
     @Override
-    public EncodingInfo getEncodingInfo(String group, EncodingId encodingId) {
+    public EncodingInfo getEncodingInfo(String tenant, String group, EncodingId encodingId) {
         return service.getEncodingInfo(group, encodingId).join();
     }
 
     @Override
-    public EncodingId getEncodingId(String group, VersionInfo version, CodecType codecType) {
+    public EncodingId getEncodingId(String tenant, String group, VersionInfo version, CodecType codecType) {
         return service.getEncodingId(group, version, codecType).join();
     }
 
     @Override
-    public SchemaWithVersion getLatestSchemaVersion(String group, @Nullable String subgroup) {
+    public SchemaWithVersion getLatestSchemaVersion(String tenant, String group, @Nullable String subgroup) {
         return service.getGroupLatestSchemaVersion(group, subgroup).join();
     }
 
     @Override
-    public List<SchemaWithVersion> getSchemaVersions(String groupId, @Nullable String schemaName) {
+    public List<SchemaWithVersion> getSchemaVersions(String tenant, String groupId, @Nullable String schemaName) {
         return service.getGroupHistory(groupId, schemaName)
                 .thenApply(history -> history.stream().map(x -> new SchemaWithVersion(x.getSchema(), x.getVersion())).collect(Collectors.toList())).join();
     }
 
     @Override
-    public List<GroupHistoryRecord> getGroupHistory(String group) {
+    public List<GroupHistoryRecord> getGroupHistory(String tenant, String group) {
         return service.getGroupHistory(group, null).join();
     }
     
     @Override
-    public VersionInfo getVersionForSchema(String group, SchemaInfo schema) {
+    public VersionInfo getVersionForSchema(String tenant, String group, SchemaInfo schema) {
         return service.getSchemaVersion(group, schema).join();
     }
 
     @Override
-    public boolean validateSchema(String group, SchemaInfo schema) {
+    public boolean validateSchema(String tenant, String group, SchemaInfo schema) {
         return service.validateSchema(group, schema).join();
     }
 
     @Override
-    public boolean canReadUsing(String group, SchemaInfo schema) {
+    public boolean canReadUsing(String tenant, String group, SchemaInfo schema) {
         return service.canRead(group, schema).join();
     }
 
     @Override
-    public List<CodecType> getCodecTypes(String group) {
+    public List<CodecType> getCodecTypes(String tenant, String group) {
         return service.getCodecTypes(group).join();
     }
 
     @Override
-    public void addCodecType(String group, CodecType codecType) {
+    public void addCodecType(String tenant, String group, CodecType codecType) {
         service.addCodec(group, codecType).join();
     }
 }

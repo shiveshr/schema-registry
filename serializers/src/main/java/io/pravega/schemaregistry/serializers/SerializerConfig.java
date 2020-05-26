@@ -40,6 +40,10 @@ public class SerializerConfig {
     /**
      * Name of the group. 
      */
+    private final String tenant;
+    /**
+     * Name of the group. 
+     */
     private final String groupId;
     /**
      * Either the registry client or the {@link SchemaRegistryClientConfig} that can be used for creating a new registry client.
@@ -75,6 +79,7 @@ public class SerializerConfig {
     private final boolean failOnCodecMismatch;
     
     public static final class SerializerConfigBuilder {
+        private String tenant = "";
         private Codec codec = NOOP;
         
         private Decoder decoder = new Decoder();

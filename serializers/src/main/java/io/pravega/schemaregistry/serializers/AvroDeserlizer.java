@@ -31,10 +31,10 @@ class AvroDeserlizer<T extends IndexedRecord> extends AbstractPravegaDeserialize
     private final AvroSchema<T> avroSchema;
     private final LoadingCache<byte[], Schema> knownSchemas;
 
-    AvroDeserlizer(String groupId, SchemaRegistryClient client,
+    AvroDeserlizer(String tenant, String groupId, SchemaRegistryClient client,
                    AvroSchema<T> schema,
                    SerializerConfig.Decoder decoder, EncodingCache encodingCache) {
-        super(groupId, client, schema, false, decoder, encodingCache);
+        super(tenant, groupId, client, schema, false, decoder, encodingCache);
         Preconditions.checkNotNull(schema);
         this.avroSchema = schema;
         this.knownSchemas = CacheBuilder.newBuilder().build(new CacheLoader<byte[], Schema>() {

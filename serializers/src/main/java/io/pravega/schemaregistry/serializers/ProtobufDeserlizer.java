@@ -21,10 +21,10 @@ import java.io.InputStream;
 
 public class ProtobufDeserlizer<T extends GeneratedMessageV3> extends AbstractPravegaDeserializer<T> {
     private final ProtobufSchema<T> protobufSchema;
-    ProtobufDeserlizer(String groupId, SchemaRegistryClient client,
+    ProtobufDeserlizer(String tenant, String groupId, SchemaRegistryClient client,
                        ProtobufSchema<T> schema, SerializerConfig.Decoder decoder,
                        EncodingCache encodingCache) {
-        super(groupId, client, schema, true, decoder, encodingCache);
+        super(tenant, groupId, client, schema, true, decoder, encodingCache);
         Preconditions.checkNotNull(schema);
         this.protobufSchema = schema;
     }

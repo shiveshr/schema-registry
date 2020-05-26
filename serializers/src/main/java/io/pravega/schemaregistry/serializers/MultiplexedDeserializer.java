@@ -20,11 +20,11 @@ import java.util.Map;
 class MultiplexedDeserializer<T> extends AbstractPravegaDeserializer<T> {
     private final Map<String, AbstractPravegaDeserializer<T>> deserializers;
 
-    MultiplexedDeserializer(String groupId, SchemaRegistryClient client,
+    MultiplexedDeserializer(String tenant, String groupId, SchemaRegistryClient client,
                             Map<String, AbstractPravegaDeserializer<T>> deserializers,
                             SerializerConfig.Decoder decoder, 
                             EncodingCache encodingCache) {
-        super(groupId, client, null, false, decoder, encodingCache);
+        super(tenant, groupId, client, null, false, decoder, encodingCache);
         this.deserializers = deserializers; 
     }
 

@@ -22,6 +22,7 @@ import io.pravega.schemaregistry.contract.transform.ModelHelper;
 import io.pravega.schemaregistry.server.rest.RegistryApplication;
 import io.pravega.schemaregistry.server.rest.ServiceConfig;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
+import org.glassfish.grizzly.http.util.HttpStatus;
 import org.glassfish.jersey.test.JerseyTest;
 import org.glassfish.jersey.test.TestProperties;
 import org.junit.Test;
@@ -47,7 +48,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 public class SchemaRegistryResourceTest extends JerseyTest {
-    private static final String GROUPS = "v1/groups";
+    private static final String GROUPS = "/v1/tenants/tenant/groups";
     private SchemaRegistryService service;
 
     @Override
@@ -116,6 +117,7 @@ public class SchemaRegistryResourceTest extends JerseyTest {
         Future<Response> future = target(GROUPS).path("mygroup").path("schemas/versions/canRead").request().async()
                                                                                        .post(Entity.entity(canReadRequest, MediaType.APPLICATION_JSON));
         Response response = future.get();
+        assertEquals(HttpStatus.OK_200.getStatusCode(), response.getStatus());
         assertTrue(response.readEntity(CanRead.class).isCompatible());
 
         canReadRequest = new CanReadRequest().schemaInfo(new SchemaInfo()

@@ -97,7 +97,7 @@ public class ProtobufDemo {
             streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
             SchemaType schemaType = SchemaType.Protobuf;
-            client.addGroup(groupId, schemaType,
+            client.addGroup("", groupId, schemaType,
                     SchemaValidationRules.of(Compatibility.allowAny()),
                     false, Collections.singletonMap(SerializerFactory.ENCODE, Boolean.toString(encodeHeaders)));
 
@@ -179,7 +179,7 @@ public class ProtobufDemo {
             streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
             SchemaType schemaType = SchemaType.Protobuf;
-            client.addGroup(groupId, schemaType,
+            client.addGroup("", groupId, schemaType,
                     SchemaValidationRules.of(Compatibility.allowAny()),
                     true, Collections.emptyMap());
 

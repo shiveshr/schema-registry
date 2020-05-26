@@ -94,7 +94,7 @@ public class SchemaRegistryAuthTest extends JerseyTest {
             return CompletableFuture.completedFuture(new MapWithToken<>(map, null));
         }).when(service).listGroups(any(), anyInt());
 
-        Future<Response> future = target("v1/groups").queryParam("limit", 100)
+        Future<Response> future = target("v1/tenants/tenant/groups").queryParam("limit", 100)
                                                      .request().header(HttpHeaders.AUTHORIZATION, 
                         AuthHelper.getCredentials("Basic", Base64.getEncoder().encodeToString((SYSTEM_ADMIN + ":" + PASSWORD).getBytes(Charsets.UTF_8))))
                                                      .async().get();
@@ -103,7 +103,7 @@ public class SchemaRegistryAuthTest extends JerseyTest {
         ListGroupsResponse list = response.readEntity(ListGroupsResponse.class);
         assertEquals(list.getGroups().size(), 2);
 
-        future = target("v1/groups").queryParam("limit", 100)
+        future = target("v1/tenants/tenant/groups").queryParam("limit", 100)
                                                      .request().header(HttpHeaders.AUTHORIZATION, 
                         AuthHelper.getCredentials("Basic", Base64.getEncoder().encodeToString((GROUP1_ADMIN + ":" + PASSWORD).getBytes(Charsets.UTF_8))))
                                                      .async().get();
@@ -126,9 +126,9 @@ public class SchemaRegistryAuthTest extends JerseyTest {
                 String defaultPassword = passwordEncryptor.encryptPassword(PASSWORD);
                 writer.write(credentialsAndAclAsString(SYSTEM_ADMIN, defaultPassword, "*,READ_UPDATE;"));
                 writer.write(credentialsAndAclAsString(SYSTEM_READER, defaultPassword, "/,READ"));
-                writer.write(credentialsAndAclAsString(GROUP1_ADMIN, defaultPassword, "/group1,READ_UPDATE"));
-                writer.write(credentialsAndAclAsString(GROUP1_USER, defaultPassword, "/group1,READ"));
-                writer.write(credentialsAndAclAsString(GROUP2_USER, defaultPassword, "/group2,READ"));
+                writer.write(credentialsAndAclAsString(GROUP1_ADMIN, defaultPassword, "//group1,READ_UPDATE"));
+                writer.write(credentialsAndAclAsString(GROUP1_USER, defaultPassword, "//group1,READ"));
+                writer.write(credentialsAndAclAsString(GROUP2_USER, defaultPassword, "//group2,READ"));
             }
             return authFile;
         } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
