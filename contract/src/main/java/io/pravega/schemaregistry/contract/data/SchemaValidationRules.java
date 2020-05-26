@@ -9,7 +9,6 @@
  */
 package io.pravega.schemaregistry.contract.data;
 
-import com.google.common.base.Preconditions;
 import io.pravega.common.ObjectBuilder;
 import lombok.Builder;
 import lombok.Data;
@@ -34,13 +33,11 @@ public class SchemaValidationRules {
         this.rules = rules;
     }
 
-    public static SchemaValidationRules of(Compatibility compatibility) {
-        return new SchemaValidationRules(Collections.singletonMap(compatibility.getName(), compatibility));
+    public static SchemaValidationRules of(SchemaValidationRule rule) {
+        return new SchemaValidationRules(Collections.singletonMap(rule.getName(), rule));
     }
-    
+
     public static SchemaValidationRules of(List<SchemaValidationRule> rules) {
-        Preconditions.checkNotNull(rules);
-        Preconditions.checkArgument(rules.stream().allMatch(x -> x instanceof Compatibility), "Only compatibility rule is supported.");
         return new SchemaValidationRules(rules.stream().collect(Collectors.toMap(SchemaValidationRule::getName, x -> x)));
     }
 

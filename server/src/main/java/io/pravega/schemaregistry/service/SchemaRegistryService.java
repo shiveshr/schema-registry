@@ -557,8 +557,7 @@ public class SchemaRegistryService {
     private boolean validateRules(SchemaType schemaType, SchemaValidationRules newRules) {
         switch (schemaType) {
             case Avro:
-                return newRules.getRules().size() == 1 &&
-                        newRules.getRules().entrySet().stream().allMatch(x -> x.getValue() instanceof Compatibility);
+                return true;
             case Protobuf:
             case Json:
             case Custom:

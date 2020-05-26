@@ -26,9 +26,9 @@ import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.schemaregistry.GroupIdGenerator;
+import io.pravega.schemaregistry.client.SchemaRegistryClientFactory;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
 import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
-import io.pravega.schemaregistry.client.SchemaRegistryClientFactory;
 import io.pravega.schemaregistry.codec.Codec;
 import io.pravega.schemaregistry.codec.CodecFactory;
 import io.pravega.schemaregistry.common.Either;
@@ -131,7 +131,7 @@ public class CompressionDemo {
         initialize();
         SerializerConfig serializerConfig2 = SerializerConfig.builder()
                                                              .groupId(groupId)
-                                                             .decoder(MY_CODEC.getCodecType(), MY_CODEC::decode)
+                                                             .addDecoder(MY_CODEC.getCodecType(), MY_CODEC::decode)
                                                              .registryConfigOrClient(Either.right(client))
                                                              .build();
 
