@@ -27,11 +27,11 @@ class MultipleFormatJsonStringDeserializer extends AbstractPravegaDeserializer<S
     private final Map<SchemaType, AbstractPravegaDeserializer> genericDeserializers;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    MultipleFormatJsonStringDeserializer(String tenant, String groupId, SchemaRegistryClient client,
+    MultipleFormatJsonStringDeserializer(String scope, String groupId, SchemaRegistryClient client,
                                          Map<SchemaType, AbstractPravegaDeserializer> genericDeserializers,
                                          SerializerConfig.Decoder decoder,
                                          EncodingCache encodingCache) {
-        super(tenant, groupId, client, null, false, decoder, encodingCache);
+        super(scope, groupId, client, null, false, decoder, encodingCache);
         this.genericDeserializers = genericDeserializers;
     }
 

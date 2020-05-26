@@ -28,9 +28,9 @@ import java.io.OutputStream;
 
 class AvroSerializer<T> extends AbstractPravegaSerializer<T> {
     private final AvroSchema<T> avroSchema;
-    AvroSerializer(String tenant, String groupId, SchemaRegistryClient client, AvroSchema<T> schema,
+    AvroSerializer(String scope, String groupId, SchemaRegistryClient client, AvroSchema<T> schema,
                    Codec codec, boolean registerSchema) {
-        super(tenant, groupId, client, schema, codec, registerSchema);
+        super(scope, groupId, client, schema, codec, registerSchema);
         this.avroSchema = schema;
     }
 

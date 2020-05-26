@@ -22,6 +22,7 @@ import io.pravega.schemaregistry.contract.transform.ModelHelper;
 import io.pravega.schemaregistry.server.rest.RegistryApplication;
 import io.pravega.schemaregistry.server.rest.ServiceConfig;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
+import io.pravega.test.common.AssertExtensions;
 import org.glassfish.grizzly.http.util.HttpStatus;
 import org.glassfish.jersey.test.JerseyTest;
 import org.glassfish.jersey.test.TestProperties;
@@ -48,7 +49,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 public class SchemaRegistryResourceTest extends JerseyTest {
-    private static final String GROUPS = "/v1/tenants/tenant/groups";
+    private static final String GROUPS = "/v1/scopes/scope/groups";
     private SchemaRegistryService service;
 
     @Override
@@ -78,7 +79,7 @@ public class SchemaRegistryResourceTest extends JerseyTest {
         assertEquals(response.getStatus(), 200);
         ListGroupsResponse list = response.readEntity(ListGroupsResponse.class);
         assertEquals(list.getGroups().size(), 2);
-
+        
         // region create group
         // endregion
 

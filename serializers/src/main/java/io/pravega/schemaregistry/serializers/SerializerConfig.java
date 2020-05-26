@@ -40,7 +40,7 @@ public class SerializerConfig {
     /**
      * Name of the group. 
      */
-    private final String tenant;
+    private final String scope;
     /**
      * Name of the group. 
      */
@@ -79,7 +79,7 @@ public class SerializerConfig {
     private final boolean failOnCodecMismatch;
     
     public static final class SerializerConfigBuilder {
-        private String tenant = "";
+        private String scope = "";
         private Codec codec = NOOP;
         
         private Decoder decoder = new Decoder();

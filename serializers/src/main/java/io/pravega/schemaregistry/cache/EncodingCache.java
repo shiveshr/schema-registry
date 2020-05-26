@@ -31,11 +31,11 @@ public class EncodingCache {
     
     private final LoadingCache<EncodingId, EncodingInfo> encodingCache;
     
-    private EncodingCache(String tenant, String groupId, SchemaRegistryClient schemaRegistryClient) {
+    private EncodingCache(String scope, String groupId, SchemaRegistryClient schemaRegistryClient) {
         encodingCache = CacheBuilder.newBuilder().build(new CacheLoader<EncodingId, EncodingInfo>() {
             @Override
             public EncodingInfo load(EncodingId key) {
-                return schemaRegistryClient.getEncodingInfo(tenant, groupId, key);
+                return schemaRegistryClient.getEncodingInfo(scope, groupId, key);
             }
         });
     }
@@ -46,12 +46,12 @@ public class EncodingCache {
     }
 
     @Synchronized
-    public static EncodingCache getEncodingCacheForGroup(String tenant, String groupId, SchemaRegistryClient schemaRegistryClient) {
-        Key key = new Key(schemaRegistryClient, tenant, groupId);
+    public static EncodingCache getEncodingCacheForGroup(String scope, String groupId, SchemaRegistryClient schemaRegistryClient) {
+        Key key = new Key(schemaRegistryClient, scope, groupId);
         if (GROUP_CACHE_MAP.containsKey(key)) {
             return GROUP_CACHE_MAP.get(key);
         } else {
-            EncodingCache value = new EncodingCache(tenant, groupId, schemaRegistryClient);
+            EncodingCache value = new EncodingCache(scope, groupId, schemaRegistryClient);
             GROUP_CACHE_MAP.put(key, value);
             return value;
         }
@@ -60,7 +60,7 @@ public class EncodingCache {
     @Data
     private static class Key {
         private final SchemaRegistryClient client;
-        private final String tenant;
+        private final String scope;
         private final String groupId;
     }
 }

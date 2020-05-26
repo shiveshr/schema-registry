@@ -99,7 +99,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void listGroups(String tenant, String continuationToken, Integer limit, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void listGroups(String scope, String continuationToken, Integer limit, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("List Groups called");
         int limitUnboxed = limit == null ? DEFAULT_LIST_GROUPS_LIMIT : limit;
 
@@ -128,7 +128,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void createGroup(String tenant, CreateGroupRequest createGroupRequest, SecurityContext securityContext,
+    public void createGroup(String scope, CreateGroupRequest createGroupRequest, SecurityContext securityContext,
                             AsyncResponse asyncResponse) throws NotFoundException {
         withCompletion("createGroup", READ_UPDATE, AuthResources.ROOT, asyncResponse, () -> {
             SchemaType schemaType = ModelHelper.decode(createGroupRequest.getSchemaType());
@@ -156,7 +156,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getGroupProperties(String tenant, String groupName, SecurityContext securityContext,
+    public void getGroupProperties(String scope, String groupName, SecurityContext securityContext,
                                    AsyncResponse asyncResponse) throws NotFoundException {
         withCompletion("getGroupProperties", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
                 () -> registryService.getGroupProperties(groupName)
@@ -179,7 +179,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getGroupHistory(String tenant, String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void getGroupHistory(String scope, String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get group history called for group {}", groupName);
         withCompletion("getGroupHistory", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
                 () -> registryService.getGroupHistory(groupName, null)
@@ -207,7 +207,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void updateSchemaValidationRules(String tenant, String groupName, UpdateValidationRulesRequest updateValidationRulesRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void updateSchemaValidationRules(String scope, String groupName, UpdateValidationRulesRequest updateValidationRulesRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Update schema validation rules called for group {} with new request {}", groupName, updateValidationRulesRequest);
         withCompletion("updateSchemaValidationRules", READ_UPDATE, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
                 () -> {
@@ -235,7 +235,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getSchemaValidationRules(String tenant, String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void getSchemaValidationRules(String scope, String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get group schema validation rules called for group {}", groupName);
         withCompletion("getSchemaValidationRules", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
                 () -> registryService.getGroupProperties(groupName)
@@ -258,7 +258,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void deleteGroup(String tenant, String groupName, SecurityContext securityContext,
+    public void deleteGroup(String scope, String groupName, SecurityContext securityContext,
                             AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Delete group called for group {}", groupName);
         withCompletion("deleteGroup", READ_UPDATE, AuthResources.ROOT, asyncResponse,
@@ -278,7 +278,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getSchemas(String tenant, String groupName, String schemaName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void getSchemas(String scope, String groupName, String schemaName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get group schemas called for group {}", groupName);
         withCompletion("getSchemas", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
                 () -> registryService.getGroupHistory(groupName, null)
@@ -307,7 +307,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getLatestSchema(String tenant, String groupName, String schemaName, SecurityContext securityContext,
+    public void getLatestSchema(String scope, String groupName, String schemaName, SecurityContext securityContext,
                                 AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get latest group schema called for group {}", groupName);
         withCompletion("getLatestSchema", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
@@ -333,7 +333,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void addSchema(String tenant, String groupName, AddSchemaRequest addSchemaRequest,
+    public void addSchema(String scope, String groupName, AddSchemaRequest addSchemaRequest,
                           SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Add schema to group called for group {}", groupName);
         withCompletion("addSchema", READ_UPDATE, String.format(AuthResources.GROUP_SCHEMA_FORMAT, groupName), asyncResponse,
@@ -369,7 +369,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void validate(String tenant, String groupName, ValidateRequest validateRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void validate(String scope, String groupName, ValidateRequest validateRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Validate schema called for group {}", groupName);
 
         withCompletion("validate", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
@@ -395,7 +395,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void canRead(String tenant, String groupName, CanReadRequest canReadRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void canRead(String scope, String groupName, CanReadRequest canReadRequest, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Can read using schema called for group {}", groupName);
 
         withCompletion("canRead", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
@@ -421,7 +421,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getSchemaFromVersion(String tenant, String groupName, Integer version,
+    public void getSchemaFromVersion(String scope, String groupName, Integer version,
                                      SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get schema from version {} called for group {}", version, groupName);
         withCompletion("getSchemaFromVersion", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
@@ -446,7 +446,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void deleteSchemaVersion(String tenant, String groupName, Integer version,
+    public void deleteSchemaVersion(String scope, String groupName, Integer version,
                                      SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Delete schema from version {} called for group {}", version, groupName);
         withCompletion("deleteSchemaVersion", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
@@ -470,7 +470,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getEncodingId(String tenant, String groupName, GetEncodingIdRequest getEncodingIdRequest,
+    public void getEncodingId(String scope, String groupName, GetEncodingIdRequest getEncodingIdRequest,
                               SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getEncodingId called for group {} with version {} and codec {}", groupName,
                 getEncodingIdRequest.getVersionInfo(), getEncodingIdRequest.getCodecType());
@@ -504,7 +504,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getSchemaVersion(String tenant, String groupName, GetSchemaVersion getSchemaVersion, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void getSchemaVersion(String scope, String groupName, GetSchemaVersion getSchemaVersion, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get schema version called for group {}", groupName);
         withCompletion("getSchemaVersion", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
                 () -> {
@@ -532,7 +532,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
     
     @Override
-    public void getSchemaNames(String tenant, String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void getSchemaNames(String scope, String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getSchemaNames called for group {} ", groupName);
         withCompletion("getObjects", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
                 () -> registryService.getSchemaNames(groupName)
@@ -557,7 +557,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getEncodingInfo(String tenant, String groupName, Integer encodingId, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void getEncodingInfo(String scope, String groupName, Integer encodingId, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getEncodingInfo called for group {} encodingId {}", groupName, encodingId);
         withCompletion("getEncodingInfo", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
                 () -> {
@@ -584,7 +584,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
 
 
     @Override
-    public void getCodecsList(String tenant, String groupName, SecurityContext securityContext,
+    public void getCodecsList(String scope, String groupName, SecurityContext securityContext,
                               AsyncResponse asyncResponse) throws NotFoundException {
         log.info("getCodecsList called for group {} ", groupName);
         withCompletion("getCodecsList", READ, String.format(AuthResources.GROUP_FORMAT, groupName), asyncResponse,
@@ -610,7 +610,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void addCodec(String tenant, String groupName, AddCodec addCodec, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void addCodec(String scope, String groupName, AddCodec addCodec, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("addCodec called for group {} codec {}", groupName, addCodec.getCodec());
         withCompletion("addCodec", READ, String.format(AuthResources.GROUP_CODEC_FORMAT, groupName), asyncResponse,
                 () -> registryService.addCodec(groupName, ModelHelper.decode(addCodec.getCodec()))

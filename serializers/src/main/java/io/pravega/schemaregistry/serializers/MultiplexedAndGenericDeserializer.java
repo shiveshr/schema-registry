@@ -22,12 +22,12 @@ class MultiplexedAndGenericDeserializer<T, G> extends AbstractPravegaDeserialize
     private final Map<String, AbstractPravegaDeserializer<T>> deserializers;
     private final AbstractPravegaDeserializer<G> genericDeserializer;
 
-    MultiplexedAndGenericDeserializer(String tenant, String groupId, SchemaRegistryClient client,
+    MultiplexedAndGenericDeserializer(String scope, String groupId, SchemaRegistryClient client,
                                       Map<String, AbstractPravegaDeserializer<T>> deserializers,
                                       AbstractPravegaDeserializer<G> genericDeserializer,
                                       SerializerConfig.Decoder decoder,
                                       EncodingCache encodingCache) {
-        super(tenant, groupId, client, null, false, decoder, encodingCache);
+        super(scope, groupId, client, null, false, decoder, encodingCache);
         this.deserializers = deserializers; 
         this.genericDeserializer = genericDeserializer;
     }

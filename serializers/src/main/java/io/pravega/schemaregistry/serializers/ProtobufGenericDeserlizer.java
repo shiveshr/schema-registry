@@ -29,9 +29,9 @@ import java.io.InputStream;
 public class ProtobufGenericDeserlizer extends AbstractPravegaDeserializer<DynamicMessage> {
     private final LoadingCache<SchemaInfo, Descriptors.Descriptor> knownSchemas;
 
-    ProtobufGenericDeserlizer(String tenant, String groupId, SchemaRegistryClient client, @Nullable ProtobufSchema<DynamicMessage> schema,
+    ProtobufGenericDeserlizer(String scope, String groupId, SchemaRegistryClient client, @Nullable ProtobufSchema<DynamicMessage> schema,
                               SerializerConfig.Decoder decoder, EncodingCache encodingCache) {
-        super(tenant, groupId, client, schema, false, decoder, encodingCache);
+        super(scope, groupId, client, schema, false, decoder, encodingCache);
         Preconditions.checkArgument(isEncodeHeader() || schema != null);
         
         this.knownSchemas = CacheBuilder.newBuilder().build(new CacheLoader<SchemaInfo, Descriptors.Descriptor>() {

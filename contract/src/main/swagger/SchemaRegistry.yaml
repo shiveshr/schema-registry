@@ -30,11 +30,11 @@ tags:
 schemes:
   - http
 paths:
-  /tenants/{tenantName}/groups:
+  /scopes/{scopeName}/groups:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
     get:
@@ -103,11 +103,11 @@ paths:
           description: Group with given name already exists
         500:
           description: Internal server error while creating a Group
-  /tenants/{tenantName}/groups/{groupName}:
+  /scopes/{scopeName}/groups/{groupName}:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
@@ -141,11 +141,11 @@ paths:
           description: Successfully deleted the Group
         500:
           description: Internal server error while deleting the Group
-  /tenants/{tenantName}/groups/{groupName}/history:
+  /scopes/{scopeName}/groups/{groupName}/history:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
@@ -169,11 +169,11 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
-  /tenants/{tenantName}/groups/{groupName}/rules:
+  /scopes/{scopeName}/groups/{groupName}/rules:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
@@ -228,11 +228,11 @@ paths:
           description: Write conflict 
         500:
           description: Internal server error while fetching Group details
-  /tenants/{tenantName}/groups/{groupName}/schemas/names:
+  /scopes/{scopeName}/groups/{groupName}/schemas/names:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
@@ -256,11 +256,11 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
-  /tenants/{tenantName}/groups/{groupName}/schemas/versions:
+  /scopes/{scopeName}/groups/{groupName}/schemas/versions:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
@@ -322,11 +322,11 @@ paths:
           description: Invalid schema type
         500:
           description: Internal server error while creating a Group
-  /tenants/{tenantName}/groups/{groupName}/schemas/versions/find:
+  /scopes/{scopeName}/groups/{groupName}/schemas/versions/find:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
@@ -364,11 +364,11 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
-  /tenants/{tenantName}/groups/{groupName}/schemas/versions/{versionOrdinal}:
+  /scopes/{scopeName}/groups/{groupName}/schemas/versions/{versionOrdinal}:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
@@ -412,11 +412,11 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details  
-  /tenants/{tenantName}/groups/{groupName}/schemas/versions/latest:
+  /scopes/{scopeName}/groups/{groupName}/schemas/versions/latest:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
@@ -444,11 +444,11 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
-  /tenants/{tenantName}/groups/{groupName}/schemas/versions/validate:
+  /scopes/{scopeName}/groups/{groupName}/schemas/versions/validate:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
@@ -488,11 +488,11 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
-  /tenants/{tenantName}/groups/{groupName}/schemas/versions/canRead:
+  /scopes/{scopeName}/groups/{groupName}/schemas/versions/canRead:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
@@ -530,11 +530,11 @@ paths:
           description: Group with given name not found
         500:
           description: Internal server error while fetching Group details
-  /tenants/{tenantName}/groups/{groupName}/encodings:
+  /scopes/{scopeName}/groups/{groupName}/encodings:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
@@ -577,11 +577,11 @@ paths:
           description: Codec not registered
         500:
           description: Internal server error while fetching Group details
-  /tenants/{tenantName}/groups/{groupName}/encodings/{encodingId}:
+  /scopes/{scopeName}/groups/{groupName}/encodings/{encodingId}:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
@@ -611,11 +611,11 @@ paths:
           description: Group or encoding id with given name not found
         500:
           description: Internal server error while fetching Group details
-  /tenants/{tenantName}/groups/{groupName}/codecs:
+  /scopes/{scopeName}/groups/{groupName}/codecs:
     parameters:
       - in: path
-        name: tenantName
-        description: Tenant name
+        name: scopeName
+        description: Scope name
         required: true
         type: string
       - in: path
