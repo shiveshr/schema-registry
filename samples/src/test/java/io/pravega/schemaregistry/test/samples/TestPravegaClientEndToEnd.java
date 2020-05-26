@@ -409,7 +409,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
         // add new decoder for custom serialization
         SerializerConfig serializerConfig2 = SerializerConfig.builder()
                                                              .groupId(groupId)
-                                                             .addDecoder(myCodec.getCodecType(), myCodec::decode)
+                                                             .decoder(myCodec.getCodecType(), myCodec::decode)
                                                              .registryConfigOrClient(Either.right(client))
                                                              .build();
 

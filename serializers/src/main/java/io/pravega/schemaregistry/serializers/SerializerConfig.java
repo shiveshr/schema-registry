@@ -15,13 +15,18 @@ import io.pravega.schemaregistry.codec.Codec;
 import io.pravega.schemaregistry.codec.CodecFactory;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.CodecType;
+import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
+import io.pravega.schemaregistry.contract.data.GroupProperties;
+import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -73,6 +78,16 @@ public class SerializerConfig {
      * Tells the deserializer that if supplied decoder codecs do not match group codecs then fail and exit upfront.  
      */
     private final boolean failOnCodecMismatch;
+
+    /**
+     * Flag to tell the serializer if the group should be created automatically. 
+     * It is recommended to register keep this flag as false in production systems and create groups and add schemas 
+     */
+    private final boolean autoCreateGroup;
+    /**
+     * Group properties to use for creating the group if autoCreateGroup is set to true. 
+     */
+    private final GroupProperties groupProperties;
     
     public static final class SerializerConfigBuilder {
         private Codec codec = NOOP;
@@ -83,8 +98,25 @@ public class SerializerConfig {
         private boolean autoRegisterCodec = false;
         private boolean failOnCodecMismatch = false;
         
-        public SerializerConfigBuilder addDecoder(CodecType codecType, Function<ByteBuffer, ByteBuffer> decoder) {
+        private GroupProperties groupProperties = new GroupProperties(SchemaType.Any, 
+                SchemaValidationRules.of(Compatibility.fullTransitive()), false, Collections.emptyMap());  
+        
+        public SerializerConfigBuilder decoder(CodecType codecType, Function<ByteBuffer, ByteBuffer> decoder) {
             this.decoder = new Decoder(codecType, decoder);
+            return this;
+        }
+        
+        public SerializerConfigBuilder autoCreateGroup(SchemaType schemaType) {
+            this.autoCreateGroup = true;
+            this.groupProperties = new GroupProperties(schemaType, SchemaValidationRules.of(Compatibility.fullTransitive()), 
+                    false, Collections.emptyMap());
+            return this;
+        }
+
+        public SerializerConfigBuilder autoCreateGroup(SchemaType schemaType, SchemaValidationRules rules, boolean versionedBySchemaName) {
+            this.autoCreateGroup = true;
+            this.groupProperties = new GroupProperties(schemaType,
+                    rules, versionedBySchemaName, Collections.emptyMap());
             return this;
         }
     }
