@@ -177,7 +177,7 @@ public class SerializerFactory {
         Map<String, AbstractPravegaDeserializer<T>> deserializerMap = schemas
                 .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getName(),
                         x -> new AvroDeserlizer<>(groupId, schemaRegistryClient, x, config.getDecoder(), encodingCache)));
-        return new MultiplexedDeserializer<>(groupId, schemaRegistryClient, deserializerMap, config.getDecoder(), 
+        return new MultiplexedDeserializer<>(groupId, schemaRegistryClient, deserializerMap, config.getDecoder(),
                 encodingCache);
     }
 
@@ -210,7 +210,7 @@ public class SerializerFactory {
                         x -> new AvroDeserlizer<>(groupId, schemaRegistryClient, x, config.getDecoder(), encodingCache)));
         AbstractPravegaDeserializer<GenericRecord> genericDeserializer = new AvroGenericDeserlizer(groupId, schemaRegistryClient,
                 null, config.getDecoder(), encodingCache);
-        return new MultiplexedAndGenericDeserializer<>(groupId, schemaRegistryClient, deserializerMap, genericDeserializer, 
+        return new MultiplexedAndGenericDeserializer<>(groupId, schemaRegistryClient, deserializerMap, genericDeserializer,
                 config.getDecoder(), encodingCache);
     }
     // endregion
@@ -366,9 +366,9 @@ public class SerializerFactory {
         Map<String, AbstractPravegaDeserializer<T>> deserializerMap = schemas
                 .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getName(),
                         x -> new ProtobufDeserlizer<>(groupId, schemaRegistryClient, x, config.getDecoder(), encodingCache)));
-        ProtobufGenericDeserlizer genericDeserializer = new ProtobufGenericDeserlizer(groupId, schemaRegistryClient, null, 
+        ProtobufGenericDeserlizer genericDeserializer = new ProtobufGenericDeserlizer(groupId, schemaRegistryClient, null,
                 config.getDecoder(), encodingCache);
-        return new MultiplexedAndGenericDeserializer<>(groupId, schemaRegistryClient, deserializerMap, genericDeserializer, 
+        return new MultiplexedAndGenericDeserializer<>(groupId, schemaRegistryClient, deserializerMap, genericDeserializer,
                 config.getDecoder(), encodingCache);
     }
     //endregion
@@ -443,7 +443,7 @@ public class SerializerFactory {
 
         EncodingCache encodingCache = EncodingCache.getEncodingCacheForGroup(groupId, schemaRegistryClient);
 
-        return new JsonGenericDeserlizer(groupId, schemaRegistryClient, config.getDecoder(), 
+        return new JsonGenericDeserlizer(groupId, schemaRegistryClient, config.getDecoder(),
                 encodingCache);
     }
 
@@ -490,7 +490,7 @@ public class SerializerFactory {
 
         Map<String, AbstractPravegaDeserializer<T>> deserializerMap = schemas
                 .values().stream().collect(Collectors.toMap(x -> x.getSchemaInfo().getName(),
-                        x -> new JsonDeserlizer<>(groupId, schemaRegistryClient, x, config.getDecoder(), 
+                        x -> new JsonDeserlizer<>(groupId, schemaRegistryClient, x, config.getDecoder(),
                                 encodingCache)));
         return new MultiplexedDeserializer<>(groupId, schemaRegistryClient,
                 deserializerMap, config.getDecoder(), encodingCache);
@@ -619,7 +619,7 @@ public class SerializerFactory {
         return new MultipleFormatGenericDeserializer(groupId, schemaRegistryClient, map, config.getDecoder(),
                 encodingCache);
     }
-    
+
     /**
      * A deserializer that can read data where each event could be written with different serialization formats and 
      * deserializes and converts them to a json string.
@@ -651,7 +651,7 @@ public class SerializerFactory {
                 encodingCache);
     }
     // endregion
-    
+
     private static void autoCreateGroup(SchemaRegistryClient client, SerializerConfig config) {
         if (config.isAutoCreateGroup()) {
             client.addGroup(config.getGroupId(), config.getGroupProperties().getSchemaType(),

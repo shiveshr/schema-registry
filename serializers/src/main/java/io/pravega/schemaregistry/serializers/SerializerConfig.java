@@ -88,27 +88,27 @@ public class SerializerConfig {
      * Group properties to use for creating the group if autoCreateGroup is set to true. 
      */
     private final GroupProperties groupProperties;
-    
+
     public static final class SerializerConfigBuilder {
         private Codec codec = NOOP;
-        
+
         private Decoder decoder = new Decoder();
-        
+
         private boolean autoRegisterSchema = false;
         private boolean autoRegisterCodec = false;
         private boolean failOnCodecMismatch = false;
-        
-        private GroupProperties groupProperties = new GroupProperties(SchemaType.Any, 
-                SchemaValidationRules.of(Compatibility.fullTransitive()), false, Collections.emptyMap());  
-        
+
+        private GroupProperties groupProperties = new GroupProperties(SchemaType.Any,
+                SchemaValidationRules.of(Compatibility.fullTransitive()), false, Collections.emptyMap());
+
         public SerializerConfigBuilder decoder(CodecType codecType, Function<ByteBuffer, ByteBuffer> decoder) {
             this.decoder = new Decoder(codecType, decoder);
             return this;
         }
-        
+
         public SerializerConfigBuilder autoCreateGroup(SchemaType schemaType) {
             this.autoCreateGroup = true;
-            this.groupProperties = new GroupProperties(schemaType, SchemaValidationRules.of(Compatibility.fullTransitive()), 
+            this.groupProperties = new GroupProperties(schemaType, SchemaValidationRules.of(Compatibility.fullTransitive()),
                     false, Collections.emptyMap());
             return this;
         }
@@ -120,7 +120,7 @@ public class SerializerConfig {
             return this;
         }
     }
-    
+
     static class Decoder {
         private static final BiFunction<CodecType, ByteBuffer, ByteBuffer> DEFAULT = (x, y) -> {
             switch (x) {
@@ -134,7 +134,7 @@ public class SerializerConfig {
                     throw new IllegalArgumentException();
             }
         };
-        
+
         @Getter(AccessLevel.PACKAGE)
         private final Set<CodecType> codecs;
         private final BiFunction<CodecType, ByteBuffer, ByteBuffer> decoder;
@@ -161,7 +161,7 @@ public class SerializerConfig {
             this.codecs.add(CodecType.GZip);
             this.codecs.add(CodecType.Snappy);
         }
-        
+
         ByteBuffer decode(CodecType codecType, ByteBuffer bytes) {
             return decoder.apply(codecType, bytes);
         }
