@@ -1,10 +1,10 @@
 /**
  * Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
- * <p>
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
+ * 
  * http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.pravega.schemaregistry.serializers;
@@ -49,7 +49,7 @@ public class SerializerFactory {
     /**
      * Creates a typed avro serializer for the Schema. The serializer implementation returned from this method is
      * responsible for interacting with schema registry service and ensures that only valid registered schema can be used.
-     * <p>
+     * 
      * Note: the returned serializer only implements {@link Serializer#serialize(Object)}.
      * It does not implement {@link Serializer#deserialize(ByteBuffer)}.
      *
@@ -74,7 +74,7 @@ public class SerializerFactory {
     /**
      * Creates a typed avro deserializer for the Schema. The deserializer implementation returned from this method is
      * responsible for interacting with schema registry service and validate the writer schema before using it.
-     * <p>
+     * 
      * Note: the returned serializer only implements {@link Serializer#deserialize(ByteBuffer)}.
      * It does not implement {@link Serializer#serialize(Object)}.
      *
@@ -103,7 +103,7 @@ public class SerializerFactory {
     /**
      * Creates a generic avro deserializer. It has the optional parameter for schema.
      * If the schema is not supplied, the writer schema is used for deserialization into {@link GenericRecord}.
-     * <p>
+     * 
      * Note: the returned serializer only implements {@link Serializer#deserialize(ByteBuffer)}.
      * It does not implement {@link Serializer#serialize(Object)}.
      *
@@ -220,7 +220,7 @@ public class SerializerFactory {
     /**
      * Creates a typed protobuf serializer for the Schema. The serializer implementation returned from this method is
      * responsible for interacting with schema registry service and ensures that only valid registered schema can be used.
-     * <p>
+     * 
      * Note: the returned serializer only implements {@link Serializer#serialize(Object)}.
      * It does not implement {@link Serializer#deserialize(ByteBuffer)}.
      *
@@ -245,7 +245,7 @@ public class SerializerFactory {
     /**
      * Creates a typed protobuf deserializer for the Schema. The deserializer implementation returned from this method is
      * responsible for interacting with schema registry service and validate the writer schema before using it.
-     * <p>
+     * 
      * Note: the returned serializer only implements {@link Serializer#deserialize(ByteBuffer)}.
      * It does not implement {@link Serializer#serialize(Object)}.
      *
@@ -272,7 +272,7 @@ public class SerializerFactory {
     /**
      * Creates a generic protobuf deserializer. It has the optional parameter for schema.
      * If the schema is not supplied, the writer schema is used for deserialization into {@link DynamicMessage}.
-     * <p>
+     * 
      * Note: the returned serializer only implements {@link Serializer#deserialize(ByteBuffer)}.
      * It does not implement {@link Serializer#serialize(Object)}.
      *
@@ -378,7 +378,7 @@ public class SerializerFactory {
     /**
      * Creates a typed json serializer for the Schema. The serializer implementation returned from this method is
      * responsible for interacting with schema registry service and ensures that only valid registered schema can be used.
-     * <p>
+     * 
      * Note: the returned serializer only implements {@link Serializer#serialize(Object)}.
      * It does not implement {@link Serializer#deserialize(ByteBuffer)}.
      *
@@ -402,7 +402,7 @@ public class SerializerFactory {
     /**
      * Creates a typed json deserializer for the Schema. The deserializer implementation returned from this method is
      * responsible for interacting with schema registry service and validate the writer schema before using it.
-     * <p>
+     * 
      * Note: the returned serializer only implements {@link Serializer#deserialize(ByteBuffer)}.
      * It does not implement {@link Serializer#serialize(Object)}.
      *
@@ -427,7 +427,7 @@ public class SerializerFactory {
 
     /**
      * Creates a generic json deserializer.
-     * <p>
+     * 
      * Note: the returned serializer only implements {@link Serializer#deserialize(ByteBuffer)}.
      * It does not implement {@link Serializer#serialize(Object)}.
      *
