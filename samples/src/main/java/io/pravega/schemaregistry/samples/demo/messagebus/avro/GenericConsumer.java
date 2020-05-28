@@ -28,7 +28,7 @@ import io.pravega.schemaregistry.client.SchemaRegistryClient;
 import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
 import io.pravega.schemaregistry.client.SchemaRegistryClientFactory;
 import io.pravega.schemaregistry.common.Either;
-import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.serializers.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
 import io.pravega.shared.NameUtils;
@@ -122,7 +122,7 @@ public class GenericConsumer {
         // region serializer
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
-                                                            .autoCreateGroup(SchemaType.Avro, true)
+                                                            .autoCreateGroup(SerializationFormat.Avro, true)
                                                             .autoRegisterSchema(true)
                                                             .registryConfigOrClient(Either.right(client))
                                                             .build();

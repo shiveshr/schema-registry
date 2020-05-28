@@ -24,7 +24,7 @@ import io.pravega.schemaregistry.GroupIdGenerator;
 import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
-import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.schemas.AvroSchema;
 import io.pravega.schemaregistry.serializers.SerializerConfig;
@@ -141,7 +141,7 @@ public class Writer2 {
         // region serializer
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
-                                                            .autoCreateGroup(SchemaType.Avro, SchemaValidationRules.of(Compatibility.backward()),
+                                                            .autoCreateGroup(SerializationFormat.Avro, SchemaValidationRules.of(Compatibility.backward()),
                                                                     false)
                                                             .autoRegisterSchema(true)
                                                             .registryConfigOrClient(Either.left(config))

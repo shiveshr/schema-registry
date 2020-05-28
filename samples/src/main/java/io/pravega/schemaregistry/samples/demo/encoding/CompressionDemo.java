@@ -34,7 +34,7 @@ import io.pravega.schemaregistry.codec.CodecFactory;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.Compatibility;
-import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.schemas.AvroSchema;
 import io.pravega.schemaregistry.serializers.SerializerConfig;
@@ -211,8 +211,8 @@ public class CompressionDemo {
             streamManager.createScope(scope);
             streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
-            SchemaType schemaType = SchemaType.Avro;
-            client.addGroup(groupId, schemaType, SchemaValidationRules.of(Compatibility.backward()), true, Collections.emptyMap());
+            SerializationFormat serializationFormat = SerializationFormat.Avro;
+            client.addGroup(groupId, serializationFormat, SchemaValidationRules.of(Compatibility.backward()), true, Collections.emptyMap());
         }
     }
 

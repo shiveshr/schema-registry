@@ -13,7 +13,7 @@ written into pravega stream.
 
 This package has three different consumers -
 1. Typed Consumer which reads typed events back from the stream using the generated objects. 
-This uses a deserializer that reads the header to get the schema but only uses the schema name from it to identify the object type.
+This uses a deserializer that reads the header to get the schema but only uses the type from it to identify the object type.
 It then uses the respective `protobuf/avro` generated java class to deserialize the data into the read time schema.
 
 2. Typed Consumer with fallback to generic deserialization.

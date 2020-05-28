@@ -33,7 +33,7 @@ import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
-import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.samples.generated.Test2;
 import io.pravega.schemaregistry.samples.generated.Test3;
@@ -62,7 +62,7 @@ import java.util.Map;
  * 1. Deserialize into Avro generated java class (schema on read).
  * 2. Deserialize into {@link GenericRecord} using user supplied schema (schema on read). 
  * 3. Deserialize into {@link GenericRecord} while retrieving writer schema. 
- * 4. Multiplexed Deserializer that deserializes data into one of avro generated typed java objects based on {@link SchemaInfo#name}.
+ * 4. Multiplexed Deserializer that deserializes data into one of avro generated typed java objects based on {@link SchemaInfo#type}.
  */
 @Slf4j
 public class AvroDemo {
@@ -135,8 +135,8 @@ public class AvroDemo {
 
             System.out.println("adding new group with: \nschema type = avro\n compatibiity = backward");
 
-            SchemaType schemaType = SchemaType.Avro;
-            client.addGroup(groupId, schemaType,
+            SerializationFormat serializationFormat = SerializationFormat.Avro;
+            client.addGroup(groupId, serializationFormat,
                     SchemaValidationRules.of(Compatibility.backward()),
                     true, Collections.emptyMap());
 
@@ -258,8 +258,8 @@ public class AvroDemo {
             streamManager.createScope(scope);
             streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
-            SchemaType schemaType = SchemaType.Avro;
-            client.addGroup(groupId, schemaType,
+            SerializationFormat serializationFormat = SerializationFormat.Avro;
+            client.addGroup(groupId, serializationFormat,
                     SchemaValidationRules.of(Compatibility.backward()),
                     true, Collections.emptyMap());
 
@@ -322,8 +322,8 @@ public class AvroDemo {
             streamManager.createScope(scope);
             streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
-            SchemaType schemaType = SchemaType.Avro;
-            client.addGroup(groupId, schemaType,
+            SerializationFormat serializationFormat = SerializationFormat.Avro;
+            client.addGroup(groupId, serializationFormat,
                     SchemaValidationRules.of(Compatibility.backward()),
                     true, Collections.emptyMap());
 
@@ -385,8 +385,8 @@ public class AvroDemo {
             streamManager.createScope(scope);
             streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
-            SchemaType schemaType = SchemaType.Avro;
-            client.addGroup(groupId, schemaType,
+            SerializationFormat serializationFormat = SerializationFormat.Avro;
+            client.addGroup(groupId, serializationFormat,
                     SchemaValidationRules.of(Compatibility.backward()),
                     true, Collections.emptyMap());
 

@@ -32,7 +32,7 @@ import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
-import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.serializers.PravegaDeserializer;
 import io.pravega.schemaregistry.serializers.SerializerConfig;
@@ -89,8 +89,8 @@ public class SerDeDemo {
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
-        SchemaType schemaType = SchemaType.custom("serDe");
-        client.addGroup(groupId, schemaType, SchemaValidationRules.of(Compatibility.denyAll()),
+        SerializationFormat serializationFormat = SerializationFormat.custom("serDe");
+        client.addGroup(groupId, serializationFormat, SchemaValidationRules.of(Compatibility.denyAll()),
                 false, Collections.emptyMap());
     }
 
@@ -105,13 +105,13 @@ public class SerDeDemo {
         Map<String, String> map = new HashMap<>();
         map.put(SERIALIZER_CLASS_NAME, MySerializer.class.getName());
         map.put(DESERIALIZER_CLASS_NAME, MyDeserializer.class.getName());
-        SchemaType schemaType = SchemaType.custom("serDe");
+        SerializationFormat serializationFormat = SerializationFormat.custom("serDe");
 
         Path path = Paths.get(filePath);
 
         URL url = path.toUri().toURL();
 
-        SchemaInfo schemaInfo = new SchemaInfo("serde", schemaType, url.toString().getBytes(Charsets.UTF_8), map);
+        SchemaInfo schemaInfo = new SchemaInfo("serde", serializationFormat, url.toString().getBytes(Charsets.UTF_8), map);
         MySerializer mySerializer = new MySerializer();
 
         Serializer<MyPojo> serializer = SerializerFactory.customSerializer(config, () -> schemaInfo, mySerializer);

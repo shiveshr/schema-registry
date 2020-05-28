@@ -35,7 +35,7 @@ import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
-import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.samples.generated.ProtobufTest;
 import io.pravega.schemaregistry.schemas.ProtobufSchema;
@@ -60,7 +60,7 @@ import java.util.Map;
  * 1. Deserialize into protobuf generated java class (schema on read).
  * 2. Deserialize into {@link DynamicMessage} using user supplied schema (schema on read). 
  * 3. Deserialize into {@link DynamicMessage} while retrieving writer schema. 
- * 4. Multiplexed Deserializer that deserializes data into one of java objects based on {@link SchemaInfo#name}.
+ * 4. Multiplexed Deserializer that deserializes data into one of java objects based on {@link SchemaInfo#type}.
  */
 @Slf4j
 public class ProtobufDemo {
@@ -96,8 +96,8 @@ public class ProtobufDemo {
             streamManager.createScope(scope);
             streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
-            SchemaType schemaType = SchemaType.Protobuf;
-            client.addGroup(groupId, schemaType,
+            SerializationFormat serializationFormat = SerializationFormat.Protobuf;
+            client.addGroup(groupId, serializationFormat,
                     SchemaValidationRules.of(Compatibility.allowAny()),
                     false, Collections.singletonMap(SerializerFactory.ENCODE, Boolean.toString(encodeHeaders)));
 
@@ -178,8 +178,8 @@ public class ProtobufDemo {
             streamManager.createScope(scope);
             streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
-            SchemaType schemaType = SchemaType.Protobuf;
-            client.addGroup(groupId, schemaType,
+            SerializationFormat serializationFormat = SerializationFormat.Protobuf;
+            client.addGroup(groupId, serializationFormat,
                     SchemaValidationRules.of(Compatibility.allowAny()),
                     true, Collections.emptyMap());
 
