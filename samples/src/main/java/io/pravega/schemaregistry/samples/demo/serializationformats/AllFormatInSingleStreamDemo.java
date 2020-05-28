@@ -32,7 +32,7 @@ import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
 import io.pravega.schemaregistry.client.SchemaRegistryClientFactory;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
-import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.samples.generated.ProtobufTest;
 import io.pravega.schemaregistry.samples.generated.Type1;
@@ -55,7 +55,7 @@ import java.util.Scanner;
 
 /**
  * This sample writes objects of all json protobuf and avro formats into a single stream. For this the `schema type` property
- * of the group is set as {@link SchemaType#Any}. 
+ * of the group is set as {@link SerializationFormat#Any}. 
  * During reads it uses {@link SerializerFactory#multiFormatGenericDeserializer(SerializerConfig)} to deserialize them into generic records 
  * of each type and the reader returns the common base class {@link Object}. 
  */
@@ -79,8 +79,8 @@ public class AllFormatInSingleStreamDemo {
         streamManager.createScope(scope);
         streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
-        SchemaType schemaType = SchemaType.Any;
-        client.addGroup(groupId, schemaType,
+        SerializationFormat serializationFormat = SerializationFormat.Any;
+        client.addGroup(groupId, serializationFormat,
                 SchemaValidationRules.of(Compatibility.allowAny()),
                 true, Collections.emptyMap());
     }

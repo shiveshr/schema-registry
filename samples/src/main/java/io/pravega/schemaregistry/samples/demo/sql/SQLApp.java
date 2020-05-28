@@ -28,7 +28,7 @@ import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
-import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.data.SchemaWithVersion;
 import io.pravega.schemaregistry.schemas.AvroSchema;
@@ -162,7 +162,7 @@ public class SQLApp {
         SchemaWithVersion latestSchema = client.getLatestSchemaVersion(groupId, null);
         SchemaInfo schemaInfo = latestSchema.getSchema();
         TableSchema tableSchema = null;
-        switch (properties.getSchemaType()) {
+        switch (properties.getSerializationFormat()) {
             case Avro:
                 Schema schema = new Schema.Parser().parse(new String(schemaInfo.getSchemaData(), Charsets.UTF_8));
                 tableSchema = new TableSchema(schema.getFields().stream().map(x -> {
@@ -177,15 +177,15 @@ public class SQLApp {
 
         String tableGroupId = getTableGroupId(tableName);
         SchemaValidationRules validationRules = SchemaValidationRules.of(Compatibility.denyAll());
-        SchemaType schemaType = SchemaType.custom("table");
+        SerializationFormat serializationFormat = SerializationFormat.custom("table");
 
         Map<String, String> map = new HashMap<>();
         map.put("scope", scope);
         map.put("stream", stream);
         
-        SchemaInfo tableSchemaInfo = new SchemaInfo("table", schemaType, tableSchema.toBytes(), map);
+        SchemaInfo tableSchemaInfo = new SchemaInfo("table", serializationFormat, tableSchema.toBytes(), map);
         
-        client.addGroup(tableGroupId, schemaType, validationRules, false, Collections.emptyMap());
+        client.addGroup(tableGroupId, serializationFormat, validationRules, false, Collections.emptyMap());
         client.addSchema(tableGroupId, tableSchemaInfo);
     }
 

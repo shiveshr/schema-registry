@@ -21,7 +21,7 @@ import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.schemaregistry.GroupIdGenerator;
 import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
 import io.pravega.schemaregistry.common.Either;
-import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.samples.generated.Type1;
 import io.pravega.schemaregistry.samples.generated.Type2;
 import io.pravega.schemaregistry.samples.generated.Type3;
@@ -153,7 +153,7 @@ public class MessageBusProducer {
         // region serializer
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
-                                                            .autoCreateGroup(SchemaType.Avro,true)
+                                                            .autoCreateGroup(SerializationFormat.Avro,true)
                                                             .autoRegisterSchema(true)
                                                             .registryConfigOrClient(Either.left(config))
                                                             .build();

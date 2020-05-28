@@ -13,12 +13,12 @@ import io.pravega.common.Exceptions;
 import io.pravega.common.concurrent.Futures;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.GroupProperties;
-import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.exceptions.CodecNotFoundException;
 import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
 import io.pravega.schemaregistry.contract.exceptions.PreconditionFailedException;
-import io.pravega.schemaregistry.contract.exceptions.SchemaTypeMismatchException;
+import io.pravega.schemaregistry.contract.exceptions.SerializationFormatMismatchException;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddCodec;
 import io.pravega.schemaregistry.contract.generated.rest.model.AddSchemaRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.CanRead;
@@ -120,10 +120,10 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
                             AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Create Group called with params {}", createGroupRequest);
         withCompletion("createGroup", () -> {
-            SchemaType schemaType = ModelHelper.decode(createGroupRequest.getSchemaType());
+            SerializationFormat serializationFormat = ModelHelper.decode(createGroupRequest.getSerializationFormat());
             SchemaValidationRules validationRules = ModelHelper.decode(createGroupRequest.getValidationRules());
             GroupProperties properties = new GroupProperties(
-                    schemaType, validationRules, createGroupRequest.isAllowMultipleSchemas(), createGroupRequest.getProperties());
+                    serializationFormat, validationRules, createGroupRequest.isAllowMultipleTypes(), createGroupRequest.getProperties());
             String groupName = createGroupRequest.getGroupName();
             return registryService.createGroup(groupName, properties)
                                   .thenApply(createStatus -> {
@@ -263,7 +263,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getSchemaVersions(String groupName, String schemaName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void getSchemaVersions(String groupName, String type, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get group schemas called for group {}", groupName);
         withCompletion("getSchemas", () -> registryService.getGroupHistory(groupName, null)
                                                                .thenApply(history -> {
@@ -291,7 +291,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getLatestSchema(String groupName, String schemaName, SecurityContext securityContext,
+    public void getLatestSchema(String groupName, String type, SecurityContext securityContext,
                                 AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get latest group schema called for group {}", groupName);
         withCompletion("getLatestSchema", () -> registryService.getGroupLatestSchemaVersion(groupName, null)
@@ -336,7 +336,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
                                       } else if (unwrap instanceof IncompatibleSchemaException) {
                                           log.info("addSchema incompatible schema {}", groupName);
                                           return Response.status(Status.CONFLICT).build();
-                                      } else if (unwrap instanceof SchemaTypeMismatchException) {
+                                      } else if (unwrap instanceof SerializationFormatMismatchException) {
                                           log.info("addSchema schema type mismatched {}", groupName);
                                           return Response.status(Status.EXPECTATION_FAILED).build();
                                       } else {
@@ -514,7 +514,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
                                                           .thenApply(schemas -> {
                                                               SchemaVersionsList schemaList = new SchemaVersionsList()
                                                                       .schemas(schemas.stream().map(ModelHelper::encode).collect(Collectors.toList()));
-                                                              List<String> names = schemaList.getSchemas().stream().map(x -> x.getSchemaInfo().getSchemaName()).collect(Collectors.toList());
+                                                              List<String> names = schemaList.getSchemas().stream().map(x -> x.getSchemaInfo().getType()).collect(Collectors.toList());
                                                               log.info("Found schemas {} for group {} ", names, groupName);
                                                               return Response.status(Status.OK).entity(schemaList).build();
                                                           })

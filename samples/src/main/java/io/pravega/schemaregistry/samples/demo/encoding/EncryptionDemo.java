@@ -33,7 +33,7 @@ import io.pravega.schemaregistry.codec.Codec;
 import io.pravega.schemaregistry.common.Either;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.Compatibility;
-import io.pravega.schemaregistry.contract.data.SchemaType;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.samples.generated.Test1;
 import io.pravega.schemaregistry.schemas.AvroSchema;
@@ -113,7 +113,7 @@ public class EncryptionDemo {
 
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
-                                                            .autoCreateGroup(SchemaType.Avro, 
+                                                            .autoCreateGroup(SerializationFormat.Avro, 
                                                                     SchemaValidationRules.of(Compatibility.backward()), true)
                                                             .autoRegisterSchema(true)
                                                             .autoRegisterCodec(true)
