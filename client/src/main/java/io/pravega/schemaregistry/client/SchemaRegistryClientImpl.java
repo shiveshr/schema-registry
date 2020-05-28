@@ -10,7 +10,6 @@
 package io.pravega.schemaregistry.client;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
 import io.pravega.schemaregistry.common.AuthHelper;
 import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
@@ -36,7 +35,6 @@ import io.pravega.schemaregistry.contract.generated.rest.model.CreateGroupReques
 import io.pravega.schemaregistry.contract.generated.rest.model.GetEncodingIdRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.GetSchemaVersion;
 import io.pravega.schemaregistry.contract.generated.rest.model.ListGroupsResponse;
-import io.pravega.schemaregistry.contract.generated.rest.model.SchemaNamesList;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaVersionsList;
 import io.pravega.schemaregistry.contract.generated.rest.model.UpdateValidationRulesRequest;
 import io.pravega.schemaregistry.contract.generated.rest.model.Valid;
@@ -53,7 +51,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,12 +77,12 @@ public class SchemaRegistryClientImpl implements SchemaRegistryClient {
 
     @SneakyThrows
     @Override
-    public boolean addGroup(String groupId, SchemaType schemaType, SchemaValidationRules validationRules, boolean versionedBySchemaName, Map<String, String> properties) {
+    public boolean addGroup(String groupId, SchemaType schemaType, SchemaValidationRules validationRules, boolean allowMultipleSchemas, Map<String, String> properties) {
         io.pravega.schemaregistry.contract.generated.rest.model.SchemaType schemaTypeModel = ModelHelper.encode(schemaType);
 
         io.pravega.schemaregistry.contract.generated.rest.model.SchemaValidationRules compatibility = ModelHelper.encode(validationRules);
         CreateGroupRequest request = new CreateGroupRequest().schemaType(schemaTypeModel)
-                                                             .properties(properties).versionedBySchemaName(versionedBySchemaName)
+                                                             .properties(properties).allowMultipleSchemas(allowMultipleSchemas)
                                                              .groupName(groupId)
                                                              .validationRules(compatibility);
 
@@ -128,7 +125,7 @@ public class SchemaRegistryClientImpl implements SchemaRegistryClient {
                         } else {
                             SchemaType schemaType = ModelHelper.decode(x.getValue().getSchemaType());
                             SchemaValidationRules rules = ModelHelper.decode(x.getValue().getSchemaValidationRules());
-                            m.put(x.getKey(), new GroupProperties(schemaType, rules, x.getValue().isVersionedBySchemaName(), x.getValue().getProperties()));
+                            m.put(x.getKey(), new GroupProperties(schemaType, rules, x.getValue().isAllowMultipleSchemas(), x.getValue().getProperties()));
                         }
                     }, HashMap::putAll);
             continuationToken = entity.getContinuationToken();
@@ -172,11 +169,11 @@ public class SchemaRegistryClientImpl implements SchemaRegistryClient {
 
     @SneakyThrows
     @Override
-    public List<String> getSchemaNames(String groupId) {
-        Response response = proxy.getSchemaNames(groupId);
-        SchemaNamesList objectsList = response.readEntity(SchemaNamesList.class);
+    public List<SchemaWithVersion> getSchemas(String groupId) {
+        Response response = proxy.getSchemas(groupId);
+        SchemaVersionsList objectsList = response.readEntity(SchemaVersionsList.class);
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-            return objectsList.getObjects();
+            return objectsList.getSchemas().stream().map(ModelHelper::decode).collect(Collectors.toList());
         } else if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
             throw new ResourceNotFoundException("Group not found.");
         } else {
@@ -276,7 +273,7 @@ public class SchemaRegistryClientImpl implements SchemaRegistryClient {
 
     @Override
     public List<SchemaWithVersion> getSchemaVersions(String groupId, @Nullable String schemaName) {
-        Response response = proxy.getSchemas(groupId, schemaName);
+        Response response = proxy.getSchemaVersions(groupId, schemaName);
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             SchemaVersionsList schemaList = response.readEntity(SchemaVersionsList.class);
             return schemaList.getSchemas().stream().map(ModelHelper::decode).collect(Collectors.toList());
@@ -299,7 +296,6 @@ public class SchemaRegistryClientImpl implements SchemaRegistryClient {
         } else {
             throw new RuntimeException("Internal Service error. Failed to get schema evolution history for group.");
         }
-
     }
 
     @SneakyThrows
@@ -372,10 +368,5 @@ public class SchemaRegistryClientImpl implements SchemaRegistryClient {
         } else if (response.getStatus() != Response.Status.CREATED.getStatusCode()) {
             throw new RuntimeException("Failed to add codec. Internal server error.");
         }
-    }
-
-    @SneakyThrows
-    private String encodeGroupId(String groupId) {
-        return URLEncoder.encode(groupId, Charsets.UTF_8.toString());
     }
 }
