@@ -41,7 +41,7 @@ public interface SchemaStore {
     
     CompletableFuture<Void> updateValidationRules(String group, Etag etag, SchemaValidationRules policy);
 
-    CompletableFuture<List<String>> listSchemaNames(String group);
+    CompletableFuture<List<SchemaWithVersion>> getLatestSchemas(String group);
     
     CompletableFuture<List<SchemaWithVersion>> listSchemas(String group);
 

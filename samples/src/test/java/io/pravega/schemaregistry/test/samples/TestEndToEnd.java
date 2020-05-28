@@ -40,6 +40,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -157,7 +158,7 @@ public abstract class TestEndToEnd {
         assertEquals(version3.getOrdinal(), 2);
         assertEquals(version3.getSchemaName(), myTest2);
 
-        List<String> schemaNames = client.getSchemaNames(group);
+        List<String> schemaNames = client.getSchemas(group).stream().map(x -> x.getSchema().getName()).collect(Collectors.toList());
         assertEquals(schemaNames.size(), 2);
         assertTrue(schemaNames.contains(myTest));
         assertTrue(schemaNames.contains(myTest2));

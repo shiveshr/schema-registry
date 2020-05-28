@@ -104,7 +104,7 @@ public interface TableRecords {
         public static final GroupPropertiesRecord.Serializer SERIALIZER = new GroupPropertiesRecord.Serializer();
 
         private final SchemaType schemaType;
-        private final boolean versionedBySchemaName;
+        private final boolean allowMultipleSchemas;
         private final Map<String, String> properties;
 
         @Override
@@ -134,13 +134,13 @@ public interface TableRecords {
 
             private void write00(GroupPropertiesRecord e, RevisionDataOutput target) throws IOException {
                 SchemaTypeRecord.SERIALIZER.serialize(target, new SchemaTypeRecord(e.schemaType));
-                target.writeBoolean(e.versionedBySchemaName);
+                target.writeBoolean(e.allowMultipleSchemas);
                 target.writeMap(e.properties, DataOutput::writeUTF, DataOutput::writeUTF);
             }
 
             private void read00(RevisionDataInput source, GroupPropertiesRecord.GroupPropertiesRecordBuilder b) throws IOException {
                 b.schemaType(SchemaTypeRecord.SERIALIZER.deserialize(source).getSchemaType())
-                 .versionedBySchemaName(source.readBoolean())
+                 .allowMultipleSchemas(source.readBoolean())
                  .properties(source.readMap(DataInput::readUTF, DataInput::readUTF));
             }
         }

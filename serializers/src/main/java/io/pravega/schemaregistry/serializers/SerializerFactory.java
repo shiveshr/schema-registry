@@ -655,7 +655,7 @@ public class SerializerFactory {
     private static void autoCreateGroup(SchemaRegistryClient client, SerializerConfig config) {
         if (config.isAutoCreateGroup()) {
             client.addGroup(config.getGroupId(), config.getGroupProperties().getSchemaType(),
-                    config.getGroupProperties().getSchemaValidationRules(), config.getGroupProperties().isVersionedBySchemaName(),
+                    config.getGroupProperties().getSchemaValidationRules(), config.getGroupProperties().isAllowMultipleSchemas(),
                     config.getGroupProperties().getProperties());
         }
     }

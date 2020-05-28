@@ -32,7 +32,6 @@ import io.pravega.schemaregistry.contract.generated.rest.model.GetSchemaVersion;
 import io.pravega.schemaregistry.contract.generated.rest.model.GroupHistory;
 import io.pravega.schemaregistry.contract.generated.rest.model.ListGroupsResponse;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaInfo;
-import io.pravega.schemaregistry.contract.generated.rest.model.SchemaNamesList;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaVersionsList;
 import io.pravega.schemaregistry.contract.generated.rest.model.SchemaWithVersion;
 import io.pravega.schemaregistry.contract.generated.rest.model.UpdateValidationRulesRequest;
@@ -52,6 +51,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -123,7 +123,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
             SchemaType schemaType = ModelHelper.decode(createGroupRequest.getSchemaType());
             SchemaValidationRules validationRules = ModelHelper.decode(createGroupRequest.getValidationRules());
             GroupProperties properties = new GroupProperties(
-                    schemaType, validationRules, createGroupRequest.isVersionedBySchemaName(), createGroupRequest.getProperties());
+                    schemaType, validationRules, createGroupRequest.isAllowMultipleSchemas(), createGroupRequest.getProperties());
             String groupName = createGroupRequest.getGroupName();
             return registryService.createGroup(groupName, properties)
                                   .thenApply(createStatus -> {
@@ -263,7 +263,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
 
     @Override
-    public void getSchemas(String groupName, String schemaName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+    public void getSchemaVersions(String groupName, String schemaName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
         log.info("Get group schemas called for group {}", groupName);
         withCompletion("getSchemas", () -> registryService.getGroupHistory(groupName, null)
                                                                .thenApply(history -> {
@@ -508,20 +508,22 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
     }
     
     @Override
-    public void getSchemaNames(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
-        log.info("getSchemaNames called for group {} ", groupName);
-        withCompletion("getObjects", () -> registryService.getSchemaNames(groupName)
-                                                          .thenApply(schemaNames -> {
-                                                              SchemaNamesList schemaNamesList = new SchemaNamesList().objects(schemaNames);
-                                                              log.info("Found object types {} for group {} ", schemaNamesList, groupName);
-                                                              return Response.status(Status.OK).entity(schemaNamesList).build();
+    public void getSchemas(String groupName, SecurityContext securityContext, AsyncResponse asyncResponse) throws NotFoundException {
+        log.info("getSchemas called for group {} ", groupName);
+        withCompletion("getSchemas", () -> registryService.getSchemas(groupName)
+                                                          .thenApply(schemas -> {
+                                                              SchemaVersionsList schemaList = new SchemaVersionsList()
+                                                                      .schemas(schemas.stream().map(ModelHelper::encode).collect(Collectors.toList()));
+                                                              List<String> names = schemaList.getSchemas().stream().map(x -> x.getSchemaInfo().getSchemaName()).collect(Collectors.toList());
+                                                              log.info("Found schemas {} for group {} ", names, groupName);
+                                                              return Response.status(Status.OK).entity(schemaList).build();
                                                           })
                                                           .exceptionally(exception -> {
                                                               if (Exceptions.unwrap(exception) instanceof StoreExceptions.DataNotFoundException) {
                                                                   log.warn("Group {} not found", groupName);
                                                                   return Response.status(Status.NOT_FOUND).build();
                                                               }
-                                                              log.warn("getSchemaNames failed with exception: ", exception);
+                                                              log.warn("getSchemas failed with exception: ", exception);
                                                               return Response.status(Status.INTERNAL_SERVER_ERROR).build();
                                                           }))
                 .thenApply(response -> {
@@ -602,6 +604,5 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync {
                     asyncResponse.resume(response);
                     return response;
                 });
-
     }
 }

@@ -110,13 +110,13 @@ public class SerializerConfig {
             return autoCreateGroup(schemaType, true);
         }
 
-        public SerializerConfigBuilder autoCreateGroup(SchemaType schemaType, boolean versionedBySchemaName) {
-            return autoCreateGroup(schemaType, SchemaValidationRules.of(Compatibility.fullTransitive()), versionedBySchemaName);
+        public SerializerConfigBuilder autoCreateGroup(SchemaType schemaType, boolean allowMultipleSchemas) {
+            return autoCreateGroup(schemaType, SchemaValidationRules.of(Compatibility.fullTransitive()), allowMultipleSchemas);
         }
 
-        public SerializerConfigBuilder autoCreateGroup(SchemaType schemaType, SchemaValidationRules rules, boolean versionedBySchemaName) {
+        public SerializerConfigBuilder autoCreateGroup(SchemaType schemaType, SchemaValidationRules rules, boolean allowMultipleSchemas) {
             this.autoCreateGroup = true;
-            this.groupProperties = new GroupProperties(schemaType, rules, versionedBySchemaName, Collections.emptyMap());
+            this.groupProperties = new GroupProperties(schemaType, rules, allowMultipleSchemas, Collections.emptyMap());
             return this;
         }
     }

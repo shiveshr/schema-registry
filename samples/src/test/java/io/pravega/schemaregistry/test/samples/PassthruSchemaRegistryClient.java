@@ -37,8 +37,8 @@ public class PassthruSchemaRegistryClient implements SchemaRegistryClient {
     
     @Override
     public boolean addGroup(String group, SchemaType schemaType, SchemaValidationRules validationRules,
-                            boolean versionedBySchemaName, Map<String, String> properties) {
-        return service.createGroup(group, new GroupProperties(schemaType, validationRules, versionedBySchemaName, properties)).join();
+                            boolean allowMultipleSchemas, Map<String, String> properties) {
+        return service.createGroup(group, new GroupProperties(schemaType, validationRules, allowMultipleSchemas, properties)).join();
     }
 
     @Override
@@ -62,8 +62,8 @@ public class PassthruSchemaRegistryClient implements SchemaRegistryClient {
     }
     
     @Override
-    public List<String> getSchemaNames(String group) {
-        return service.getSchemaNames(group).join();
+    public List<SchemaWithVersion> getSchemas(String group) {
+        return service.getSchemas(group).join();
     }
 
     @Override
