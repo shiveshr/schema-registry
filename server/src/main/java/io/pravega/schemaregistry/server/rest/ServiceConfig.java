@@ -9,6 +9,7 @@
  */
 package io.pravega.schemaregistry.server.rest;
 
+import io.pravega.auth.ServerConfig;
 import io.pravega.common.Exceptions;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,17 +18,19 @@ import lombok.Getter;
  * REST server config.
  */
 @Getter
-public class ServiceConfig {
+@Builder
+public class ServiceConfig implements ServerConfig {
     private final String host;
     private final int port;
+    private final boolean authEnabled;
 
-    @Builder
-    ServiceConfig(final String host, final int port) {
+    private ServiceConfig(final String host, final int port, final boolean authEnabled) {
         Exceptions.checkNotNullOrEmpty(host, "host");
         Exceptions.checkArgument(port > 0, "port", "Should be positive integer");
 
         this.host = host;
         this.port = port;
+        this.authEnabled = authEnabled;
     }
 
     @Override
@@ -38,6 +41,7 @@ public class ServiceConfig {
         return new StringBuilder(String.format("%s(", getClass().getSimpleName()))
                 .append(String.format("host: %s, ", host))
                 .append(String.format("port: %d, ", port))
+                .append(String.format("authEnabled: %b, ", authEnabled))
                 .toString();
     }
 }

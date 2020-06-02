@@ -10,11 +10,12 @@
 package io.pravega.schemaregistry.storage;
 
 import io.pravega.client.ClientConfig;
-import io.pravega.controller.server.rpc.auth.GrpcAuthHelper;
+import io.pravega.schemaregistry.server.rest.ServiceConfig;
 import io.pravega.schemaregistry.storage.client.TableStore;
 import io.pravega.schemaregistry.storage.impl.SchemaStoreImpl;
 import io.pravega.schemaregistry.storage.impl.groups.InMemoryGroups;
 import io.pravega.schemaregistry.storage.impl.groups.PravegaKVGroups;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -26,8 +27,17 @@ public class SchemaStoreFactory {
         return new SchemaStoreImpl<>(new InMemoryGroups(executor));
     }
     
-    public static SchemaStore createPravegaStore(ClientConfig clientConfig, ScheduledExecutorService executor) {
-        TableStore tableStore = new TableStore(clientConfig, GrpcAuthHelper.getDisabledAuthHelper(), executor);
+    public static SchemaStore createPravegaStore(ServiceConfig serviceConfig, ClientConfig clientConfig, ScheduledExecutorService executor) {
+        TableStore tableStore = new TableStore(clientConfig, () -> retrieveMasterToken(serviceConfig), executor);
         return new SchemaStoreImpl<>(new PravegaKVGroups(tableStore, executor));
     }
+
+    private static String retrieveMasterToken(ServiceConfig config) {
+        if (config.isAuthEnabled()) {
+            throw new NotImplementedException("Auth");
+        } else {
+            return "";
+        }
+    }
+
 }

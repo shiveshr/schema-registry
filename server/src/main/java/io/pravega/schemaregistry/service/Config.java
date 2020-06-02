@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Properties;
+
+import io.pravega.schemaregistry.server.rest.ServiceConfig;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -44,13 +46,11 @@ public final class Config {
 
     public static final String SERVICE_HOST;
     public static final int SERVICE_PORT;
-    
     public static final String PRAVEGA_CONTROLLER_URI;
-    
     public static final int THREAD_POOL_SIZE;
-    
     public static final String STORE_TYPE;
 
+    public static final ServiceConfig SERVICE_CONFIG;
     //endregion
 
     //region Property Definitions
@@ -58,12 +58,10 @@ public final class Config {
     private static final Property<String> PROPERTY_REST_IP = Property.named("service.restIp", "0.0.0.0");
     private static final Property<Integer> PROPERTY_REST_PORT = Property.named("service.restPort", 9092);
     
-    private static final Property<Integer> PROPERTY_THREAD_POOL_SIZE = Property.named("service.threadPoolSize", 50);
-    
     private static final Property<String> PROPERTY_PRAVEGA_CONTROLLER_URL = Property.named("service.controller.url", "tcp://localhost:9090");
-    
     private static final Property<String> PROPERTY_STORE_TYPE = Property.named("service.storeType", "Pravega");
-    
+    private static final Property<Integer> PROPERTY_THREAD_POOL_SIZE = Property.named("service.threadPoolSize", 50);
+
     private static final String COMPONENT_CODE = "schema-registry";
 
     //endregion
@@ -78,10 +76,11 @@ public final class Config {
         SERVICE_PORT = p.getInt(PROPERTY_REST_PORT);
 
         PRAVEGA_CONTROLLER_URI = p.get(PROPERTY_PRAVEGA_CONTROLLER_URL);
-        
+
         THREAD_POOL_SIZE = p.getInt(PROPERTY_THREAD_POOL_SIZE);
-        
         STORE_TYPE = p.get(PROPERTY_STORE_TYPE);
+
+        SERVICE_CONFIG = createServiceConfig();
     }
 
     private static Properties loadConfiguration() {
@@ -161,7 +160,14 @@ public final class Config {
 
         return resolved;
     }
-    
+
+    private static ServiceConfig createServiceConfig() {
+        return ServiceConfig.builder()
+                            .host(Config.SERVICE_HOST)
+                                   .port(Config.SERVICE_PORT)
+                                   .build();
+    }
+
     //endregion
 }
 

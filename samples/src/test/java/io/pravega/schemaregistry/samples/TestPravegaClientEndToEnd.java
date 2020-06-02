@@ -1,10 +1,10 @@
 /**
  * Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
- * <p>
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
+ * 
  * http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.pravega.schemaregistry.samples;
@@ -39,12 +39,14 @@ import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.exceptions.IncompatibleSchemaException;
+import io.pravega.schemaregistry.pravegastandalone.PravegaStandaloneUtils;
 import io.pravega.schemaregistry.schemas.AvroSchema;
 import io.pravega.schemaregistry.schemas.JSONSchema;
 import io.pravega.schemaregistry.schemas.ProtobufSchema;
 import io.pravega.schemaregistry.serializers.JSonGenericObject;
 import io.pravega.schemaregistry.serializers.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
+import io.pravega.schemaregistry.service.Config;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
 import io.pravega.schemaregistry.storage.SchemaStore;
 import io.pravega.schemaregistry.storage.SchemaStoreFactory;
@@ -134,7 +136,7 @@ public class TestPravegaClientEndToEnd implements AutoCloseable {
 
         clientConfig = ClientConfig.builder().controllerURI(URI.create(pravegaStandaloneUtils.getControllerURI())).build();
 
-        schemaStore = SchemaStoreFactory.createPravegaStore(clientConfig, executor);
+        schemaStore = SchemaStoreFactory.createPravegaStore(Config.SERVICE_CONFIG, clientConfig, executor);
 
         service = new SchemaRegistryService(schemaStore, executor);
         client = new PassthruSchemaRegistryClient(service);

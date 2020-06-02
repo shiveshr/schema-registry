@@ -1,10 +1,10 @@
 /**
  * Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
- * <p>
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
+ * 
  * http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.pravega.schemaregistry.samples.demo.serializationformats;
@@ -133,7 +133,7 @@ public class AvroDemo {
             streamManager.createScope(scope);
             streamManager.createStream(scope, stream, StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build());
 
-            System.out.println("adding new group with: \nschema type = avro\n compatibiity = backward");
+            System.out.println("adding new group with: \nserialization format = avro\n compatibiity = backward");
 
             SerializationFormat serializationFormat = SerializationFormat.Avro;
             client.addGroup(groupId, serializationFormat,

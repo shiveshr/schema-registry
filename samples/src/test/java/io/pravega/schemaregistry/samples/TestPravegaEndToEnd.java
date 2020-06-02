@@ -1,15 +1,17 @@
 /**
  * Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
- * <p>
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
+ * 
  * http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.pravega.schemaregistry.samples;
 
 import io.pravega.client.ClientConfig;
+import io.pravega.schemaregistry.service.Config;
+import io.pravega.schemaregistry.pravegastandalone.PravegaStandaloneUtils;
 import io.pravega.schemaregistry.storage.SchemaStore;
 import io.pravega.schemaregistry.storage.SchemaStoreFactory;
 import org.junit.Before;
@@ -26,6 +28,6 @@ public class TestPravegaEndToEnd extends TestEndToEnd {
     }
     
     SchemaStore getStore() {
-        return SchemaStoreFactory.createPravegaStore(clientConfig, executor);
+        return SchemaStoreFactory.createPravegaStore(Config.SERVICE_CONFIG, clientConfig, executor);
     }
 }

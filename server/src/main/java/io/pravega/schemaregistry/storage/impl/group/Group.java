@@ -1,10 +1,10 @@
 /**
  * Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
- * <p>
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
+ * 
  * http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.pravega.schemaregistry.storage.impl.group;
@@ -44,6 +44,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
@@ -112,7 +113,8 @@ public class Group<V> {
         return groupTable.getEntry(SCHEMA_TYPES_KEY, TableRecords.SchemaTypesListValue.class)
                          .thenCompose(types -> {
                              List<String> schemas = types == null ? Collections.emptyList() : types.getTypes();
-                             return Futures.allOfWithResults(schemas.stream().map(this::getLatestSchemaVersion).collect(Collectors.toList()));
+                             return Futures.allOfWithResults(schemas.stream().map(this::getLatestSchemaVersion).collect(Collectors.toList()))
+                                     .thenApply(latestSchemasList -> latestSchemasList.stream().filter(Objects::nonNull).collect(Collectors.toList()));
                          });
     }
 

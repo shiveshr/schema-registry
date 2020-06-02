@@ -24,14 +24,14 @@ import java.util.concurrent.ScheduledExecutorService;
 @Slf4j
 public class Main {
     public static void main(String[] args) {
-        ServiceConfig config = ServiceConfig.builder().host(Config.SERVICE_HOST).port(Config.SERVICE_PORT).build();
         ClientConfig clientConfig = ClientConfig.builder().controllerURI(URI.create(Config.PRAVEGA_CONTROLLER_URI)).build();
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(Config.THREAD_POOL_SIZE);
 
         SchemaStore schemaStore;
+        ServiceConfig serviceConfig = Config.SERVICE_CONFIG;
         if (Config.STORE_TYPE.equals(StoreType.Pravega.name())) {
-            schemaStore = SchemaStoreFactory.createPravegaStore(clientConfig, executor);
+            schemaStore = SchemaStoreFactory.createPravegaStore(serviceConfig, clientConfig, executor);
         } else if (Config.STORE_TYPE.equals(StoreType.Pravega.name())) {
             schemaStore = SchemaStoreFactory.createInMemoryStore(executor);
         } else {
@@ -40,7 +40,7 @@ public class Main {
         
         SchemaRegistryService service = new SchemaRegistryService(schemaStore, executor);
 
-        RestServer restServer = new RestServer(service, config);
+        RestServer restServer = new RestServer(service, serviceConfig);
         restServer.startAsync();
         log.info("Awaiting start of REST server");
         restServer.awaitRunning();
