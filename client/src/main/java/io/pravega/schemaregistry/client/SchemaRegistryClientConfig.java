@@ -19,13 +19,13 @@ import java.net.URI;
  */
 @Data
 @Builder
-public class SchemaRegistryConfig {
+public class SchemaRegistryClientConfig {
     /**
      * URI for connecting with registry client.
      */
     private final URI schemaRegistryUri;
 
-    private SchemaRegistryConfig(URI schemaRegistryUri) {
+    private SchemaRegistryClientConfig(URI schemaRegistryUri) {
         this.schemaRegistryUri = schemaRegistryUri;
     }
 
