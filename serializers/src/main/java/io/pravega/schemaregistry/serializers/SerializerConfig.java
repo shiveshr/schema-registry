@@ -11,7 +11,7 @@ package io.pravega.schemaregistry.serializers;
 
 import com.google.common.base.Preconditions;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
-import io.pravega.schemaregistry.client.SchemaRegistryConfig;
+import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
 import io.pravega.schemaregistry.codec.Codec;
 import io.pravega.schemaregistry.codec.CodecFactory;
 import io.pravega.schemaregistry.common.Either;
@@ -48,10 +48,10 @@ public class SerializerConfig {
      */
     private final String groupId;
     /**
-     * Either the registry client or the {@link SchemaRegistryConfig} that can be used for creating a new registry client.
+     * Either the registry client or the {@link SchemaRegistryClientConfig} that can be used for creating a new registry client.
      * Exactly one of the two option has to be supplied. 
      */
-    private final Either<SchemaRegistryConfig, SchemaRegistryClient> registryConfigOrClient;
+    private final Either<SchemaRegistryClientConfig, SchemaRegistryClient> registryConfigOrClient;
     /**
      * Flag to tell the serializer if the schema should be automatically registered before using it in {@link io.pravega.client.stream.EventStreamWriter}. 
      * It is recommended to register keep this flag as false in production systems and manage schema evolution explicitly and
@@ -98,7 +98,7 @@ public class SerializerConfig {
         private boolean autoRegisterSchema = false;
         private boolean autoRegisterCodec = false;
         private boolean failOnCodecMismatch = true;
-        private Either<SchemaRegistryConfig, SchemaRegistryClient> registryConfigOrClient = null;
+        private Either<SchemaRegistryClientConfig, SchemaRegistryClient> registryConfigOrClient = null;
 
         private GroupProperties groupProperties = new GroupProperties(SerializationFormat.Any,
                 SchemaValidationRules.of(Compatibility.fullTransitive()), false, Collections.emptyMap());
@@ -128,7 +128,7 @@ public class SerializerConfig {
             return this;
         }
         
-        public SerializerConfigBuilder registryConfig(SchemaRegistryConfig config) {
+        public SerializerConfigBuilder registryConfig(SchemaRegistryClientConfig config) {
             Preconditions.checkArgument(config != null);
             this.registryConfigOrClient = Either.left(config);
             return this;

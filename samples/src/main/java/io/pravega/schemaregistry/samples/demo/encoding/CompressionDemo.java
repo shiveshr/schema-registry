@@ -28,7 +28,7 @@ import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.schemaregistry.GroupIdGenerator;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
 import io.pravega.schemaregistry.client.SchemaRegistryClientFactory;
-import io.pravega.schemaregistry.client.SchemaRegistryConfig;
+import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
 import io.pravega.schemaregistry.codec.Codec;
 import io.pravega.schemaregistry.codec.CodecFactory;
 import io.pravega.schemaregistry.contract.data.CodecType;
@@ -119,7 +119,7 @@ public class CompressionDemo {
     
     public CompressionDemo() {
         clientConfig = ClientConfig.builder().controllerURI(URI.create("tcp://localhost:9090")).build();
-        SchemaRegistryConfig config = SchemaRegistryConfig.builder().schemaRegistryUri(URI.create("http://localhost:9092")).build();
+        SchemaRegistryClientConfig config = SchemaRegistryClientConfig.builder().schemaRegistryUri(URI.create("http://localhost:9092")).build();
         client = SchemaRegistryClientFactory.createRegistryClient(config);
         id = Long.toString(System.currentTimeMillis());
         scope = "scope" + id;
