@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
 public class SchemaRegistryClientImpl implements SchemaRegistryClient {
     private final ApiV1.GroupsApi proxy;
 
-    SchemaRegistryClientImpl(SchemaRegistryClientConfig config) {
+    SchemaRegistryClientImpl(SchemaRegistryConfig config) {
         Client client = ClientBuilder.newClient(new ClientConfig());
         if (config.isAuthEnabled()) {
             client.register((ClientRequestFilter) context -> {

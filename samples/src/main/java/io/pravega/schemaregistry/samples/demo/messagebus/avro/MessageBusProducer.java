@@ -19,8 +19,7 @@ import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.schemaregistry.GroupIdGenerator;
-import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
-import io.pravega.schemaregistry.common.Either;
+import io.pravega.schemaregistry.client.SchemaRegistryConfig;
 import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.samples.generated.Type1;
 import io.pravega.schemaregistry.samples.generated.Type2;
@@ -46,14 +45,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageBusProducer {
     private final ClientConfig clientConfig;
-    private final SchemaRegistryClientConfig config;
+    private final SchemaRegistryConfig config;
     private final String scope;
     private final String stream;
     private final EventStreamWriter<SpecificRecordBase> writer;
 
     private MessageBusProducer(String controllerURI, String registryUri, String scope, String stream) {
         clientConfig = ClientConfig.builder().controllerURI(URI.create(controllerURI)).build();
-        this.config = SchemaRegistryClientConfig.builder().schemaRegistryUri((URI.create(registryUri))).build();
+        this.config = SchemaRegistryConfig.builder().schemaRegistryUri((URI.create(registryUri))).build();
         this.scope = scope;
         this.stream = stream;
         String groupId = GroupIdGenerator.getGroupId(GroupIdGenerator.Type.QualifiedStreamName, scope, stream);
@@ -155,7 +154,7 @@ public class MessageBusProducer {
                                                             .groupId(groupId)
                                                             .autoCreateGroup(SerializationFormat.Avro,true)
                                                             .autoRegisterSchema(true)
-                                                            .registryConfigOrClient(Either.left(config))
+                                                            .registryConfig(config)
                                                             .build();
 
         Map<Class<? extends SpecificRecordBase>, AvroSchema<SpecificRecordBase>> map = new HashMap<>();
