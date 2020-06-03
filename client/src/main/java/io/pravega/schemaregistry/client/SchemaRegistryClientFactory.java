@@ -19,7 +19,7 @@ public class SchemaRegistryClientFactory {
      * @param config Configuration for creating registry client. 
      * @return SchemaRegistry client implementation
      */
-    public static SchemaRegistryClient createRegistryClient(SchemaRegistryClientConfig config) {
+    public static SchemaRegistryClient createRegistryClient(SchemaRegistryConfig config) {
         return new SchemaRegistryClientImpl(config.getSchemaRegistryUri());
     }
 }

@@ -25,9 +25,8 @@ import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.schemaregistry.GroupIdGenerator;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
-import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
 import io.pravega.schemaregistry.client.SchemaRegistryClientFactory;
-import io.pravega.schemaregistry.common.Either;
+import io.pravega.schemaregistry.client.SchemaRegistryConfig;
 import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.samples.generated.Type1;
 import io.pravega.schemaregistry.samples.generated.Type2;
@@ -58,7 +57,7 @@ public class MessageBusConsumer {
 
     private MessageBusConsumer(String controllerURI, String registryUri, String scope, String stream) {
         clientConfig = ClientConfig.builder().controllerURI(URI.create(controllerURI)).build();
-        SchemaRegistryClientConfig config = SchemaRegistryClientConfig.builder().schemaRegistryUri((URI.create(registryUri))).build();
+        SchemaRegistryConfig config = SchemaRegistryConfig.builder().schemaRegistryUri((URI.create(registryUri))).build();
         client = SchemaRegistryClientFactory.createRegistryClient(config);
         this.scope = scope;
         this.stream = stream;
@@ -142,7 +141,7 @@ public class MessageBusConsumer {
                                                             .groupId(groupId)
                                                             .autoCreateGroup(SerializationFormat.Avro,true)
                                                             .autoRegisterSchema(true)
-                                                            .registryConfigOrClient(Either.right(client))
+                                                            .registryClient(client)
                                                             .build();
 
         Map<Class<? extends SpecificRecordBase>, AvroSchema<SpecificRecordBase>> map = new HashMap<>();

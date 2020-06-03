@@ -26,14 +26,13 @@ import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.schemaregistry.GroupIdGenerator;
-import io.pravega.schemaregistry.client.SchemaRegistryClientFactory;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
-import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
-import io.pravega.schemaregistry.common.Either;
+import io.pravega.schemaregistry.client.SchemaRegistryClientFactory;
+import io.pravega.schemaregistry.client.SchemaRegistryConfig;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaInfo;
-import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.serializers.PravegaDeserializer;
 import io.pravega.schemaregistry.serializers.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
@@ -62,7 +61,7 @@ public class SerDeDemo {
 
     private SerDeDemo(String controllerURI, String registryUri, String scope, String stream, String filePath) {
         clientConfig = ClientConfig.builder().controllerURI(URI.create(controllerURI)).build();
-        SchemaRegistryClientConfig config = SchemaRegistryClientConfig.builder().schemaRegistryUri(URI.create(registryUri)).build();
+        SchemaRegistryConfig config = SchemaRegistryConfig.builder().schemaRegistryUri(URI.create(registryUri)).build();
         client = SchemaRegistryClientFactory.createRegistryClient(config);
         this.scope = scope;
         this.stream = stream;
@@ -99,7 +98,7 @@ public class SerDeDemo {
         SerializerConfig config = SerializerConfig.builder()
                                                   .groupId(groupId)
                                                   .autoRegisterSchema(true)
-                                                  .registryConfigOrClient(Either.right(client))
+                                                  .registryClient(client)
                                                   .build();
 
         Map<String, String> map = new HashMap<>();
@@ -125,7 +124,7 @@ public class SerDeDemo {
     private EventStreamReader<Object> createReader() {
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
-                                                            .registryConfigOrClient(Either.right(client))
+                                                            .registryClient(client)
                                                             .build();
 
         // region read into specific schema
