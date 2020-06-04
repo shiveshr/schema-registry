@@ -11,7 +11,6 @@ package io.pravega.schemaregistry.storage.impl;
 
 import io.pravega.schemaregistry.ListWithToken;
 import io.pravega.schemaregistry.common.Either;
-import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
 import io.pravega.schemaregistry.contract.data.GroupHistoryRecord;
@@ -127,12 +126,12 @@ public class SchemaStoreImpl<T> implements SchemaStore {
     }
 
     @Override
-    public CompletableFuture<Either<EncodingId, Etag>> getEncodingId(String group, VersionInfo versionInfo, CodecType codecType) {
+    public CompletableFuture<Either<EncodingId, Etag>> getEncodingId(String group, VersionInfo versionInfo, String codecType) {
         return getGroup(group).thenCompose(grp -> grp.getEncodingId(versionInfo, codecType));
     }
 
     @Override
-    public CompletableFuture<EncodingId> createEncodingId(String group, VersionInfo versionInfo, CodecType codecType, 
+    public CompletableFuture<EncodingId> createEncodingId(String group, VersionInfo versionInfo, String codecType, 
                                                           Etag etag) {
         return getGroup(group).thenCompose(grp -> grp.createEncodingId(versionInfo, codecType, etag));
     }
@@ -143,13 +142,13 @@ public class SchemaStoreImpl<T> implements SchemaStore {
     }
 
     @Override
-    public CompletableFuture<List<CodecType>> getCodecTypes(String group) {
+    public CompletableFuture<List<String>> getCodecTypes(String group) {
         return getGroup(group).thenCompose(Group::getCodecTypes);
     }
 
     @Override
-    public CompletableFuture<Void> addCodec(String group, CodecType codecType) {
-        return getGroup(group).thenCompose(grp -> grp.addCodec(codecType));
+    public CompletableFuture<Void> addCodecType(String group, String codecType) {
+        return getGroup(group).thenCompose(grp -> grp.addCodecType(codecType));
     }
 
     @Override
