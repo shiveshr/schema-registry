@@ -1,10 +1,10 @@
 /**
  * Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
- * <p>
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
+ * 
  * http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.pravega.schemaregistry.client;
@@ -170,16 +170,6 @@ public class SchemaRegistryClientImpl implements SchemaRegistryClient {
     }
 
     @Override
-    public SchemaWithVersion getLatestSchemaVersion(String groupId, @Nullable String schemaType) {
-        List<SchemaWithVersion> list = latestSchemas(groupId, schemaType);
-        if (schemaType == null) {
-            return list.stream().max(Comparator.comparingInt(x -> x.getVersion().getOrdinal())).orElse(null);
-        } else {
-            return list.get(0);
-        }
-    }
-
-    @Override
     public List<SchemaWithVersion> getSchemas(String groupId) {
         return latestSchemas(groupId, null);
     }
@@ -275,6 +265,16 @@ public class SchemaRegistryClientImpl implements SchemaRegistryClient {
                 throw new InternalServerError("Internal Service error. Failed to get encoding info.");
             }
         });
+    }
+
+    @Override
+    public SchemaWithVersion getLatestSchemaVersion(String groupId, @Nullable String schemaType) {
+        List<SchemaWithVersion> list = latestSchemas(groupId, schemaType);
+        if (schemaType == null) {
+            return list.stream().max(Comparator.comparingInt(x -> x.getVersion().getOrdinal())).orElse(null);
+        } else {
+            return list.get(0);
+        }
     }
 
     @Override
