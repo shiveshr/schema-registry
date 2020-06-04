@@ -96,7 +96,17 @@ public interface SchemaRegistryClient {
      */
     void updateSchemaValidationRules(String groupId, SchemaValidationRules validationRules, @Nullable SchemaValidationRules previousRules)
         throws PreconditionFailedException, ResourceNotFoundException, UnauthorizedException;
-    
+
+    /**
+     * Gets list of latest schemas for each object types registered under the group. Objects are identified by {@link SchemaInfo#type}.
+     *
+     * @param groupId Id for the group. 
+     * @return List of different objects within the group.   
+     * @throws ResourceNotFoundException if group is not found.
+     * @throws UnauthorizedException if the user is unauthorized.
+     */
+    List<SchemaWithVersion> getSchemas(String groupId) throws ResourceNotFoundException, UnauthorizedException;
+
     /**
      * Registers schema to the group. Schemas are validated against existing schemas in the group that share the same 
      * {@link SchemaInfo#type}.
@@ -190,16 +200,6 @@ public interface SchemaRegistryClient {
      */
     EncodingId getEncodingId(String groupId, VersionInfo version, String codecType) 
             throws CodecTypeNotRegisteredException, ResourceNotFoundException, UnauthorizedException;
-
-    /**
-     * Gets list of latest schemas for each object types registered under the group. Objects are identified by {@link SchemaInfo#type}.
-     *
-     * @param groupId Id for the group. 
-     * @return List of different objects within the group.   
-     * @throws ResourceNotFoundException if group is not found.
-     * @throws UnauthorizedException if the user is unauthorized.
-     */
-    List<SchemaWithVersion> getSchemas(String groupId) throws ResourceNotFoundException, UnauthorizedException;
 
     /**
      * Gets latest schema and version for the group (or type, if specified). 
