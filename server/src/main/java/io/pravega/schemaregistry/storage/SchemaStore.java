@@ -11,7 +11,6 @@ package io.pravega.schemaregistry.storage;
 
 import io.pravega.schemaregistry.ListWithToken;
 import io.pravega.schemaregistry.common.Either;
-import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
 import io.pravega.schemaregistry.contract.data.GroupHistoryRecord;
@@ -63,15 +62,15 @@ public interface SchemaStore {
 
     CompletableFuture<VersionInfo> getSchemaVersion(String group, SchemaInfo schemaInfo);
 
-    CompletableFuture<Either<EncodingId, Etag>> getEncodingId(String group, VersionInfo versionInfo, CodecType codecType);
+    CompletableFuture<Either<EncodingId, Etag>> getEncodingId(String group, VersionInfo versionInfo, String codecType);
     
-    CompletableFuture<EncodingId> createEncodingId(String group, VersionInfo versionInfo, CodecType codecType, Etag etag);
+    CompletableFuture<EncodingId> createEncodingId(String group, VersionInfo versionInfo, String codecType, Etag etag);
 
     CompletableFuture<EncodingInfo> getEncodingInfo(String group, EncodingId encodingId);
 
-    CompletableFuture<List<CodecType>> getCodecTypes(String group);
+    CompletableFuture<List<String>> getCodecTypes(String group);
 
-    CompletableFuture<Void> addCodec(String group, CodecType codecType);
+    CompletableFuture<Void> addCodecType(String group, String codecType);
 
     CompletableFuture<List<GroupHistoryRecord>> getGroupHistory(String group);
     
