@@ -27,10 +27,9 @@ import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.schemaregistry.GroupIdGenerator;
 import io.pravega.schemaregistry.client.SchemaRegistryClient;
-import io.pravega.schemaregistry.client.SchemaRegistryClientFactory;
 import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
+import io.pravega.schemaregistry.client.SchemaRegistryClientFactory;
 import io.pravega.schemaregistry.codec.Codec;
-import io.pravega.schemaregistry.contract.data.CodecType;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SchemaValidationRules;
 import io.pravega.schemaregistry.contract.data.SerializationFormat;
@@ -48,9 +47,7 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
 /**
@@ -107,8 +104,7 @@ public class EncryptionDemo {
         AvroSchema<Test1> schema3 = AvroSchema.of(Test1.class);
         
         // region writer with custom codec
-        Map<String, String> properties = Collections.singletonMap(ENCRYPTION_KEY_KEY, myEncryptionKey);
-        Codec myCodec = getMyCodec(properties);
+        Codec myCodec = getMyCodec();
 
         SerializerConfig serializerConfig = SerializerConfig.builder()
                                                             .groupId(groupId)
@@ -130,11 +126,10 @@ public class EncryptionDemo {
     }
     
     private void startReader() {
-        List<CodecType> list = client.getCodecTypes(groupId);
+        List<String> list = client.getCodecTypes(groupId);
         assert 1 == list.size();
-        assert list.stream().anyMatch(x -> x.equals(CodecType.Custom) && x.getCustomTypeName().equals(myEncryption));
-        Map<String, String> propertiesFromRegistry = list.get(0).getProperties();
-        Codec myCodec = getMyCodec(propertiesFromRegistry);
+        assert list.stream().anyMatch(x -> x.equals(myEncryption));
+        Codec myCodec = getMyCodec();
 
         // region new reader with additional codec
         // add new decoder for custom serialization
@@ -164,13 +159,13 @@ public class EncryptionDemo {
     }
     
     @SneakyThrows
-    private Codec getMyCodec(Map<String, String> properties) {
+    private Codec getMyCodec() {
         return new Codec() {
-            private final byte[] key = properties.get("key").getBytes(Charsets.UTF_8);
+            private final byte[] key = ENCRYPTION_KEY_KEY.getBytes(Charsets.UTF_8);
 
             @Override
-            public CodecType getCodecType() {
-                return CodecType.custom(myEncryption, properties);
+            public String getCodecType() {
+                return myEncryption;
             }
 
             @SneakyThrows
