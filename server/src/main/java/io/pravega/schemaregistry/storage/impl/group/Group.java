@@ -12,14 +12,13 @@ package io.pravega.schemaregistry.storage.impl.group;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.util.JsonFormat;
 import io.pravega.common.Exceptions;
 import io.pravega.common.concurrent.Futures;
 import io.pravega.common.util.Retry;
 import io.pravega.schemaregistry.common.Either;
+import io.pravega.schemaregistry.common.HashUtil;
 import io.pravega.schemaregistry.contract.data.EncodingId;
 import io.pravega.schemaregistry.contract.data.EncodingInfo;
 import io.pravega.schemaregistry.contract.data.GroupHistoryRecord;
@@ -68,7 +67,6 @@ public class Group<V> {
     private static final TableRecords.SchemaTypesKey SCHEMA_TYPES_KEY = new TableRecords.SchemaTypesKey();
     private static final TableRecords.LatestSchemaVersionKey LATEST_SCHEMA_VERSION_KEY = new TableRecords.LatestSchemaVersionKey();
     private static final TableRecords.LatestEncodingIdKey LATEST_ENCODING_ID_KEY = new TableRecords.LatestEncodingIdKey();
-    private static final HashFunction HASH = Hashing.murmur3_128();
     private static final Retry.RetryAndThrowConditionally WRITE_CONFLICT_RETRY = Retry.withExpBackoff(1, 2, Integer.MAX_VALUE, 100)
                                                                                       .retryWhen(x -> Exceptions.unwrap(x) instanceof StoreExceptions.WriteConflictException);
 
@@ -471,7 +469,7 @@ public class Group<V> {
     }
 
     private long getFingerprint(SchemaInfo schemaInfo) {
-        return HASH.hashBytes(schemaInfo.getSchemaData()).asLong();
+        return HashUtil.getFingerprint(schemaInfo.getSchemaData());
     }
 
     private CompletableFuture<EncodingId> generateNewEncodingId(VersionInfo versionInfo, String codecType, Etag etag) {

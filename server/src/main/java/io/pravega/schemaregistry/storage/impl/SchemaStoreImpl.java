@@ -25,6 +25,7 @@ import io.pravega.schemaregistry.storage.SchemaStore;
 import io.pravega.schemaregistry.storage.StoreExceptions;
 import io.pravega.schemaregistry.storage.impl.group.Group;
 import io.pravega.schemaregistry.storage.impl.groups.Groups;
+import io.pravega.schemaregistry.storage.impl.schemas.Schemas;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -32,9 +33,11 @@ import java.util.concurrent.CompletableFuture;
 
 public class SchemaStoreImpl<T> implements SchemaStore {
     private final Groups<T> groups;
+    private final Schemas<T> schemas;
 
-    public SchemaStoreImpl(Groups<T> groups) {
+    public SchemaStoreImpl(Groups<T> groups, Schemas<T> schemas) {
         this.groups = groups;
+        this.schemas = schemas;
     }
     
     // region schema store
@@ -117,7 +120,8 @@ public class SchemaStoreImpl<T> implements SchemaStore {
     
     @Override
     public CompletableFuture<VersionInfo> addSchema(String group, SchemaInfo schemaInfo, GroupProperties prop, Etag etag) {
-        return getGroup(group).thenCompose(grp -> grp.addSchema(schemaInfo, prop, etag));
+        return schemas.addNewSchema(schemaInfo, group)
+                .thenCompose(v -> getGroup(group).thenCompose(grp -> grp.addSchema(schemaInfo, prop, etag)));
     }
 
     @Override
@@ -159,6 +163,11 @@ public class SchemaStoreImpl<T> implements SchemaStore {
     @Override
     public CompletableFuture<List<GroupHistoryRecord>> getGroupHistoryForType(String group, String type) {
         return getGroup(group).thenCompose(grp -> grp.getHistory(type));
+    }
+
+    @Override
+    public CompletableFuture<List<String>> getGroupsUsing(SchemaInfo schemaInfo) {
+        return schemas.getGroupsUsing(schemaInfo);
     }
 
     // endregion
