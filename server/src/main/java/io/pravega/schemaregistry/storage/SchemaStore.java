@@ -75,4 +75,6 @@ public interface SchemaStore {
     CompletableFuture<List<GroupHistoryRecord>> getGroupHistory(String group);
     
     CompletableFuture<List<GroupHistoryRecord>> getGroupHistoryForType(String group, String type);
+    
+    CompletableFuture<List<String>> getGroupsUsing(SchemaInfo schemaInfo);
 }

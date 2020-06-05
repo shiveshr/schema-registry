@@ -15,6 +15,8 @@ import io.pravega.schemaregistry.storage.client.TableStore;
 import io.pravega.schemaregistry.storage.impl.SchemaStoreImpl;
 import io.pravega.schemaregistry.storage.impl.groups.InMemoryGroups;
 import io.pravega.schemaregistry.storage.impl.groups.PravegaKVGroups;
+import io.pravega.schemaregistry.storage.impl.schemas.InMemorySchemas;
+import io.pravega.schemaregistry.storage.impl.schemas.PravegaKVSchemas;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -24,12 +26,12 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class SchemaStoreFactory {
     public static SchemaStore createInMemoryStore(ScheduledExecutorService executor) {
-        return new SchemaStoreImpl<>(new InMemoryGroups(executor));
+        return new SchemaStoreImpl<>(new InMemoryGroups(executor), new InMemorySchemas());
     }
     
     public static SchemaStore createPravegaStore(ServiceConfig serviceConfig, ClientConfig clientConfig, ScheduledExecutorService executor) {
         TableStore tableStore = new TableStore(clientConfig, () -> retrieveMasterToken(serviceConfig), executor);
-        return new SchemaStoreImpl<>(new PravegaKVGroups(tableStore, executor));
+        return new SchemaStoreImpl<>(new PravegaKVGroups(tableStore, executor), new PravegaKVSchemas(tableStore));
     }
 
     private static String retrieveMasterToken(ServiceConfig config) {
