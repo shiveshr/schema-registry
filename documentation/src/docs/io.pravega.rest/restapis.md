@@ -791,6 +791,75 @@ Adds a new schema to the group
 ```
 
 
+<a name="getschemaversions"></a>
+### GET /groups/{groupName}/schemas/versions
+
+#### Description
+Get all schema versions for the group
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**groupName**  <br>*required*|Group name|string|
+|**Query**|**type**  <br>*optional*|Type of object the schema describes.|string|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|Versioned history of schemas registered under the group|[SchemaVersionsList](#schemaversionslist)|
+|**404**|Group with given name not found|No Content|
+|**500**|Internal server error while fetching Group schema versions|No Content|
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Group
+
+
+#### Example HTTP request
+
+##### Request path
+```
+/groups/string/schemas/versions
+```
+
+
+#### Example HTTP response
+
+##### Response 200
+```json
+{
+  "schemas" : [ {
+    "schemaInfo" : {
+      "type" : "string",
+      "serializationFormat" : {
+        "serializationFormat" : "string",
+        "customTypeName" : "string"
+      },
+      "schemaData" : "string",
+      "properties" : {
+        "string" : "string"
+      }
+    },
+    "version" : {
+      "type" : "string",
+      "version" : 0,
+      "ordinal" : 0
+    }
+  } ]
+}
+```
+
+
 <a name="canread"></a>
 ### POST /groups/{groupName}/schemas/versions/canRead
 
@@ -1027,7 +1096,7 @@ Checks if given schema is compatible with schemas in the registry for current po
 ```
 
 
-<a name="getschemafromversion"></a>
+<a name="getschemafromversionordinal"></a>
 ### GET /groups/{groupName}/schemas/versions/{versionOrdinal}
 
 #### Description
@@ -1087,11 +1156,11 @@ Get schema from the version ordinal that uniquely identifies the schema in the g
 ```
 
 
-<a name="deleteschemaversion"></a>
+<a name="deleteschemaversionorinal"></a>
 ### DELETE /groups/{groupName}/schemas/versions/{versionOrdinal}
 
 #### Description
-Delete schema version from the group.
+Delete schema identified by version from the group.
 
 
 #### Parameters
@@ -1126,6 +1195,110 @@ Delete schema version from the group.
 ##### Request path
 ```
 /groups/string/schemas/versions/0
+```
+
+
+<a name="getschemafromversion"></a>
+### GET /groups/{groupName}/schemas/{type}/versions/{version}
+
+#### Description
+Get schema from the version ordinal that uniquely identifies the schema in the group.
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**groupName**  <br>*required*|Group name|string|
+|**Path**|**type**  <br>*required*|Schema type from SchemaInfo#type or VersionInfo#type|string|
+|**Path**|**version**  <br>*required*|Version number|integer (int32)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|Schema corresponding to the version|[SchemaInfo](#schemainfo)|
+|**404**|Group with given name not found|No Content|
+|**500**|Internal server error while fetching schema from version|No Content|
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Group
+
+
+#### Example HTTP request
+
+##### Request path
+```
+/groups/string/schemas/string/versions/0
+```
+
+
+#### Example HTTP response
+
+##### Response 200
+```json
+{
+  "type" : "string",
+  "serializationFormat" : {
+    "serializationFormat" : "string",
+    "customTypeName" : "string"
+  },
+  "schemaData" : "string",
+  "properties" : {
+    "string" : "string"
+  }
+}
+```
+
+
+<a name="deleteschemaversion"></a>
+### DELETE /groups/{groupName}/schemas/{type}/versions/{version}
+
+#### Description
+Delete schema version from the group.
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**groupName**  <br>*required*|Group name|string|
+|**Path**|**type**  <br>*required*|Schema type from SchemaInfo#type or VersionInfo#type|string|
+|**Path**|**version**  <br>*required*|Version number|integer (int32)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**204**|Schema corresponding to the version|No Content|
+|**404**|Group with given name not found|No Content|
+|**500**|Internal server error while deleting schema from group|No Content|
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Group
+
+
+#### Example HTTP request
+
+##### Request path
+```
+/groups/string/schemas/string/versions/0
 ```
 
 
