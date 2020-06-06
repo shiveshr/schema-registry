@@ -90,8 +90,8 @@ public class SchemaRegistryService {
                         ))).thenApply(groups -> {
                             log.info("Returning groups {}", groups);
                             return new MapWithToken<>(
-                                    groups.entrySet().stream().collect(HashMap::new,
-                                            (m, v) -> m.put(v.getKey(), v.getValue().get()), HashMap::putAll), reply.getToken());
+                                    groups.entrySet().stream().filter(x -> x.getValue().get() != null)
+                                          .collect(Collectors.toMap(Map.Entry::getKey, m -> m.getValue().get())), reply.getToken());
                         });
                     });
     }
