@@ -103,11 +103,14 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync, ApiV1.S
                                      .thenApply(result -> {
                                          ListGroupsResponse groupsList = new ListGroupsResponse();
                                          result.getMap().forEach((x, y) -> {
-                                             if (y == null) {
-                                                 // partially created group.
-                                                 groupsList.putGroupsItem(x, null);
-                                             } else {
-                                                 groupsList.putGroupsItem(x, ModelHelper.encode(y));
+                                             if (y != null) {
+                                                 try {
+                                                     authenticateAuthorize(getAuthorizationHeader(), 
+                                                             String.format(AuthResources.GROUP_FORMAT, x), READ);
+                                                     groupsList.putGroupsItem(x, ModelHelper.encode(y));
+                                                 } catch (AuthException e) {
+                                                    // skip groups the user is not authorized on.                                                      
+                                                 }
                                              }
                                          });
                                          groupsList.continuationToken(result.getToken() == null ? null : result.getToken().toString());
