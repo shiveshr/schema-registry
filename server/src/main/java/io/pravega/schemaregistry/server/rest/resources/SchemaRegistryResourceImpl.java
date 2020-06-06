@@ -77,10 +77,7 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync, ApiV1.S
                                                           .thenApply(result -> {
                                                               ListGroupsResponse groupsList = new ListGroupsResponse();
                                                               result.getMap().forEach((x, y) -> {
-                                                                  if (y == null) {
-                                                                      // partially created group.
-                                                                      groupsList.putGroupsItem(x, null);
-                                                                  } else {
+                                                                  if (y != null) {  
                                                                       groupsList.putGroupsItem(x, ModelHelper.encode(y));
                                                                   }
                                                               });
