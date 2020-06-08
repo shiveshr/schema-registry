@@ -74,7 +74,7 @@ public class SchemaRegistryResourceTest extends JerseyTest {
         Response response = future.get();
         assertEquals(response.getStatus(), 200);
         ListGroupsResponse list = response.readEntity(ListGroupsResponse.class);
-        assertEquals(list.getGroups().size(), 2);
+        assertEquals(list.getGroups().size(), 1);
 
         // region create group
         // endregion
