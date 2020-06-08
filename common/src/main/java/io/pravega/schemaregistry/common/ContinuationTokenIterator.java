@@ -13,10 +13,12 @@ import lombok.Synchronized;
 
 import javax.annotation.concurrent.GuardedBy;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 
@@ -37,25 +39,33 @@ public class ContinuationTokenIterator<T, Token> implements Iterator<T> {
     private T next;
     @GuardedBy("$lock")
     private boolean canHaveNext;
-
+    @GuardedBy("$lock")
+    private final Set<Token> tokens;
+    
     public ContinuationTokenIterator(Function<Token, Map.Entry<Token, Collection<T>>> loadingFunction, Token tokenIdentity) {
         this.loadingFunction = loadingFunction;
         this.queue = new LinkedBlockingQueue<T>();
         this.token = tokenIdentity;
         this.canHaveNext = true;
         this.next = null;
+        this.tokens = new HashSet<>();
     }
 
     @Synchronized
     private void load() {
-        if (next == null && canHaveNext) {
+        next = next == null ? queue.poll() : next;
+        while (next == null && canHaveNext) {
             Map.Entry<Token, Collection<T>> result = loadingFunction.apply(token);
+            boolean tokenUpdated = result.getKey() != null && !tokens.contains(result.getKey());
+            if (result.getKey() != null) {
+                tokens.add(result.getKey());
+            }
             token = result.getKey();
 
             queue.addAll(result.getValue());
             next = queue.poll();
             if (next == null) {
-                canHaveNext = false;
+                canHaveNext = tokenUpdated;
             }
         }
     }
