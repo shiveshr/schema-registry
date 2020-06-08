@@ -66,6 +66,6 @@ public class SchemaRegistryServiceTest {
         }).when(store).getGroupProperties(eq("grp2"));
 
         MapWithToken<String, GroupProperties> result = service.listGroups(null, 100).join();
-        assertEquals(result.getMap().size(), 2);
+        assertEquals(result.getMap().size(), 1);
     }
 }
