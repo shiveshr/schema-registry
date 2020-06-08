@@ -31,7 +31,7 @@ paths:
       tags:
       - "Group"
       operationId: listGroups
-      description: List all groups
+      description: List all groups within the namespace. If namespace is not specified, All groups in default namespace are listed. 
       produces:
         - application/json
       parameters:
@@ -363,7 +363,7 @@ paths:
     delete:
       tags:
       - "Group"
-      operationId: deleteSchemaVersionOrinal
+      operationId: deleteSchemaVersionOrdinal
       description: Delete schema identified by version from the group.
       produces:
         - application/json
