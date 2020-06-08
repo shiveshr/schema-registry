@@ -84,9 +84,6 @@ allprojects {
         maven {
             url "https://repository.apache.org/snapshots"
         }
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
     }
 
     gradle.projectsEvaluated {
@@ -190,6 +187,7 @@ project('contract') {
         compile group: 'org.glassfish.jersey.media', name: 'jersey-media-json-jackson', version: jerseyVersion
         compile group: 'javax.xml.bind', name: 'jaxb-api', version: jaxbVersion
         compile group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: jaxbVersion
+
     }
 
     javadoc {
@@ -200,6 +198,17 @@ project('contract') {
         exclude "**/impl/**";
         options.addBooleanOption("Xdoclint:all,-reference", true)
     }
+}
+
+def getProjectVersion() {
+    String ver = schemaregistryVersion
+    if (grgit && ver.contains("-SNAPSHOT")) {
+        String versionLabel = ver.substring(0, ver.indexOf("-SNAPSHOT"))
+        def count = grgit.log(includes:['HEAD']).size()
+        def commitId = "${grgit.head().abbreviatedId}"
+        ver = versionLabel + "-" + count + "." + commitId + "-SNAPSHOT"
+    }
+    return ver
 }
 
 project('serializers') {
@@ -323,17 +332,6 @@ project('samples') {
         exclude "**/impl/**";
         options.addBooleanOption("Xdoclint:all,-reference", true)
     }
-}
-
-def getProjectVersion() {
-    String ver = schemaregistryVersion
-    if (grgit && ver.contains("-SNAPSHOT")) {
-        String versionLabel = ver.substring(0, ver.indexOf("-SNAPSHOT"))
-        def count = grgit.log(includes:['HEAD']).size()
-        def commitId = "${grgit.head().abbreviatedId}"
-        ver = versionLabel + "-" + count + "." + commitId + "-SNAPSHOT"
-    }
-    return ver
 }
 
 apply plugin: 'distribution'
@@ -489,3 +487,4 @@ class DockerPushTask extends Exec {
         }
     }
 }
+
