@@ -43,7 +43,7 @@ Create a new Group
 
 |Type|Name|Description|Schema|
 |---|---|---|---|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to create group|string|
 |**Body**|**CreateGroupRequest**  <br>*required*|The Group configuration|[CreateGroupRequest](#creategroup-creategrouprequest)|
 
 <a name="creategroup-creategrouprequest"></a>
@@ -118,7 +118,7 @@ List all groups within the namespace. If namespace is not specified, All groups 
 |---|---|---|---|
 |**Query**|**continuationToken**  <br>*optional*|Continuation token|string|
 |**Query**|**limit**  <br>*optional*|The numbers of items to return|integer|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to look up groups|string|
 
 
 #### Responses
@@ -172,7 +172,7 @@ Fetch the properties of an existing Group
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 
 
 #### Responses
@@ -236,7 +236,7 @@ Delete a Group
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 
 
 #### Responses
@@ -272,7 +272,7 @@ Adds a new codecType to the group.
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 |**Body**|**codecType**  <br>*required*|The codecType|string|
 
 
@@ -321,7 +321,7 @@ Get codecTypes for the group.
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 
 
 #### Responses
@@ -373,7 +373,7 @@ Get an encoding id that uniquely identifies a schema version and codec type pair
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 |**Body**|**GetEncodingIdRequest**  <br>*required*|Get schema corresponding to the version|[GetEncodingIdRequest](#getencodingid-getencodingidrequest)|
 
 <a name="getencodingid-getencodingidrequest"></a>
@@ -454,7 +454,7 @@ Get the encoding information corresponding to the encoding id.
 |---|---|---|---|
 |**Path**|**encodingId**  <br>*required*|Encoding id that identifies a unique combination of schema and codec type|integer (int32)|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 
 
 #### Responses
@@ -522,7 +522,7 @@ Fetch the history of schema evolution of a Group
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 
 
 #### Responses
@@ -598,7 +598,7 @@ update schema validation rules of an existing Group
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 |**Body**|**UpdateValidationRulesRequest**  <br>*required*|update group policy|[UpdateValidationRulesRequest](#updateschemavalidationrules-updatevalidationrulesrequest)|
 
 <a name="updateschemavalidationrules-updatevalidationrulesrequest"></a>
@@ -667,7 +667,7 @@ Fetch latest schema versions for all objects identified by SchemaInfo#type under
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 |**Query**|**type**  <br>*optional*|Type of object|string|
 
 
@@ -737,7 +737,7 @@ Adds a new schema to the group
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 |**Body**|**schemaInfo**  <br>*required*|Add new schema to group|[SchemaInfo](#schemainfo)|
 
 
@@ -815,7 +815,7 @@ Get all schema versions for the group
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 |**Query**|**type**  <br>*optional*|Type of object the schema describes.|string|
 
 
@@ -885,7 +885,7 @@ Checks if given schema can be used for reads subject to compatibility policy in 
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 |**Body**|**schemaInfo**  <br>*required*|Checks if schema can be used to read the data in the stream based on compatibility rules.|[SchemaInfo](#schemainfo)|
 
 
@@ -959,7 +959,7 @@ Get the version for the schema if it is registered. It does not automatically re
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 |**Body**|**schemaInfo**  <br>*required*|Get schema corresponding to the version|[SchemaInfo](#schemainfo)|
 
 
@@ -1035,7 +1035,7 @@ Checks if given schema is compatible with schemas in the registry for current po
 |Type|Name|Description|Schema|
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 |**Body**|**ValidateRequest**  <br>*required*|Checks if schema is valid with respect to supplied validation rules|[ValidateRequest](#validate-validaterequest)|
 
 <a name="validate-validaterequest"></a>
@@ -1125,7 +1125,7 @@ Get schema from the version ordinal that uniquely identifies the schema in the g
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
 |**Path**|**versionOrdinal**  <br>*required*|Version ordinal|integer (int32)|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 
 
 #### Responses
@@ -1173,7 +1173,7 @@ Get schema from the version ordinal that uniquely identifies the schema in the g
 ```
 
 
-<a name="deleteschemaversionorinal"></a>
+<a name="deleteschemaversionordinal"></a>
 ### DELETE /groups/{groupName}/schemas/versions/{versionOrdinal}
 
 #### Description
@@ -1186,7 +1186,7 @@ Delete schema identified by version from the group.
 |---|---|---|---|
 |**Path**|**groupName**  <br>*required*|Group name|string|
 |**Path**|**versionOrdinal**  <br>*required*|Version ordinal|integer (int32)|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 
 
 #### Responses
@@ -1230,7 +1230,7 @@ Get schema from the version ordinal that uniquely identifies the schema in the g
 |**Path**|**groupName**  <br>*required*|Group name|string|
 |**Path**|**type**  <br>*required*|Schema type from SchemaInfo#type or VersionInfo#type|string|
 |**Path**|**version**  <br>*required*|Version number|integer (int32)|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 
 
 #### Responses
@@ -1292,7 +1292,7 @@ Delete schema version from the group.
 |**Path**|**groupName**  <br>*required*|Group name|string|
 |**Path**|**type**  <br>*required*|Schema type from SchemaInfo#type or VersionInfo#type|string|
 |**Path**|**version**  <br>*required*|Version number|integer (int32)|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup group. If no namespace is specified, default namespace is used.|string|
 
 
 #### Responses
@@ -1333,7 +1333,7 @@ Gets a map of groups to version info where the schema if it is registered. Schem
 
 |Type|Name|Description|Schema|
 |---|---|---|---|
-|**Query**|**namespace**  <br>*optional*|namespace|string|
+|**Query**|**namespace**  <br>*optional*|Namespace in which to lookup schemas used in groups. If no namespace is specified, default namespace is used.|string|
 |**Body**|**schemaInfo**  <br>*required*|Get schema references for the supplied schema|[SchemaInfo](#schemainfo)|
 
 
@@ -1358,7 +1358,7 @@ Gets a map of groups to version info where the schema if it is registered. Schem
 
 #### Tags
 
-* Schema
+* Schemas
 
 
 #### Example HTTP request
