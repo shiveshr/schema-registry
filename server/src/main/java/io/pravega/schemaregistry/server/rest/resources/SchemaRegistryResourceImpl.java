@@ -44,6 +44,7 @@ import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -81,6 +82,10 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync, ApiV1.S
                                                                       groupsList.putGroupsItem(x, ModelHelper.encode(y));
                                                                   }
                                                               });
+                                                              if (groupsList.getGroups() == null) {
+                                                                  groupsList.groups(Collections.emptyMap());
+                                                              }
+
                                                               groupsList.continuationToken(result.getToken() == null ? null : result.getToken().toString());
                                                               return Response.status(Status.OK).entity(groupsList).build();
                                                           })
