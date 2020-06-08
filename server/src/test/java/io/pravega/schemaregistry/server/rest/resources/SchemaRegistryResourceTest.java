@@ -23,6 +23,7 @@ import io.pravega.schemaregistry.server.rest.ServiceConfig;
 import io.pravega.schemaregistry.service.SchemaRegistryService;
 import org.glassfish.jersey.test.JerseyTest;
 import org.glassfish.jersey.test.TestProperties;
+import org.junit.After;
 import org.junit.Test;
 
 import javax.ws.rs.client.Entity;
@@ -36,7 +37,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -48,17 +51,24 @@ import static org.mockito.Mockito.mock;
 public class SchemaRegistryResourceTest extends JerseyTest {
     private static final String GROUPS = "v1/groups";
     private SchemaRegistryService service;
+    private ScheduledExecutorService executor;
 
     @Override
     protected Application configure() {
+        executor = Executors.newSingleThreadScheduledExecutor();
         forceSet(TestProperties.CONTAINER_PORT, "0");
         service = mock(SchemaRegistryService.class);
         final Set<Object> resourceObjs = new HashSet<>();
-        resourceObjs.add(new SchemaRegistryResourceImpl(service, ServiceConfig.builder().build()));
+        resourceObjs.add(new SchemaRegistryResourceImpl(service, ServiceConfig.builder().build(), executor));
 
         return new RegistryApplication(resourceObjs);
     }
 
+    @After
+    public void tearDown() {
+        executor.shutdownNow();    
+    }
+    
     @Test
     public void groups() throws ExecutionException, InterruptedException {
         GroupProperties group1 = new GroupProperties(SerializationFormat.Avro,

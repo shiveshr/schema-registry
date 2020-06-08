@@ -52,9 +52,14 @@ import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -81,48 +86,74 @@ public class SchemaRegistryResourceImpl implements ApiV1.GroupsApiAsync, ApiV1.S
     @Context
     HttpHeaders headers;
 
-    private final AuthHandlerManager authManager;
-
     private SchemaRegistryService registryService;
     private ServiceConfig config;
+    private final AuthHandlerManager authManager;
+    private final Executor executorService;
     
-    public SchemaRegistryResourceImpl(SchemaRegistryService registryService, ServiceConfig config) {
+    public SchemaRegistryResourceImpl(SchemaRegistryService registryService, ServiceConfig config, Executor executorService) {
         this.registryService = registryService;
         this.config = config;
         this.authManager = new AuthHandlerManager(config);
+        this.executorService = executorService;
     }
 
     @Override
     public void listGroups(String continuationToken, Integer limit, 
                            AsyncResponse asyncResponse) throws NotFoundException {
         log.info("List Groups called");
-        int limitUnboxed = limit == null ? DEFAULT_LIST_GROUPS_LIMIT : limit;
+        AtomicInteger toFetch = limit == null ? new AtomicInteger(DEFAULT_LIST_GROUPS_LIMIT) : new AtomicInteger(limit);
+        AtomicReference<String> continuationTokenRef = new AtomicReference<>(continuationToken);
+        AtomicBoolean loop = new AtomicBoolean(true);
+        ListGroupsResponse groupsList = new ListGroupsResponse();
 
-        withCompletion("listGroups", READ, AuthResources.ROOT, asyncResponse,
-                () -> registryService.listGroups(ContinuationToken.fromString(continuationToken), limitUnboxed)
-                                     .thenApply(result -> {
-                                         ListGroupsResponse groupsList = new ListGroupsResponse();
-                                         result.getMap().forEach((x, y) -> {
-                                             if (y != null) {
-                                                 try {
-                                                     authenticateAuthorize(getAuthorizationHeader(), 
-                                                             String.format(AuthResources.GROUP_FORMAT, x), READ);
-                                                     groupsList.putGroupsItem(x, ModelHelper.encode(y));
-                                                 } catch (AuthException e) {
-                                                    // skip groups the user is not authorized on.                                                      
+        List<String> authorizationHeader = config.isAuthEnabled() ? getAuthorizationHeader() : Collections.emptyList();
+        CompletableFuture.runAsync(() -> {
+            if (config.isAuthEnabled()) {
+                String credentials = parseCredentials(authorizationHeader);
+                try {
+                    authManager.authenticate(credentials);
+                } catch (AuthException e) {
+                    log.warn("Unauthenticated", e);
+                    asyncResponse.resume(Response.status(Response.Status.FORBIDDEN.getStatusCode()).build());
+                }
+            }
+        }, executorService).thenCompose(v ->
+                Futures.loop(loop::get,
+                        () -> registryService.listGroups(ContinuationToken.fromString(continuationTokenRef.get()), toFetch.get())
+                                             .thenAccept(result -> {
+                                                 AtomicInteger filtered = new AtomicInteger();
+                                                 result.getMap().forEach((x, y) -> {
+                                                     if (y != null) {
+                                                         try {
+                                                             authenticateAuthorize(authorizationHeader,
+                                                                     String.format(AuthResources.GROUP_FORMAT, x), READ);
+                                                             groupsList.putGroupsItem(x, ModelHelper.encode(y));
+                                                         } catch (AuthException e) {
+                                                             // skip groups the user is not authorized on.
+                                                             filtered.incrementAndGet();
+                                                         } 
+                                                     }
+                                                 });
+                                                 if (result.getMap().size() == toFetch.get() && filtered.get() > 0) {
+                                                     toFetch.set(filtered.get());
+                                                     continuationTokenRef.set(result.getToken() == null ? 
+                                                             ContinuationToken.EMPTY.toString() : result.getToken().toString());
+                                                 } else {
+                                                     // we have reached exit condition
+                                                     loop.set(false);
+                                                     groupsList.continuationToken(result.getToken() == null ? null : result.getToken().toString());
                                                  }
-                                             }
-                                         });
-                                         groupsList.continuationToken(result.getToken() == null ? null : result.getToken().toString());
-                                         return Response.status(Status.OK).entity(groupsList).build();
-                                     })
-                                     .exceptionally(exception -> {
-                                         log.warn("listGroups failed with exception: ", exception);
-                                         return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-                                     }))                .thenApply(response -> {
-                    asyncResponse.resume(response);
-                    return response;
-                });
+
+                                             }), executorService).thenApply(r -> Response.status(Status.OK).entity(groupsList).build())
+                       .exceptionally(exception -> {
+                           log.warn("listGroups failed with exception: ", exception);
+                           return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+                       })
+               .thenApply(response -> {
+                   asyncResponse.resume(response);
+                   return response;
+               }));
     }
 
     @Override
