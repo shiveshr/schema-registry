@@ -79,7 +79,7 @@ public class SchemaRegistryResourceTest extends JerseyTest {
             map.put("group1", group1);
             map.put("group2", null);
             return CompletableFuture.completedFuture(new MapWithToken<>(map, null));
-        }).when(service).listGroups(any(), anyInt());
+        }).when(service).listGroups(any(), any(), anyInt());
 
         Future<Response> future = target(GROUPS).queryParam("limit", 100).request().async().get();
         Response response = future.get();
@@ -115,7 +115,7 @@ public class SchemaRegistryResourceTest extends JerseyTest {
         // endregion
 
         // can read
-        doAnswer(x -> CompletableFuture.completedFuture(true)).when(service).canRead(any(), any());
+        doAnswer(x -> CompletableFuture.completedFuture(true)).when(service).canRead(any(), any(), any());
         SchemaInfo schemaInfo = new SchemaInfo()
                 .type("name")
                 .serializationFormat(ModelHelper.encode(SerializationFormat.Avro))

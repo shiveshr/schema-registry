@@ -101,7 +101,7 @@ public class SchemaRegistryAuthTest extends JerseyTest {
                 map.put("group" + i, group1);
             }
             return CompletableFuture.completedFuture(new MapWithToken<>(map, ContinuationToken.fromString("token")));
-        }).when(service).listGroups(any(), anyInt());
+        }).when(service).listGroups(any(), any(), anyInt());
 
         Future<Response> future = target("v1/groups").queryParam("limit", 10)
                                                      .request().header(HttpHeaders.AUTHORIZATION, 
@@ -140,9 +140,9 @@ public class SchemaRegistryAuthTest extends JerseyTest {
         }
 
         doAnswer(x -> CompletableFuture.completedFuture(new MapWithToken<>(map1, ContinuationToken.fromString("token"))))
-                .when(service).listGroups(any(), eq(10));
+                .when(service).listGroups(any(), any(), eq(10));
         doAnswer(x -> CompletableFuture.completedFuture(new MapWithToken<>(map2, ContinuationToken.fromString("token"))))
-                .when(service).listGroups(any(), eq(8));
+                .when(service).listGroups(any(), any(), eq(8));
 
         future = target("v1/groups").queryParam("limit", 10)
                                     .request().header(HttpHeaders.AUTHORIZATION,
